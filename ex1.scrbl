@@ -6,10 +6,10 @@
 
 @local-table-of-contents[]
 
-@section{Exercise 1.1}
+@section[#:tag "c1e1"]{Exercise 1.1}
 
 Omitted.
-@section{Exercise 1.2}
+@section[#:tag "c1e2"]{Exercise 1.2}
 
 @chunk[<ex1-2>
 (define (ex1-2)
@@ -17,7 +17,7 @@ Omitted.
      (* 3 (* (- 6 2) (- 2 7)))))
 ]
 
-@section{Exercise 1.3}
+@section[#:tag "c1e3"]{Exercise 1.3}
 
 @chunk[<ex1-3>
 (define (ex1-3 a b c)
@@ -29,7 +29,7 @@ Omitted.
   (sum-sq (two-largest a b c)))
 ]
 
-@section{Exercise 1.4}
+@section[#:tag "c1e4"]{Exercise 1.4}
 
 This procedure adds the absolute value of @tt{b} to @tt{a}. To do this, it
 selects the operation to apply on @tt{a} with @tt{b} based on whether @tt{b} is
@@ -42,7 +42,7 @@ greater than @tt{0}. If @tt{b > 0}, then @tt{b = abs(b)} and can be added to
   ((if (> b 0) + -) a b))
 ]
 
-@section{Exercise 1.5}
+@section[#:tag "c1e5"]{Exercise 1.5}
 
 In an applicative-order interpreter, the example will never
 evaluate because the operand (@tt{p}) cannot be evaluated. In
@@ -51,7 +51,7 @@ until the alternate condition of the if condition is reached --
 and since it won't be reached because the @tt{x} argument is @tt{0}, the
 example will evaluate to @tt{0}.
 
-@section{Exercise 1.6}
+@section[#:tag "c1e6"]{Exercise 1.6}
 
 The @tt{sqrt-iter} procedure using the @tt{new-if} procedure never terminates.
 This has to do with how all operands are evaluated, unlike with the
@@ -59,7 +59,7 @@ special form @tt{if}.
 
 @bold{TODO: Elaborate}
 
-@section{Exercise 1.7}
+@section[#:tag "c1e7"]{Exercise 1.7}
 
 @tt{good-enough?} is inadequate for computing the square roots of small
 numbers because it allows for too large a margin of error. The procedure
@@ -106,7 +106,7 @@ to exactly @tt{0.01}.
 
 @bold{TODO: Test very large numbers}
 
-@section{Exercise 1.8}
+@section[#:tag "c1e8"]{Exercise 1.8}
 
 To make this exercise more interesting, I've written an iteration procedure which
 takes an @tt{improve} function as an argument. This means that the only difference
@@ -137,7 +137,7 @@ of @tt{0.001}.)
      3))
 ]
 
-@section{Exercise 1.9}
+@section[#:tag "c1e9"]{Exercise 1.9}
 
 The evaluation of the expression @tt{(+ 4 5)} with the first procedure using the substition
 model is as follows:
@@ -176,7 +176,7 @@ The evaluation using the second procedure generates an iterative process:
 9
 }
 
-@section{Exercise 1.10}
+@section[#:tag "c1e10"]{Exercise 1.10}
 
 The following evaluations using the substitution model are tedious, and are sometimes
 simplified based on the results of earlier derivations, because the number of steps
@@ -280,7 +280,7 @@ procedures that evaluate @tt{A} for fixed @tt{x} values.
 
 Put concisely, @tt{(h n) = 2^(h (dec n))}.
 
-@section{Exercise 1.11}
+@section[#:tag "c1e11"]{Exercise 1.11}
 
 @chunk[<f-rec>
 (define (f-rec n)
@@ -300,7 +300,7 @@ Put concisely, @tt{(h n) = 2^(h (dec n))}.
       (loop 3 2 1 0)))
 ]
 
-@section{Exercise 1.12}
+@section[#:tag "c1e12"]{Exercise 1.12}
 
 This procedure calculates the value in Pascal's triangle at
 depth @tt{depth} and column @tt{column}. Both the depth and
@@ -396,7 +396,7 @@ process.
   (triangle-loop 1 '((1))))
 ]
 
-@section{Exercise 1.13}
+@section[#:tag "c1e13"]{Exercise 1.13}
 
 @bold{Statement:} @tt{Fib(n)} is the closest integer to @tt{(ø^n) / √5}, where
 @tt{ø = (1 + √5) / 2}.
@@ -442,7 +442,7 @@ This method of computing Fibonacci numbers works.
 
 @bold{TODO: Look this over between two and ten more times, and be more explicit}
 
-@section{Exercise 1.14}
+@section[#:tag "c1e14"]{Exercise 1.14}
 
 (Tree not included.)
 
@@ -486,11 +486,11 @@ of the last one.
 
 @bold{TODO: Space complexity}
 
-@section{Exercise 1.15}
+@section[#:tag "c1e15"]{Exercise 1.15}
 
 @bold{TODO}
 
-@section{Exercise 1.16}
+@section[#:tag "c1e16"]{Exercise 1.16}
 
 @chunk[<fast-expt-iter>
 (define (fast-expt-iter b n)
@@ -503,7 +503,7 @@ of the last one.
 
 @bold{TODO: Explain}
 
-@section{Exercise 1.17}
+@section[#:tag "c1e17"]{Exercise 1.17}
 
 @chunk[<fast-times>
 (define (fast-times a b)
@@ -514,7 +514,7 @@ of the last one.
 
 @bold{TODO: Explain}
 
-@section{Exercise 1.18}
+@section[#:tag "c1e18"]{Exercise 1.18}
 
 @chunk[<fast-times-iter>
 (define (fast-times-iter a b)
@@ -527,7 +527,7 @@ of the last one.
 
 @bold{TODO: Explain}
 
-@section{Exercise 1.19}
+@section[#:tag "c1e19"]{Exercise 1.19}
 
 @chunk[<fib>
 (define (fib n)
@@ -552,7 +552,7 @@ of the last one.
 
 @bold{TODO: Explain}
 
-@section{Exercise 1.20}
+@section[#:tag "c1e20"]{Exercise 1.20}
 
 @bold{TODO: Show normal-order evaluation}
 
@@ -562,7 +562,7 @@ Under normal-order evaluation, @tt{remainder} is called 18 times.
 
 Under applicative-order evaluation, @tt{remainder} is called 4 times.
 
-@section{Exercise 1.21}
+@section[#:tag "c1e21"]{Exercise 1.21}
 
 The smallest divisor of @tt{199} is @tt{199}.
 
@@ -570,7 +570,7 @@ The smallest divisor of @tt{1999} is @tt{1999}.
 
 The smallest divisor of @tt{19999} is @tt{7}.
                                      
-@section{Exercise 1.22}
+@section[#:tag "c1e22"]{Exercise 1.22}
 
 A lot of the exercises in this book are more interesting than they appear. I'm
 going to pick on this one for a little bit.
@@ -671,15 +671,15 @@ the benefits of generalization.
 
 @bold{TODO: Actually answer the question.}
 
-@section{Exercise 1.23}
+@section[#:tag "c1e23"]{Exercise 1.23}
 
 @bold{TODO - I don't want to do more of this runtime stuff right now}
 
-@section{Exercise 1.24}
+@section[#:tag "c1e24"]{Exercise 1.24}
 
 @bold{TODO - I don't want to do more of this runtime stuff right now}
 
-@section{Exercise 1.25}
+@section[#:tag "c1e25"]{Exercise 1.25}
 
 She is correct that you can compute @tt{expmod} this way, but it requires
 a bit of knowledge to be sure of. The long-form @tt{expmod} takes the @tt{remainder}
@@ -694,7 +694,7 @@ computes more, simpler remainders.
 
 @bold{TODO: Show test results}
 
-@section{Exercise 1.26}
+@section[#:tag "c1e26"]{Exercise 1.26}
 
 By calling @tt{*} instead of @tt{square}, the arguments need to be calculated
 twice instead of once. Since these arguments are calls to @tt{expmod}, this means
@@ -703,7 +703,7 @@ size @tt{n/2}. This makes the problem O(n) instead of O(logn).
 
 @bold{TODO: Elaborate}
 
-@section{Exercise 1.27}
+@section[#:tag "c1e27"]{Exercise 1.27}
 
 Here is a procedure to test for congruence for a number @tt{n} with every integer @tt{1 <= a <= n - 1}:
 
@@ -718,11 +718,11 @@ Here is a procedure to test for congruence for a number @tt{n} with every intege
 
 It is trivial to verify that this procedure returns true for the given Carmichael numbers.
 
-@section{Exercise 1.28}
+@section[#:tag "c1e28"]{Exercise 1.28}
 
 @bold{TODO}
 
-@section{Exercise 1.29}
+@section[#:tag "c1e29"]{Exercise 1.29}
 
 This procedure computes integrals with Simpson's rule:
 
@@ -757,7 +757,7 @@ Comparing outputs with the book:
 0.2500000000000003
 }|
 
-@section{Exercise 1.30}
+@section[#:tag "c1e30"]{Exercise 1.30}
 
 @chunk[<sum>
 (define (sum term a next b)
@@ -781,7 +781,7 @@ Curiously, in my environment, this procedure gives very slightly different answe
 0.25000000000000006
 }|
 
-@section{Exercise 1.31}
+@section[#:tag "c1e31"]{Exercise 1.31}
 
 We can define a @tt{product} procedure very similarly to the first @tt{sum} procedure:
 
@@ -831,7 +831,7 @@ A @tt{product} procedure computing an iterative process is as follows:
   (iter a 1))
 ]
 
-@section{Exercise 1.32}
+@section[#:tag "c1e32"]{Exercise 1.32}
 
 A general @tt{accumulate} procedure can be written as follows:
 
@@ -865,7 +865,7 @@ We can write an iterative @tt{accumulate} like this:
   (iter a null-value))
 ]
 
-@section{Exercise 1.33}
+@section[#:tag "c1e33"]{Exercise 1.33}
 
 @chunk[<filtered-accumulate>
 (define (filtered-accumulate predicate combiner null-value term a next b)
@@ -890,7 +890,7 @@ We can write an iterative @tt{accumulate} like this:
   (filtered-accumulate is-relatively-prime? * 1 identity 1 inc (- n 1)))
 ]
 
-@section{Exercise 1.34}
+@section[#:tag "c1e34"]{Exercise 1.34}
 
 Suppose we have the following procedure @tt{f}:
 
@@ -909,7 +909,7 @@ If we ask the interpreter to evaluate @tt{(f f)}, the following happens:
 
 This fails, because @tt{2} is not a procedure.
 
-@section{Exercise 1.35}
+@section[#:tag "c1e35"]{Exercise 1.35}
 
 We can see that the golden ratio is the fixed point of the function @tt{f(x) = x + 1/x} simply
 by evaluating:
@@ -938,7 +938,7 @@ We can then write a procedure to compute the golden ratio using @tt{fixed-point}
   (fixed-point golden-transform 1))
 ]
 
-@section{Exercise 1.36}
+@section[#:tag "c1e36"]{Exercise 1.36}
 
 I'm ommitting the change to @tt{fixed-point} to make it print successive approximations because
 it is trivial -- I added two lines to display the guess and then print a newline at the beginning
@@ -1010,7 +1010,7 @@ And this does calculate the fixed point of the function:
 1000.0046472054871
 }
 
-@section{Exercise 1.37}
+@section[#:tag "c1e37"]{Exercise 1.37}
 
 A procedure for evaluating a continued fraction for up to depth @tt{k}:
 
@@ -1053,7 +1053,7 @@ straightforward:
   (loop (/ (n k) (d k)) (- k 1)))
 ]
 
-@section{Exercise 1.38}
+@section[#:tag "c1e38"]{Exercise 1.38}
 
 Using an internally-defined @tt{denom} function, which reduces the index
 by @tt{2} if it's greater than @tt{2} to make the logic simpler, we can
@@ -1081,7 +1081,7 @@ Testing this procedure, we can see it does calculate @tt{e}:
 2.7182818284590455
 }
 
-@section{Exercise 1.39}
+@section[#:tag "c1e39"]{Exercise 1.39}
 
 @chunk[<tan-cf>
 (define (tan-cf x k)
@@ -1092,7 +1092,7 @@ Testing this procedure, we can see it does calculate @tt{e}:
   (cont-frac numer denom k))
 ]
 
-@section{Exercise 1.40}
+@section[#:tag "c1e40"]{Exercise 1.40}
 
 We want @tt{cubic} to be a procedure of three parameter @tt{a}, @tt{b}, and @tt{c}
 that returns a procedure of one parameter @tt{x} that evaluates the function
@@ -1115,7 +1115,7 @@ We can verify this works with an example, finding the root of the function
 0.8945582482428005
 }
 
-@section{Exercise 1.41}
+@section[#:tag "c1e41"]{Exercise 1.41}
 
 The procedure definition of @tt{double} is simple:
 
@@ -1142,7 +1142,7 @@ increments @tt{4^2 = 16} times. The answer to the expression is @tt{21}.
 
 @bold{TODO: That cumbersome derivation?}
 
-@section{Exercise 1.42}
+@section[#:tag "c1e42"]{Exercise 1.42}
 
 Function composition is a powerful idea, but Scheme is expressive enough for
 a self-explanatory implementation:
@@ -1152,7 +1152,7 @@ a self-explanatory implementation:
   (lambda (x) (f (g x))))
 ]
 
-@section{Exercise 1.43}
+@section[#:tag "c1e43"]{Exercise 1.43}
 
 We can define @tt{repeated} simply using @tt{compose} from the last exercise:
 
@@ -1166,7 +1166,7 @@ The main idea is that repeating @tt{f} @tt{t} times is equivalent to applying @t
 to @tt{f} repeated @tt{t - 1} times, with a base case of @tt{f} repeated @tt{1} time,
 which is just @tt{f}.
 
-@section{Exercise 1.44}
+@section[#:tag "c1e44"]{Exercise 1.44}
 
 @bold{TODO: Words}
 
@@ -1185,7 +1185,7 @@ which is just @tt{f}.
   (repeated smooth times))
 ]
 
-@section{Exercise 1.45}
+@section[#:tag "c1e45"]{Exercise 1.45}
 
 The number of @tt{average-damp} calls needed for the @tt{n}th root to converge is
 the floor of log2(n).
@@ -1199,7 +1199,7 @@ the floor of log2(n).
 
 @bold{TODO: More words}
 
-@section{Exercise 1.46}
+@section[#:tag "c1e46"]{Exercise 1.46}
 
 @chunk[<iterative-improve>
 (define (iterative-improve good-enough? improve-guess)

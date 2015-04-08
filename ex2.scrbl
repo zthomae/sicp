@@ -6,7 +6,7 @@
 
 @local-table-of-contents[]
 
-@section{Exercise 2.1}
+@section[#:tag "c2e1"]{Exercise 2.1}
 
 This new @tt{make-rat} procedure is ultimately a case analysis. There are
 many ways to do it -- I have chosen one that handles both cases of negative
@@ -22,7 +22,7 @@ rational numbers in one case.
          (cons (* -1 (abs n)) (abs d)))))
 ]
 
-@section{Exercise 2.2}
+@section[#:tag "c2e2"]{Exercise 2.2}
 
 The procedures for making and selecting from line segments and points are very similar --
 just operations on pairs of their parts.  @tt{make-segment} and @tt{make-point} are both calls
@@ -156,7 +156,7 @@ It would be even better if the @tt{car}s and @tt{cdr}s of the pairs sent to
 @tt{print-pair} knew how to print themselves, but that is getting beyond the scope
 of the exercise.
 
-@section{Exercise 2.3}
+@section[#:tag "c2e3"]{Exercise 2.3}
 
 Two representations of rectangles come to mind immediately:
 
@@ -268,7 +268,7 @@ implementation-specific details, like @tt{-segment} and @tt{-corner}, behind
 standard interfaces like @tt{make-rectangle}, @tt{get-width}, and
 @tt{get-height}. More on this topic will be introduced later in the book.
 
-@section{Exercise 2.4}
+@section[#:tag "c2e4"]{Exercise 2.4}
 
 The definitions of @tt{cons} and @tt{car} we are given are as follows:
 
@@ -318,11 +318,11 @@ Using the substitution model to evaluate:
 y
 }
 
-@section{Exercise 2.5}
+@section[#:tag "c2e5"]{Exercise 2.5}
 
 @bold{TODO}
 
-@section{Exercise 2.6}
+@section[#:tag "c2e6"]{Exercise 2.6}
 
 @bold{TODO: Words}
 
@@ -382,7 +382,7 @@ x
       ((m f) ((n f) x)))))
 ]
 
-@section{Exercise 2.7}
+@section[#:tag "c2e7"]{Exercise 2.7}
 
 We can see by examining the implementations of the operations that @tt{make-interval}
 takes the lower bound as the first parameter and the upper bound as the second. For
@@ -405,7 +405,7 @@ Therefore, knowing that @tt{make-interval} is a @tt{cons} call, we know to defin
 (define (upper-bound i) (cdr i))
 ]
 
-@section{Exercise 2.8}
+@section[#:tag "c2e8"]{Exercise 2.8}
 
 Alyssa reasoned that adding two intervals made a new interval where the lower
 bound was the sum of the arguments' lower bounds and the upper bound was the
@@ -420,7 +420,7 @@ for the upper bound).
                  (- (lower-bound x) (lower-bound y))))
 ]
 
-@section{Exercise 2.9}
+@section[#:tag "c2e9"]{Exercise 2.9}
 
 First, a definition of the @tt{width} procedure:
 
@@ -469,7 +469,7 @@ using our procedures:
 => #f
 }
 
-@section{Exercise 2.10}
+@section[#:tag "c2e10"]{Exercise 2.10}
 
 Before modifying any code, we need to understand: Why does it not make sense
 to divide by an interval that spans zero?
@@ -525,7 +525,7 @@ Fixing Alyssa's code is simple (and more readable because of the new
       (mul-interval x (reciprocal y))))
 ]
 
-@section{Exercise 2.11}
+@section[#:tag "c2e11"]{Exercise 2.11}
 
 Ben's point is that there are nine different valid sign combinations for the
 lower and upper bounds of the two intervals being multiplied, and that a basic
@@ -636,7 +636,7 @@ And using our testing procedure, we can verify that this procedure is correct:
 => #t
 }
 
-@section{Exercise 2.12}
+@section[#:tag "c2e12"]{Exercise 2.12}
 
 @tt{make-center-percent} is not hard to implement. Just calculate the width
 from the center and the percent and then use @tt{make-center-width}:
@@ -657,23 +657,23 @@ and then dividing by the width:
     (/ (- (upper-bound i) c) w)))
 ]
 
-@section{Exercise 2.13}
+@section[#:tag "c2e13"]{Exercise 2.13}
 
 @bold{TODO}
 
-@section{Exercise 2.14}
+@section[#:tag "c2e14"]{Exercise 2.14}
 
 @bold{TODO}
 
-@section{Exercise 2.15}
+@section[#:tag "c2e15"]{Exercise 2.15}
 
 @bold{TODO}
 
-@section{Exercise 2.16}
+@section[#:tag "c2e16"]{Exercise 2.16}
 
 @bold{TODO}
 
-@section{Exercise 2.17}
+@section[#:tag "c2e17"]{Exercise 2.17}
 
 @bold{TODO: Words}
 
@@ -683,7 +683,7 @@ and then dividing by the width:
       (last-pair (cdr l))))
 ]
 
-@section{Exercise 2.18}
+@section[#:tag "c2e18"]{Exercise 2.18}
 
 @bold{TODO: Words}
 
@@ -693,7 +693,7 @@ and then dividing by the width:
       (append (reverse (cdr l)) (list (car l)))))
 ]
 
-@section{Exercise 2.19}
+@section[#:tag "c2e19"]{Exercise 2.19}
 
 @tt{first-denomination}, @tt{except-first-denomination}, and @tt{no-more?} are all primitive
 operations on lists:
@@ -720,7 +720,7 @@ The order of the list @tt{coin-values} does not affect the answer of @tt{cc}:
 => #t
 }
 
-@section{Exercise 2.20}
+@section[#:tag "c2e20"]{Exercise 2.20}
 
 I found it easiest to define @tt{same-parity} iteratively, using an iterative inner
 procedure taking the first argument, the results list, and the rest of the numbers
@@ -757,7 +757,7 @@ alternatively have used @tt{apply} to get around this:
 However, although I have used it before, we technically don't know @tt{apply}
 at this point in the book.
 
-@section{Exercise 2.21}
+@section[#:tag "c2e21"]{Exercise 2.21}
 
 First, the implementation of @tt{square-list} that does not use @tt{map}:
 
@@ -776,7 +776,7 @@ And the implementation that does:
   (map (lambda (x) (square x)) items))
 ]
 
-@section{Exercise 2.22}
+@section[#:tag "c2e22"]{Exercise 2.22}
 
 The first procedure produces the answer list in the wrong order because it
 @tt{cons}es the square of the current entry to the front of the @tt{answers}
@@ -789,7 +789,7 @@ meaning that later items are squared and appear earlier in the list.
 The second procedure does not work because @tt{cons}es a list to a value,
 which does not produce a valid list structure.
 
-@section{Exercise 2.23}
+@section[#:tag "c2e23"]{Exercise 2.23}
 
 I have chosen to use @tt{nil} as the return value rather than true. This isn't
 exactly what I'd like to do, but I don't think @tt{for-each} should have a
@@ -803,11 +803,11 @@ return value, and at this time I think this is closer to that.
          (for-each f (cdr items))))))
 ]
 
-@section{Exercise 2.24}
+@section[#:tag "c2e24"]{Exercise 2.24}
 
 Omitted.
 
-@section{Exercise 2.25}
+@section[#:tag "c2e25"]{Exercise 2.25}
 
 I give solutions both in reduced and unreduced form.
 
@@ -831,7 +831,7 @@ I give solutions both in reduced and unreduced form.
 => #t
 }
 
-@section{Exercise 2.26}
+@section[#:tag "c2e26"]{Exercise 2.26}
 
 @verbatim{
 (append x y)
@@ -858,7 +858,7 @@ to the list @tt{(1 2 3)} and is  is the valid list @tt{(4 5 6)}.
 We get this result because @tt{list} creates a list structure where the first element
 is the list @tt{(1 2 3)} and the second element is the list @tt{(4 5 6)}.
 
-@section{Exercise 2.27}
+@section[#:tag "c2e27"]{Exercise 2.27}
 
 There are a few subtle changes in @tt{deep-reverse} that should be mentioned.
 
@@ -898,7 +898,7 @@ create the wrong list structure. In other words,
 => ((() ((() 4) 3)) ((() 2) 1))
 }
 
-@section{Exercise 2.28}
+@section[#:tag "c2e28"]{Exercise 2.28}
 
 @tt{fringe} is similar to @tt{deep-reverse} in that it has three base cases for
 non-lists, single-item lists, and general lists. However, the non-pair case
@@ -912,7 +912,7 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
         (else (append (fringe (car l)) (fringe (cdr l))))))
 ]
 
-@section{Exercise 2.29}
+@section[#:tag "c2e29"]{Exercise 2.29}
 
 @bold{TODO: Words}
 
@@ -967,7 +967,7 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
 
 @bold{TODO: Changing list to cons (just change list? to pair?, I think)}
 
-@section{Exercise 2.30}
+@section[#:tag "c2e30"]{Exercise 2.30}
 
 These procedures are direct modifications of the corresponding ones for
 @tt{scale-tree}. This is relevant to the next exercise.
@@ -989,7 +989,7 @@ These procedures are direct modifications of the corresponding ones for
        tree))
 ]
 
-@section{Exercise 2.31}
+@section[#:tag "c2e31"]{Exercise 2.31}
 
 @chunk[<tree-map>
 (define (tree-map proc tree)
@@ -1007,7 +1007,7 @@ As an example, we could define @tt{scale-tree} this way:
   (tree-map (lambda (x) (* x factor)) tree))
 }
 
-@section{Exercise 2.32}
+@section[#:tag "c2e32"]{Exercise 2.32}
 
 The idea behind this algorithm is as follows: The set of all subsets of a set
 @tt{s} is the same as the union of the set of subsets of @tt{s} containing an
@@ -1047,5 +1047,73 @@ The complete procedure is below.
               rest)))))
 ]
 
-@section{Exercise 2.33}
+@section[#:tag "c2e33"]{Exercise 2.33}
 
+To implement @tt{map} using @tt{accumulate}, we give @tt{accumulate} a
+procedure @tt{cons}ing the result of applying @tt{p} to its first argument
+(the new value) onto its second argument (the accumulated list so far).
+And since @tt{accumulate} evolves a recursive process, the values of the
+new sequence will be in the right order.
+
+@chunk[<map-accumulate>
+(define (map p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) nil sequence))
+]
+
+To implement @tt{append}, we set up one sequence as the initial value and
+apply @tt{cons} to successive elements from the other. The second argument
+is used as the initial value because @tt{cons} will append new values to
+the front of the list.
+@chunk[<append-accumulate>
+(define (append seq1 seq2)
+  (accumulate cons seq2 seq1))
+]
+
+To implement @tt{length}, we give a procedure that adds 1 to its second argument.
+
+@chunk[<length-accumulate>
+(define (length sequence)
+  (accumulate (lambda (x y) (+ y 1)) 0 sequence))
+]
+
+@section[#:tag "c2e34"]{Exercise 2.34}
+
+In every step, we add @tt{this-coeff} to the product of the already-computed
+@tt{higher-terms} and @tt{x}.
+
+@bold{TODO: More explanation}
+
+@chunk[<horner-eval>
+(define (horner-eval x coefficient-sequence)
+  (accumulate (lambda (this-coeff higher-terms) (+ this-coeff (* higher-terms x)))
+              0
+              coefficient-sequence))
+]
+
+@section[#:tag "c2e35"]{Exercise 2.35}
+
+I can think of a silly way to write @tt{count-leaves} using the template provided
+by the exercise:
+
+@chunk[<count-leaves-1>
+(define (count-leaves t)
+  (accumulate (lambda (x y) (+ y 1))
+              0
+              (map identity (enumerate-tree t))))
+]
+
+Of course, this could be simplified like this:
+
+@chunk[<count-leaves-2>
+(define (count-leaves t)
+  (accumulate (lambda (x y) (+ y 1)) 0 (enumerate-tree t)))
+]
+
+However, we don't have to write @tt{count-leaves} as an accumulation, because
+we already have an @tt{accumulate} procedure for counting things: @tt{length}
+from @secref{c2e33}:
+
+@chunk[<count-leaves>
+(define (count-leaves t)
+  (length (enumerate-tree t)))
+]
