@@ -1117,3 +1117,203 @@ from @secref{c2e33}:
 (define (count-leaves t)
   (length (enumerate-tree t)))
 ]
+
+@section[#:tag "c2e36"]{Exercise 2.36}
+
+The added parts of the procedure are both based on a simple idea: To get the
+first element of each of @tt{seqs}, you can @tt{map} @tt{car} over them. And
+to get the rest of each of them, you can @tt{map} @tt{cdr} over them.
+
+@chunk[<accumulate-n>
+(define (accumulate-n op init seqs)
+  (if (null? (car seqs))
+      nil
+      (cons (accumulate op init (map car seqs))
+            (accumulate-n op init (map cdr seqs)))))
+]
+
+@section[#:tag "c2e37"]{Exercise 2.37}
+
+@tt{matrix-*-matrix} maps over each row of the matrix a procedure that maps
+multiplication by the scalar @tt{v} over the entries in the row.
+
+@chunk[<matrix-*-vector>
+(define (matrix-*-vector m v)
+  (map (lambda (r) (map (lambda (e) (* e v)) r)) m))
+]
+
+@tt{transpose} uses @tt{cons} with @tt{accumulate-n} to create a list of lists
+made up of the columns of the original matrix.
+
+@chunk[<transpose>
+(define (transpose mat)
+  (accumulate-n cons nil mat))
+]
+
+@tt{matrix-*-matrix} computes the @tt{dot-product} of each row of @tt{m} with
+each column of @tt{n} (where the columns are found with @tt{transpose}).
+
+@chunk[<matrix-*-matrix>
+(define (matrix-*-matrix m n)
+  (let ((cols (transpose n)))
+    (map
+     (lambda (row)
+       (map (lambda (col) (dot-product row col))
+            cols))
+     m)))
+]
+
+@section[#:tag "c2e38"]{Exercise 2.38}
+
+@verbatim{
+(fold-right / 1 (list 1 2 3))
+=> 3/2
+}
+
+First @tt{(/ 3 2)} is computed, then this is divided by @tt{1}, making
+@tt{3/2} the final answer.
+
+@verbatim{
+(fold-left / 1 (list 1 2 3))
+=> 1/6
+}
+
+However, here @tt{1} is divided by @tt{2} first, and then this is divided
+by @tt{3}, making @tt{1/6} the final answer.
+
+@verbatim{
+(fold-right list nil (list 1 2 3))
+=> (1 (2 (3 ())))
+}
+
+First, @tt{3} is @tt{cons}ed with @tt{nil}. Then, @tt{2} is @tt{cons}ed with this.
+Then, @tt{1} is @tt{cons}ed with this. Because a number is always @tt{cons}ed with
+a list, this produces a list structure.
+
+@verbatim{
+(fold-left list nil (list 1 2 3))
+(((() 1) 2) 3)
+}
+
+First, @tt{nil} is @tt{cons}ed with @tt{1}. Then, this is @tt{cons}ed with @tt{2}.
+Then, this is @tt{cons}ed with @tt{3}. Because a pair is always @tt{cons}ed with
+a number, this produces the opposite of a list structure.
+
+@tt{fold-left} and @tt{fold-right} will produce the same result if @tt{op} is commutative.
+
+@section[#:tag "c2e39"]{Exercise 2.39}
+
+Writing @tt{reverse} in terms of @tt{fold-right} uses an inner procedure of
+
+@codeblock{
+(lambda (x y) (append y (list x)))
+}
+
+@tt{y} contains the list so far (with an initial value of @tt{nil}), while
+@tt{x} is the current element being folded over. The current element gets added
+to the end of the list, and since the values in the original list get added
+in reverse order (due to the way the recursive process unfolds), this produces
+a reversed list.
+
+@chunk[<reverse-foldr>
+(define (reverse sequence)
+  (fold-right (lambda (x y) (append y (list x))) nil sequence))
+]
+
+Writing @tt{reverse} in terms of @tt{fold-left} is almost identical, with an
+inner procedure of
+
+@codeblock{
+(lambda (x y) (append (list y) x))
+}
+
+The two arguments of a procedure passed to @tt{fold-left} are reversed compared to
+those for @tt{fold-right}. So now, @tt{y} is the current element being visited.
+Since @tt{fold-left} evolves an iterative process where the elements of the list
+being reversed are operated on in forward order, appending the values to the front
+of the list as they are seen produces a list in reversed order.
+
+@chunk[<reverse-foldl>
+(define (reverse-foldl sequence)
+  (fold-left (lambda (x y) (append (list y) x)) nil sequence))
+]
+
+@section[#:tag "c2e40"]{Exercise 2.40}
+
+This procedure is almost identical to the one embedded in the original
+@tt{prime-sum-pairs} procedure, with one small change: The outer map (over
+values of @tt{i}) now enumerates from @tt{2} to @tt{n}, not from @tt{1}.  The
+inner @tt{enumerate-interval} for @tt{j} would produce an empty list (since it
+would go from @tt{1} to @tt{0}), which would get ignored when @tt{flatmap}
+@tt{append}s the results together (@tt{(append nil nil)} is still @tt{nil}). A
+clever trick knowing how @tt{flatmap} works, but I prefer it this way. The
+definition of the unique pairs given in the book states that @tt{i > 1} anyway.
+
+@chunk[<unique-pairs>
+(define (unique-pairs n)
+  (map
+   (lambda (i)
+     (map (lambda (j) (list i j))
+          (enumerate-interval 1 (- i 1))))
+   (enumerate-interval 2 n)))
+]
+
+@tt{prime-sum-pairs} now looks like this:
+
+@chunk[<prime-sum-pairs-2>
+(define (prime-sum-pairs n)
+  (map make-pair-sum
+       (filter prime-sum? (unique-pairs n))))
+]
+
+@section[#:tag "c2e41"]{Exercise 2.41}
+
+Outside the main procedure I defined a general procedure
+@tt{make-ordered-triples} for generating ordered triples with positive integer
+values up to @tt{n}:
+
+@chunk[<make-ordered-triples>
+(define (make-ordered-triples n)
+  (flatmap
+   (lambda (i)
+     (flatmap
+      (lambda (j)
+        (map
+         (lambda (k)
+           (list i j k))
+         (enumerate-interval 1 n)))
+      (enumerate-interval 1 n)))
+   (enumerate-interval 1 n)))
+]
+
+This procedure uses a pattern found earlier in @tt{unique-pairs} from
+@secref{"c2e40"}. In the innermost procedure, a list of lists is created with
+@tt{map}. Above this, however, nested lists are flattened with @tt{flatmap},
+leaving only a singly-nested list of lists at the end. @tt{flatmap} can't be
+used at the innermost level, of course, because it would flatten all of the
+lists representing the triples into one long list.
+
+The specific filter we are asked to implement, that of finding triples with
+distinct values summing to @tt{s}, is defined inside
+@tt{ordered-distinct-triples-sum} (which has an unwieldly name if I've ever
+seen one...). It checks if the sum of the values of the triple equals @tt{s} by
+accumulating @tt{+} from @tt{0}, a basic pattern we've seen before.
+
+@chunk[<ordered-distinct-triples-sum n s>
+(define (ordered-distinct-triples-sum n s)
+  (define (valid-triple? s)
+    (lambda (t)
+      (and
+       (= s (accumulate + 0 t))
+       (and (not (= (car t) (cadr t)))
+            (not (= (car t) (caddr t)))
+            (not (= (cadr t) (caddr t)))))))
+  (filter (valid-triple? s) (make-ordered-triples n)))
+]
+
+@bold{TODO: Rename that procedure. Really.}
+
+@bold{TODO: General all-distinct? procedure.}
+
+@section[#:tag "c2e42"]{Exercise 2.42}
+
