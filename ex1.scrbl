@@ -11,15 +11,15 @@
 Omitted.
 @section[#:tag "c1e2"]{Exercise 1.2}
 
-@chunk[<ex1-2>
+@codeblock{
 (define (ex1-2)
   (/ (+ 5 (+ 4 (- 2 (- 3 (+ 6 (/ 4 5))))))
      (* 3 (* (- 6 2) (- 2 7)))))
-]
+}
 
 @section[#:tag "c1e3"]{Exercise 1.3}
 
-@chunk[<ex1-3>
+@codeblock{
 (define (ex1-3 a b c)
   (define (sqr x) (* x x))
   (define (sum-sq lst)
@@ -27,7 +27,7 @@ Omitted.
   (define (two-largest a b c)
     (remove (min a b c) (list a b c)))
   (sum-sq (two-largest a b c)))
-]
+}
 
 @section[#:tag "c1e4"]{Exercise 1.4}
 
@@ -37,10 +37,10 @@ greater than @tt{0}. If @tt{b > 0}, then @tt{b = abs(b)} and can be added to
 @var{a}. Otherwise, @tt{-b = abs(b)} and so @tt{a - b = a + abs(b)}. Note that
 @tt{-b = abs(b)} for the case where @tt{b = 0}.
 
-@chunk[<a-plus-abs-b>
+@codeblock{
 (define (a-plus-abs-b a b)
   ((if (> b 0) + -) a b))
-]
+}
 
 @section[#:tag "c1e5"]{Exercise 1.5}
 
@@ -79,23 +79,23 @@ the actual number is too small to be realistically reached?
 A better @tt{sqrt} procedure using a @tt{good-enough?} test based on observing
 the relative change between guesses and accepting a guess when this is small:
 
-@chunk[<sqrt>
+@codeblock{
 (define (sqrt x)
     (sqrt-iter x 1.0 0.0))
-]
+}
 
 (The choice of starting guesses of 1 and 0 is arbitary.)
 
-@chunk[<sqrt-iter>
+@codeblock{
 (define (sqrt-iter x guess previous-guess)
-    (if (good-enough? guess previous-guess) guess
-        (sqrt-iter x (improve guess x) guess)))
-]
+  (if (good-enough? guess previous-guess) guess
+      (sqrt-iter x (improve guess x) guess)))
+}
 
-@chunk[<good-enough?>
+@codeblock{
 (define (good-enough? guess previous-guess)
-    (< (abs (- guess previous-guess)) good-enough-factor))
-]
+  (< (abs (- guess previous-guess)) good-enough-factor))
+}
 
 I leave @tt{good-enough-factor} to be defined somewhere else, to vary for testing.
 
@@ -117,25 +117,25 @@ later in the chapter.
 (I use my previously-defined @tt{good-enough?} procedure with a @tt{good-enough-factor}
 of @tt{0.001}.)
 
-@chunk[<cube-root>
+@codeblock{
 (define (cube-root x)
-    (root-iter x 1.0 0.0 cube-root-improve))
-]
+  (root-iter x 1.0 0.0 cube-root-improve))
+}
 
-@chunk[<root-iter>
+@codeblock{
 (define (root-iter x guess previous-guess improve)
-    (if (good-enough? guess previous-guess) guess
-        (root-iter x (improve guess x) guess improve)))
-]
+  (if (good-enough? guess previous-guess) guess
+      (root-iter x (improve guess x) guess improve)))
+}
 
-@chunk[<cube-root-improve>
+@codeblock{
 (define (cube-root-improve x guess)
-    (/
-     (+
-      (/ x (* guess guess))
-      (* 2 guess))
-     3))
-]
+  (/
+   (+
+    (/ x (* guess guess))
+    (* 2 guess))
+   3))
+}
 
 @section[#:tag "c1e9"]{Exercise 1.9}
 
@@ -254,21 +254,21 @@ Finally, @tt{(A 3 3)}
 In short, Ackermann's function is @emph{very} recursive. For the rest of the exercise, we consider
 procedures that evaluate @tt{A} for fixed @tt{x} values.
 
-@chunk[<f-ack>
+@codeblock{
 (define (f n) (A 0 n))
-]
+}
 
 @tt{f} evaluates a base case, with a result of @tt{2 * n}.
 
-@chunk[<g-ack>
+@codeblock{
 (define (g n) (A 1 n))
-]
+}
 
 @tt{g} generalizes the first expansion we did, which evaluates to @tt{2 ^ n}.
 
-@chunk[<h-ack>
+@codeblock{
 (define (h n) (A 2 n))
-]
+}
 
 @tt{h} generalizes the second expansion.  Notice a few cases:
 
@@ -282,15 +282,15 @@ Put concisely, @tt{(h n) = 2^(h (dec n))}.
 
 @section[#:tag "c1e11"]{Exercise 1.11}
 
-@chunk[<f-rec>
+@codeblock{
 (define (f-rec n)
   (if (< n 3) n
       (+ (f-rec (- n 1))
          (* 2 (f-rec (- n 2)))
          (* 3 (f-rec (- n 3))))))
-]
+}
 
-@chunk[<f-iter>
+@codeblock{
 (define (f-iter n)
   (define (loop i a b c)
     (let ((f_i (+ a (* 2 b) (* 3 c))))
@@ -298,7 +298,7 @@ Put concisely, @tt{(h n) = 2^(h (dec n))}.
           (loop (+ i 1) f_i a b))))
   (if (< n 3) n
       (loop 3 2 1 0)))
-]
+}
 
 @section[#:tag "c1e12"]{Exercise 1.12}
 
@@ -306,18 +306,18 @@ This procedure calculates the value in Pascal's triangle at
 depth @tt{depth} and column @tt{column}. Both the depth and
 column are 0-indexed.
 
-@chunk[<pascal-value>
+@codeblock{
 (define (pascal-value depth col)
   (cond ((= 0 col) 1)
         ((= depth col) 1)
         (else (+ (pascal-value (- depth 1) (- col 1))
                  (pascal-value (- depth 1) col)))))
-]
+}
 
 We can define two more procedures to (primitively) print the
 triangle:
 
-@chunk[<make-new-row>
+@codeblock{
 (define (make-new-row depth)
   (define (loop depth col str)
     (if (> col depth) str
@@ -325,12 +325,12 @@ triangle:
                        (number->string (pascal-value depth col))
                        (loop depth (+ col 1) " "))))
   (loop depth 0 ""))
-]
+}
 
-@chunk[<pascals-triangle>
+@codeblock{
 (define (pascals-triangle depth)
   (display (make-pascal-triangle 0 depth "")))
-]
+}
 
 However, I'm not satisfied with this recursive solution. It is
 clear to me that, instead of tree-recursively generating every
@@ -370,12 +370,12 @@ will generate no pairs other than these padding ones for the row at depth @tt{0}
 Unlike the exercise directs, this procedure also generates an iterative
 process.
 
-@chunk[<empty?>
+@codeblock{
 (define (empty? l)
   (eq? nil l))
-]
+}
 
-@chunk[<pascal-triangle>
+@codeblock{
 (define (pascal-triangle depth)
   (define (make-pairs l)
     (define (loop l pairs)
@@ -394,7 +394,7 @@ process.
                        (cons (compute-next-row (car current-triangle))
                              current-triangle))))
   (triangle-loop 1 '((1))))
-]
+}
 
 @section[#:tag "c1e13"]{Exercise 1.13}
 
@@ -492,49 +492,49 @@ of the last one.
 
 @section[#:tag "c1e16"]{Exercise 1.16}
 
-@chunk[<fast-expt-iter>
+@codeblock{
 (define (fast-expt-iter b n)
   (define (loop a b i)
     (cond ((= i 0) a)
           ((even? i) (loop a (square b) (/ i 2)))
           (else (loop (* a b) b (- i 1)))))
   (loop 1 b n))
-]
+}
 
 @bold{TODO: Explain}
 
 @section[#:tag "c1e17"]{Exercise 1.17}
 
-@chunk[<fast-times>
+@codeblock{
 (define (fast-times a b)
   (cond ((= b 0) 0)
         ((even? b) (double (fast-times a (halve b))))
         (else (+ a (fast-times a (- b 1))))))
-]
+}
 
 @bold{TODO: Explain}
 
 @section[#:tag "c1e18"]{Exercise 1.18}
 
-@chunk[<fast-times-iter>
+@codeblock{
 (define (fast-times-iter a b)
   (define (loop x a b)
     (cond ((= b 0) x)
           ((even? b) (loop x (double a) (halve b)))
           (else (loop (+ a x) a (- b 1)))))
   (loop 0 a b))
-]
+}
 
 @bold{TODO: Explain}
 
 @section[#:tag "c1e19"]{Exercise 1.19}
 
-@chunk[<fib>
+@codeblock{
 (define (fib n)
   (fib-iter 1 0 0 1 n))
-]
+}
 
-@chunk[<fib-iter>
+@codeblock{
 (define (fib-iter a b p q count)
   (cond ((= count 0) b)
         ((even? count)
@@ -548,7 +548,7 @@ of the last one.
                         p
                         q
                         (- count 1)))))
-]
+}
 
 @bold{TODO: Explain}
 
@@ -582,7 +582,7 @@ algorithm we're using suggests. This procedure is meant to check for primality "
 odd integers in a specified range". With this range specified by a minimum and maximum value,
 the procedure could be written like this:
 
-@chunk[<search-for-primes>
+@codeblock{
 (define (search-for-primes start end)
   (define (loop current end)
     (if (> current end) (newline)
@@ -592,7 +592,7 @@ the procedure could be written like this:
   (cond ((not (< start end)) (search-for-primes end start))
         ((divides? 2 start) (loop (+ start 1) end))
         (else (loop start end))))
-]
+}
 
 Here, I chose to use an inclusive range, and chose to switch the range bounds if @tt{start} was
 greater than @tt{end}, rather than throwing an error.
@@ -605,7 +605,7 @@ needing trial and error. This function also contains a subtle bug. I think we ca
 
 First, a function for computing the first @tt{n} primes greater than a certain number:
 
-@chunk[<next-primes>
+@codeblock{
 (define (next-primes start num)
   (define (loop current-number current-list)
     (cond ((= (length current-list) num) current-list)
@@ -616,7 +616,7 @@ First, a function for computing the first @tt{n} primes greater than a certain n
         ((= start 2) (loop 3 '(2)))
         ((divides? 2 start) (loop (+ start 1) '()))
         (else (loop (+ start 2) '()))))
-]
+}
 
 Like much of the code I write, this uses an inner recursive loop procedure that assumes a simpler
 set of inputs to reduce the inner conditions, with the outer procedure managing the interface
@@ -633,12 +633,12 @@ test the run time yourself.
 
 Instead, we can write a procedure to test the run time of any arbitrary procedure passed to it:
 
-@chunk[<time-proc>
+@codeblock{
 (define (time-proc proc . args)
   (let ((start-time (runtime)))
     (apply proc args)
     (- (runtime) start-time)))
-]
+}
 
 This procedure takes a procedure as the first argument and executes it with the rest of its
 given arguments passed as arguments to the given procedure, calling @tt{runtime} before
@@ -647,12 +647,12 @@ similar to procedures that exist in many dialects of Lisp, including Racket.
 
 We can use this to get the runtimes we've been asked for like this:
 
-@chunk[<1.22-map>
+@codeblock{
 (map
   (lambda (x)
     (time-proc prime? x))
   (next-primes 1000 3))
-]
+}
 
 We can generalize this to work for @tt{10000} and the rest, or we could not.
 
@@ -707,14 +707,14 @@ size @tt{n/2}. This makes the problem O(n) instead of O(logn).
 
 Here is a procedure to test for congruence for a number @tt{n} with every integer @tt{1 <= a <= n - 1}:
 
-@chunk[<congruence-test>
+@codeblock{
 (define (congruence-test num)
   (define (loop current)
     (cond ((= current num) #t)
           ((not (= (expmod current num num) current)) #f)
           (else (loop (+ current 1)))))
   (loop 1))
-]
+}
 
 It is trivial to verify that this procedure returns true for the given Carmichael numbers.
 
@@ -726,7 +726,7 @@ It is trivial to verify that this procedure returns true for the given Carmichae
 
 This procedure computes integrals with Simpson's rule:
 
-@chunk[<simpson-integral>
+@codeblock{
 (define (simpson-integral f a b n)
   (define h (/ (- b a) n))
   (define (term k)
@@ -736,7 +736,7 @@ This procedure computes integrals with Simpson's rule:
             ((divides? 2 k) (* 2 y))
             (else (* 4 y)))))
   (* (/ h 3) (sum term 1 inc n)))
-]
+}
 
 The decision that made this simplest to write was to let @tt{a} and @tt{b} in the @tt{sum}
 be @tt{1} and @tt{n-1}, respectively -- the indexes of the evaluated function values, rather
@@ -759,14 +759,14 @@ Comparing outputs with the book:
 
 @section[#:tag "c1e30"]{Exercise 1.30}
 
-@chunk[<sum>
+@codeblock{
 (define (sum term a next b)
   (define (iter a result)
     (if (> a b)
         result
         (iter (next a) (+ result (term a)))))
   (iter a 0))
-]
+}
 
 Curiously, in my environment, this procedure gives very slightly different answers compared to above:
 
@@ -785,24 +785,24 @@ Curiously, in my environment, this procedure gives very slightly different answe
 
 We can define a @tt{product} procedure very similarly to the first @tt{sum} procedure:
 
-@chunk[<product>
+@codeblock{
 (define (product term a next b)
   (if (> a b)
       1
       (* (term a)
          (product term (next a) next b))))
-]
+}
 
 We can use this procedure to define factorial as follows:
 
-@chunk[<factorial>
+@codeblock{
 (define (factorial n)
   (product identity 1 inc n))
-]
+}
 
 We can use this procedure to compute pi as follows:
 
-@chunk[<pi-product>
+@codeblock{
 (define (pi-product n)
   (define (numer n)
     (define (numer-term i)
@@ -817,11 +817,11 @@ We can use this procedure to compute pi as follows:
           (+ i 2)))
     (product denom-term 1 inc n))
   (* 4 (/ (numer n) (denom n))))
-]
+}
 
 A @tt{product} procedure computing an iterative process is as follows:
 
-@chunk[<product>
+@codeblock{
 (define (product term a next b)
   (define (iter a result)
     (if (> a b)
@@ -829,45 +829,45 @@ A @tt{product} procedure computing an iterative process is as follows:
         (iter (next a)
               (* result (term a)))))
   (iter a 1))
-]
+}
 
 @section[#:tag "c1e32"]{Exercise 1.32}
 
 A general @tt{accumulate} procedure can be written as follows:
 
-@chunk[<accumulate-recur>
+@codeblock{
 (define (accumulate combiner null-value term a next b)
   (if (> a b)
       null-value
       (combiner (term a)
                 (accumulate combiner null-value term (next a) next b))))
-]
+}
 
 We can write @tt{sum} and @tt{product} using @tt{accumulate}:
 
-@chunk[<sum>
+@codeblock{
 (define (sum term a next b)
   (accumulate + 0 term a next b))
-]
+}
 
-@chunk[<product>
+@codeblock{
 (define (product term a next b)
   (accumulate * 1 term a next b))
-]
+}
 
 We can write an iterative @tt{accumulate} like this:
 
-@chunk[<accumulate-iter>
+@codeblock{
 (define (accumulate combiner null-value term a next b)
   (define (iter a result)
     (if (> a b) result
         (iter (next a) (combiner result (term a)))))
   (iter a null-value))
-]
+}
 
 @section[#:tag "c1e33"]{Exercise 1.33}
 
-@chunk[<filtered-accumulate>
+@codeblock{
 (define (filtered-accumulate predicate combiner null-value term a next b)
   (define (iter a result)
     (cond ((> a b) result)
@@ -876,28 +876,28 @@ We can write an iterative @tt{accumulate} like this:
           (else
            (iter (next a) result))))
   (iter a null-value))
-]
+}
 
-@chunk[<sum-of-primes>
+@codeblock{
 (define (sum-of-primes a b)
   (filtered-accumulate prime? + 0 identity a inc b))
-]
+}
 
-@chunk[<product-of-relatively-prime>
+@codeblock{
 (define (product-of-relatively-prime n)
   (define (is-relatively-prime? i)
     (= 1 (gcd i n)))
   (filtered-accumulate is-relatively-prime? * 1 identity 1 inc (- n 1)))
-]
+}
 
 @section[#:tag "c1e34"]{Exercise 1.34}
 
 Suppose we have the following procedure @tt{f}:
 
-@chunk[<f-1-34>
+@codeblock{
 (define (f g)
   (g 2))
-]
+}
 
 If we ask the interpreter to evaluate @tt{(f f)}, the following happens:
 
@@ -933,10 +933,10 @@ to @tt{b} by @tt{(a + b) / a = a / b = phi}. The left side can be expanded to @t
 
 We can then write a procedure to compute the golden ratio using @tt{fixed-point} as such:
 
-@chunk[<golden-ratio>
+@codeblock{
 (define golden-ratio
   (fixed-point golden-transform 1))
-]
+}
 
 @section[#:tag "c1e36"]{Exercise 1.36}
 
@@ -946,9 +946,9 @@ of the @tt{try} procedure.
 
 We can see the difference that average damping makes easily:
 
-@chunk[<36-f>
+@codeblock{
 (define (36-f x) (/ (log 1000) (log x)))
-]
+}
 
 @verbatim{
 > (fixed-point 36-f 2)
@@ -1014,23 +1014,23 @@ And this does calculate the fixed point of the function:
 
 A procedure for evaluating a continued fraction for up to depth @tt{k}:
 
-@chunk[<cont-frac-recur>
+@codeblock{
 (define (cont-frac n d k)
   (define (loop i)
     (if (= i k) (/ (n i) (d i))
       (/ (n i)
          (+ (d i) (loop (+ i 1))))))
   (loop 1))
-]
+}
 
 Using an auxiliary procedure @tt{test-37}, we can see @tt{1/phi} being approximated:
 
-@chunk[<test-37>
+@codeblock{
 (define (test-37 k)
   (/ 1 (cont-frac (lambda (i) 1.0)
                   (lambda (i) 1.0)
                   k)))
-]
+}
 
 @verbatim{
 > (test-37 10)
@@ -1044,14 +1044,14 @@ realize that it is much easier to create the fraction from the inside
 out, starting from @tt{k} and moving to @tt{1}. Then the answer is
 straightforward:
 
-@chunk[<cont-frac-iter>
+@codeblock{
 (define (cont-frac n d k)
   (define (loop current i)
     (if (= i 0) current
         (loop (/ (n i) (+ (d i) current))
               (- i 1))))
   (loop (/ (n k) (d k)) (- k 1)))
-]
+}
 
 @section[#:tag "c1e38"]{Exercise 1.38}
 
@@ -1059,7 +1059,7 @@ Using an internally-defined @tt{denom} function, which reduces the index
 by @tt{2} if it's greater than @tt{2} to make the logic simpler, we can
 use @tt{cont-frac} to approximate @tt{e} using Euler's expansion like this:
 
-@chunk[<euler-e-frac>
+@codeblock{
 (define (euler-e-frac k)
   (define (denom i)
     (if (< i 3) i
@@ -1070,7 +1070,7 @@ use @tt{cont-frac} to approximate @tt{e} using Euler's expansion like this:
   (+ 2 (cont-frac (lambda (i) 1.0)
                   denom
                   k)))
-]
+}
 
 Testing this procedure, we can see it does calculate @tt{e}:
 
@@ -1083,14 +1083,14 @@ Testing this procedure, we can see it does calculate @tt{e}:
 
 @section[#:tag "c1e39"]{Exercise 1.39}
 
-@chunk[<tan-cf>
+@codeblock{
 (define (tan-cf x k)
   (define (numer i)
     (if (= i 1) x (* (square x) -1.0)))
   (define (denom i)
     (- (* 2.0 i) 1.0))
   (cont-frac numer denom k))
-]
+}
 
 @section[#:tag "c1e40"]{Exercise 1.40}
 
@@ -1098,14 +1098,14 @@ We want @tt{cubic} to be a procedure of three parameter @tt{a}, @tt{b}, and @tt{
 that returns a procedure of one parameter @tt{x} that evaluates the function
 @tt{x^3 + ax^2 + bx + c}. This can be done as so:
 
-@chunk[<cubic>
-(define (cubic a b c)
+@codeblock{
+(Define (cubic a b c)
   (lambda (x)
     (+ (cube x)
        (* a (square x))
        (* b x)
        c)))
-]
+}
 
 We can verify this works with an example, finding the root of the function
 @tt{x^3 + 2x^2 + 3x - 5} (which is approximately 0.89456):
@@ -1119,10 +1119,10 @@ We can verify this works with an example, finding the root of the function
 
 The procedure definition of @tt{double} is simple:
 
-@chunk[<double>
+@codeblock{
 (define (double f)
   (lambda (x) (f (f x))))
-]
+}
 
 Evaluating @tt{(((double (double double)) inc) 5)} via the substitution method is
 cumbersome, but we can build up the solution in parts. We know that
@@ -1147,20 +1147,20 @@ increments @tt{4^2 = 16} times. The answer to the expression is @tt{21}.
 Function composition is a powerful idea, but Scheme is expressive enough for
 a self-explanatory implementation:
 
-@chunk[<compose>
+@codeblock{
 (define (compose f g)
   (lambda (x) (f (g x))))
-]
+}
 
 @section[#:tag "c1e43"]{Exercise 1.43}
 
 We can define @tt{repeated} simply using @tt{compose} from the last exercise:
 
-@chunk[<repeated>
+@codeblock{
 (define (repeated f times)
   (if (= times 1) f
       (compose f (repeated f (- times 1)))))
-]
+}
 
 The main idea is that repeating @tt{f} @tt{t} times is equivalent to applying @tt{f}
 to @tt{f} repeated @tt{t - 1} times, with a base case of @tt{f} repeated @tt{1} time,
@@ -1170,7 +1170,7 @@ which is just @tt{f}.
 
 @bold{TODO: Words}
 
-@chunk[<smooth>
+@codeblock{
 (define (smooth f)
   (lambda (x)
     (/
@@ -1178,46 +1178,46 @@ which is just @tt{f}.
         (f x)
         (f (+ x dx)))
      3)))
-]
+}
 
-@chunk[<smooth>
+@codeblock{
 (define (n-smooth f times)
   (repeated smooth times))
-]
+}
 
 @section[#:tag "c1e45"]{Exercise 1.45}
 
 The number of @tt{average-damp} calls needed for the @tt{n}th root to converge is
 the floor of log2(n).
 
-@chunk[<nth-root>
+@codeblock{
 (define (nth-root x n)
   (fixed-point-of-transform (lambda (y) (/ x (expt y (- n 1))))
                             (repeated average-damp (floor (log-base n 2)))
                             1.0))
-]
+}
 
 @bold{TODO: More words}
 
 @section[#:tag "c1e46"]{Exercise 1.46}
 
-@chunk[<iterative-improve>
+@codeblock{
 (define (iterative-improve good-enough? improve-guess)
   (define (iter guess)
     (if (good-enough? guess) guess
         (iter (improve-guess guess))))
   iter)
-]
+}
 
 The square root procedure is easy to rewrite using @tt{iterative-improve}.
 
-@chunk[<sqrt-iterimp>
+@codeblock{
 (define (sqrt x)
   ((iterative-improve
      (lambda (guess) (< (abs (- (square guess) x)) 0.001))
      (lambda (guess) (average guess (/ x guess))))
    1.0))
-]
+}
 
 @tt{fixed-point} is also easy to rewrite, if you don't need to get the exact
 same result. The procedure relies on comparing the current guess with the next
@@ -1226,7 +1226,7 @@ guess, and returning the next guess if they are close enough. However,
 holds. The two results will be very close (as they have to be, if
 @tt{close-enough?} is going to return true), but not identical.
 
-@chunk[<fixed-point-iterimp>
+@codeblock{
 (define (fixed-point f first-guess)
   (define tolerance 0.00001)
   (define (close-enough? v1 v2)
@@ -1236,6 +1236,6 @@ holds. The two results will be very close (as they have to be, if
       (close-enough? guess (f guess)))
     f)
    first-guess))
-]
+}
 
 At the moment, I don't see a way around this.
