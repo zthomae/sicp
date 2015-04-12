@@ -1383,3 +1383,285 @@ I don't have a use for it.
 
 @section[#:tag "c2e43"]{Exercise 2.43}
 
+@bold{TODO}
+
+@section[#:tag "c2e44"]{Exercise 2.44}
+
+@bold{NOTE: Although I could possibly do so, I am not evaluating these
+procedures on real painters.}  This means that I will need to study how the procedures
+making up the picture language work, and apply them using reason.
+
+Chief among these right now is @tt{below}, since we need to place one painter
+on top of another to meet the image specification. We can see by reading the
+provided code that @tt{below} can be sketched like this:
+
+@codeblock{
+(define (below low high)
+;; return a painter with `low' placed below `high'
+)
+}
+
+For example, notice how @tt{top-left} is the second argument in the first call to
+@tt{below} and @tt{bottom-right} is the first argument in the second call:
+
+@codeblock{
+(define (corner-split painter n)
+;; ...
+          (beside (below painter top-left)
+                  (below bottom-right corner))
+;; ...
+)
+}
+
+@tt{up-split} is almost identical to @tt{right-split}. Knowing how @tt{below}'s arguments
+work, we can use it properly to place the smaller split painters above the original
+as specified:
+
+@codeblock{
+(define (up-split painter n)
+  (if (= n 0)
+      painter
+      (let ((smaller (up-split painter (- n 1))))
+        (below painter (beside smaller smaller)))))
+}
+
+@section[#:tag "c2e45"]{Exercise 2.45}
+
+Writing @tt{up-split}, it should have been apparent that it was almost identical to
+@tt{right-split}. Now we generalize it into a general @tt{split} procedure:
+
+@codeblock{
+(define (split macro-op micro-op)
+  (define (apply-split painter n)
+    (if (= n 0)
+        painter
+        (let ((smaller (apply-split painter (- n 1))))
+          (macro-op painter (micro-op smaller smaller)))))
+  apply-split)
+}
+
+We cannot use a normal @tt{lambda} because the procedure we return has to call itself.
+I chose to use an internal @tt{define} to create the procedure and to return it without
+calling it after.
+
+@section[#:tag "c2e46"]{Exercise 2.46}
+
+Vectors can simply be another pair joined by @tt{cons}:
+
+@codeblock{
+(define (make-vect x y) (cons x y))
+
+(define (xcor-vect v) (car v))
+
+(define (ycor-vect v) (cdr v))
+}
+
+The operators @tt{add-vect}, @tt{sub-vect}, and @tt{scale-vect} are similarly trivial:
+
+@codeblock{
+(define (add-vect v1 v2)
+  (make-vect (+ (xcor-vect v1) (xcor-vect v2))
+             (+ (ycor-vect v1) (ycor-vect v2))))
+
+(define (sub-vect v1 v2)
+  (make-vect (- (xcor-vect v1) (xcor-vect v2))
+             (- (ycor-vect v1) (ycor-vect v2))))
+
+(define (scale-vect s v)
+  (make-vect (* s (xcor-vect v))
+             (* s (ycor-vect v))))
+}
+
+@section[#:tag "c2e47"]{Exercise 2.47}
+
+If frames are defined using a list:
+
+@codeblock{
+(define (origin-frame frame) (car frame))
+
+(define (edge1-frame frame) (cadr frame))
+
+(define (edge2-frame frame) (caddr frame))
+}
+
+If frames are defined by @tt{cons}ing an origin vector onto a pair of edge
+vectors:
+
+@codeblock{
+(define (origin-frame frame) (car frame))
+
+(define (edge1-frame frame) (cadr frame))
+
+(define (edge2-frame frame) (cddr frame))
+}
+
+Since the only difference is the position of the @tt{edge2} vector, the
+procedures are all identical except for @tt{edge2-frame}. And these are
+almost the same, too, since the data structures are so similar.
+
+@section[#:tag "c2e48"]{Exercise 2.48}
+
+This is rote practice. I think this kind of practice is good for the one
+practicing. I used to stumble sometimes with creating the right list structures
+in different procedures evaluating in different ways using the different
+list-making procedures like @tt{cons} and @tt{append} before rote practice
+reinforced my understanding of the list model and the procedures working in it.
+However, these exercises are very boring to comment on.
+
+@codeblock{
+(define (make-segment start end) (cons start end))
+
+(define (start-segment segment) (car segment))
+
+(define (end-segment segment) (cdr segment))
+}
+
+@section[#:tag "c2e49"]{Exercise 2.49}
+
+These procedures are victims to creeping indentation due to the nested
+@tt{let}s, but we don't have the tools to do better at the moment.
+
+First, an outline painter:
+
+@codeblock{
+(define outline-painter
+  (let ((bottom-left (make-vect 0.0 0.0))
+        (bottom-right (make-vect 1.0 0.0))
+        (top-left (make-vect 0.0 1.0))
+        (top-right (make-vect 1 1)))
+    (let ((bottom (make-segment bottom-left bottom-right))
+          (left (make-segment bottom-left top-left))
+          (right (make-segment bottom-right top-right))
+          (top (make-segment top-left top-right)))
+      (segments->painter
+       (list bottom left right top)))))
+}
+
+Next, an "X" painter:
+
+@codeblock{
+(define x-painter
+  (let ((bottom-left (make-vect 0.0 0.0))
+        (bottom-right (make-vect 1.0 0.0))
+        (top-left (make-vect 0.0 1.0))
+        (top-right (make-vect 1.0 1.0)))
+    (segments->painter
+     (list
+      (make-segment bottom-left top-right)
+      (make-segment top-left bottom-right)))))
+}
+
+I could generalize these two to be applications of a procedure creating
+painters working on the corners of a frame, but I won't.
+
+A painter for a diamond whose corners are the midpoints of the frame (using
+hardcoded midpoints because we are working on the unit frame):
+
+@codeblock{
+(define diamond-painter
+  (let ((bottom (make-vect 0.5 0.0))
+        (left (make-vect 0.0 0.5))
+        (right (make-vect 1.0 0.5))
+        (top (make-vect 0.5 1.0)))
+    (let ((bottom-left (make-segment bottom left))
+          (left-top (make-segment left top))
+          (top-right (make-segment top right))
+          (right-bottom (make-segment right bottom)))
+      (segments->painter
+       (list bottom-left left-top top-right right-bottom)))))
+}
+
+Defining @tt{wave} is simply a matter of supplying @tt{segments->painter} with
+a more complex list of segments. I don't think the amount to be learned here is
+worth the work it takes to find these edges based on the images in the book.
+
+@section[#:tag "c2e50"]{Exercise 2.50}
+
+The first, @tt{flip-horiz}, is defined similarly to @tt{flip-vert}, with the new origin
+in the bottom-right corner and the edges coming left and up from it:
+
+@codeblock{
+(define (flip-horiz painter)
+  (transform-painter painter
+                     (make-vect 1 0)
+                     (make-vect 0 0)
+                     (make-vect 1 1)))
+}
+
+The rest are defined in terms of painter transformations we already have:
+
+@codeblock{
+(define (rotate180 painter)
+  (flip-vert painter))
+}
+
+@codeblock{
+(define (rotate270 painter)
+  (flip-horiz (rotate90 painter)))
+}
+@section[#:tag "c2e51"]{Exercise 2.51}
+
+We discussed how @tt{below} worked in @secref{c2e44}. Now we implement that.
+
+When defining @tt{below} using calls to @tt{transform-painter}, I have chosen
+to diverge from the style used by the given definition of @tt{beside}. I
+believe that @tt{beside} makes incomplete use of definition: All vectors are
+defined in terms of endpoints except for @tt{split-point}, including a vector
+that is the sum of @tt{split-point} and another vector.
+
+As I usually do, I opted for more definitions and abstraction in my
+implementation. I've given all of the vectors names, and defined
+@tt{split-point} (now named @tt{mid-left} instead of a generic name) using
+@tt{scale-vect} for fun. Also, in line with my definition stub seen earlier, I
+have named the painter arguments @tt{bottom} and @tt{top} instead of using the
+nonspecific names @tt{painter1} and @tt{painter2}.
+
+I believe this procedure is easier to read than the @tt{beside} procedure it is
+supposed to be based on.
+
+@codeblock{
+(define (below painter-bottom painter-top)
+  (let ((bottom-left (make-vect 0.0 0.0))
+        (botom-right (make-vect 1.0 0.0))
+        (top-left (make-vect 0.0 1.0))
+        (mid-left (scale-vect top-left 0.5)))
+    (let ((paint-bottom
+           (transform-painter painter-bottom
+                              bottom-left
+                              bottom-right
+                              mid-left))
+          (paint-top
+           (transform-painter painter-top
+                              mid-left
+                              (add-vect mid-left bottom-right)
+                              top-left)))
+      (lambda (frame)
+        (paint-bottom frame)
+        (paint-top frame)))))
+}
+
+To define @tt{below} in terms of @tt{beside}, we have to rotate the whole
+painter resulting from @tt{beside} and also rotate the painter given to
+@tt{beside}.
+
+We know that the first argument of @tt{beside} is painted on the left and the
+second on the right. We can imagine then rotating the image by @tt{90} degrees
+counterclockwise such that the first painter given to @tt{beside} ends up on
+the bottom. We can use @tt{rotate90} for this.
+
+Having rotated the whole painter counterclockwise by @tt{90} degrees, we need
+to rotate the painters given to @tt{beside} in such a way that they are facing
+upright at the end. This means turning them @tt{90} degrees clockwise (or
+@tt{270} counterclockwise), which can be done with @tt{rotate270}.
+
+The whole procedure is as follows:
+
+@codeblock{
+(define (below bottom top)
+  (rotate90
+   (beside (rotate270 bottom) (rotate270 top))))
+}
+
+@section[#:tag "c2e52"]{Exercise 2.52}
+
+@bold{TODO, except part a}
