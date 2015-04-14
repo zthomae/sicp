@@ -1383,13 +1383,31 @@ I don't have a use for it.
 
 @section[#:tag "c2e43"]{Exercise 2.43}
 
-@bold{TODO}
+@bold{These are just notes}
+
+The essense of what is going wrong here is that @tt{queen-cols} is being called
+with the same arguments many times. Basically, in one @tt{(queen-cols k)} call
+@tt{(queen-cols (- k 1))} gets evaluated @tt{board-size} times. In general,
+@tt{(queen-cols (- k x))} gets evaluated @tt{board-size ^ x} times.
+
+I think I can simplify by not doing a full big-O analysis. The fast @tt{queens}
+calls @tt{queen-cols} @tt{board-size} times, once per @tt{k} in
+@tt{(enumerate-interval 1 board-size)}. The slow @tt{queens} calls each
+@tt{(queen-cols k)} @tt{board-size ^ (board-size - (board-size - k)) - 1} more
+times.
+
+Suppose that the fast @tt{queens} solves the eight-queens puzzle in time
+@tt{T}. How can I express the amount of time the slow @tt{queens} takes with
+respect to @tt{T}?
+
+@bold{TODO: Answer the question}
 
 @section[#:tag "c2e44"]{Exercise 2.44}
 
 @bold{NOTE: Although I could possibly do so, I am not evaluating these
-procedures on real painters.}  This means that I will need to study how the procedures
-making up the picture language work, and apply them using reason.
+procedures on real painters.}  This means that I will need to study how the
+procedures making up the picture language work, and apply them on paper. I
+believe this is how these exercises are best done.
 
 Chief among these right now is @tt{below}, since we need to place one painter
 on top of another to meet the image specification. We can see by reading the
