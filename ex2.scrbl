@@ -1682,4 +1682,33 @@ The whole procedure is as follows:
 
 @section[#:tag "c2e52"]{Exercise 2.52}
 
-@bold{TODO, except part a}
+I did not make the @tt{wave} painter in @secref{c2e49}, so I will not be adding
+segments to it.
+
+To modify @tt{corner-split}, I will apply a @tt{flip-horiz} to the base case
+and to the bottom-left painter:
+
+@codeblock{
+(define (corner-split painter n)
+  (if (= n 0)
+      (flip-horiz painter)
+      (let ((up (up-split painter (- n 1)))
+            (right (right-split painter (- n 1))))
+        (let ((top-left (beside up up)
+              (bottom-right (below up right))
+              (corner (corner-split painter (- n 1))))
+          (beside (below (flip-horiz painter) top-left)
+                  (below bottom-right corner))))))
+}
+
+To modify @tt{square-limit}, I will make the patterns face outward by swapping
+the left and right halves in the @tt{square-of-four} call:
+
+@codeblock{
+(define (square-limit painter n)
+  (let ((combine4 (square-of-four identity flip-horiz
+                                  flip-vert rotate180)))
+    (combine4 (corner-split painter n))))
+}
+
+@bold{TODO: This exercise could really use images}
