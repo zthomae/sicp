@@ -1698,7 +1698,7 @@ and to the bottom-left painter:
               (bottom-right (below up right))
               (corner (corner-split painter (- n 1))))
           (beside (below (flip-horiz painter) top-left)
-                  (below bottom-right corner))))))
+                  (below bottom-right corner)))))))
 }
 
 To modify @tt{square-limit}, I will make the patterns face outward by swapping
