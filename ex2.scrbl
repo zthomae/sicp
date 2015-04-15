@@ -1712,3 +1712,416 @@ the left and right halves in the @tt{square-of-four} call:
 }
 
 @bold{TODO: This exercise could really use images}
+
+@section[#:tag "c2e53"]{Exercise 2.53}
+
+@verbatim{
+(list 'a 'b 'c)
+=> (a b c)
+
+(list (list 'george))
+=> ((george))
+
+(cdr '((x1 x2) (y1 y2)))
+=> ((y1 y2))
+
+(cadr '((x1 x2) (y1 y2)))
+=> (y1 y2)
+
+(pair? (car '(a short list)))
+=> #f
+
+(memq 'red '((red shoes) (blue socks)))
+=> #f
+
+(memq 'red '(red shoes blue socks))
+=> (red shoes blue socks)
+}
+
+@section[#:tag "c2e54"]{Exercise 2.54}
+
+@codeblock{
+(define (equal? a b)
+  (cond
+   ((and (null? a) (null? b)) #t)
+   ((and (symbol? a) (symbol? b))
+    (eq? a b))
+   ((and (list? a) (list? b))
+    (if (or (null? a) (null? b)) #f
+     (and
+      (equal? (car a) (car b))
+      (equal? (cdr a) (cdr b)))))
+   (else #f)))
+}
+
+@section[#:tag "c2e55"]{Exercise 2.55}
+
+When evaluating
+
+@verbatim{
+(car ''abracadabra)
+}
+
+the expanded evaluation is
+
+@verbatim{
+(car (quote (quote abracadabra)))
+}
+
+It is clear from this that @tt{quote} is the corect answer.
+
+@section[#:tag "c2e56"]{Exercise 2.56}
+
+The definitions of @tt{exponentiation?}, @tt{base}, and @tt{exponent} are
+trivial, basically identical to similar procedures for other operations:
+
+@codeblock{
+(define (exponentiation? x)
+  (and (pair? x) (eq? (car x) '**)))
+
+(define (base x) (cadr x))
+
+(define (exponent x) (caddr x))
+}
+
+@tt{make-exponentiation} also follows the template of similar procedures for
+sums and products. In addition to the base cases for exponents of @tt{0} and
+@tt{1} that we were asked to do, I have handled the cases for bases of @tt{0}
+and @tt{1}, as well as the case of a constant raised to a constant power.
+
+@codeblock{
+(define (make-exponentiation base exponent)
+  (cond ((=number? exponent 0) 1)
+        ((=number? exponent 1) base)
+        ((=number? base 0) 0)
+        ((=number? base 1) 1)
+        ((and (number? base) (number? exponent))
+         (expt base exponent))
+        (else (list '** base exponent))))
+}
+
+However, the rule we are implementing only refers to expressions being raised
+to constant powers. We could check that the exponent is a number in
+@tt{make-exponentiation}, but this would be improper for expressions with
+non-constant-power exponents that we might want to differentiate later. So,
+I've created another procedure, @tt{constant-exponentiation?}, that checks if
+an expression is an exponentiation with a constant exponent. This procedure is
+used inside @tt{deriv} to implement the power rule. A simple implementation is
+as follows:
+
+@codeblock{
+(define (constant-exponentiation? x)
+  (and (exponentiation? x) (number? (exponent x))))
+}
+
+@bold{TODO: non-simple implementation}
+
+Finally, the extended @tt{deriv} is as follows:
+
+@codeblock{
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp)
+         (if (same-variable? exp var) 1 0))
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)
+                   (deriv (augend exp) var)))
+        ((product? exp)
+         (make-sum
+          (make-product (multiplier exp)
+                        (deriv (multiplicand exp) var))
+          (make-product (deriv (multiplier exp) var)
+                        (multiplicand exp))))
+        ((constant-exponentiation? exp)
+         (make-product
+          (make-product
+           (exponent exp)
+           (make-exponentiation (base exp)
+                                (- (exponent exp) 1)))
+          (deriv (base exp) var)))
+        (else
+         (error "unknown expression type -- DERIV" exp))))
+}
+
+@section[#:tag "c2e57"]{Exercise 2.57}
+
+It is enough to change @tt{augend} (and @tt{multiplicand}) to return the sum
+(and product) of the terms after the @tt{addend} (or @tt{multiplier}). However,
+we cannot always append a @tt{+} or @tt{*} to the front of the rest of the
+terms, or we will end up with things like @tt{(+ x)} when there is only one
+term left. Therefore, we must only return the last term (the behavior we
+already have) if there is one term left, and otherwise return a new sum (or
+product). We do not have to change @tt{deriv} at all. The implementations are
+below.
+
+@codeblock{
+(define (augend s)
+  (if (null? (cdddr s))
+      (caddr s)
+      (append (list '+) (cddr s))))
+
+(define (multiplicand p)
+  (if (null? (cdddr p))
+      (caddr p)
+      (append (list '*) (cddr p))))
+}
+
+We can verify that this works by taking the book's cue:
+
+@verbatim{
+(equal?
+ (deriv '(* (* x y) (+ x 3)) 'x)
+ (deriv '(* x y (+ x 3)) 'x))
+
+=> #t
+}
+
+@section[#:tag "c2e58"]{Exercise 2.58}
+
+Changing to fully-parenthesized prefix notation is simple: In
+operation-selection procedures for the first argument (e.g. @tt{addend}), use
+@tt{car}.
+
+@codeblock{
+(define (addend s) (car s))
+
+(define (multiplier p) (car p))
+
+(define (base x) (car x))
+}
+
+Then, inside the operation-construction procedures (e.g. @tt{make-sum}), swap
+the positions of the operator and the first argument in the list.
+
+@codeblock{
+(define (make-sum a1 a2)
+  (cond ((=number? a1 0) a2)
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        (else (list a1 '+ a2))))
+
+(define (make-product m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        (else (list m1 '* m2))))
+
+(define (make-exponentiation base exponent)
+  (cond ((=number? exponent 0) 1)
+        ((=number? exponent 1) base)
+        ((=number? base 0) 0)
+        ((=number? base 1) 1)
+        ((and (number? base) (number? exponent))
+         (expt base exponent))
+        (else (list base '** exponent))))
+}
+
+Then, inside all of the operation-detection procedures (e.g. @tt{sum?}), use
+@tt{cadr}. You could also generalize this to an @tt{operator} procedure, but I
+won't.
+
+@codeblock{
+(define (sum? x)
+  (and (pair? x) (eq? (cadr x) '+)))
+
+(define (product? x)
+  (and (pair? x) (eq? (cadr x) '*)))
+
+(define (exponentiation? x)
+  (and (pair? x) (eq? (cadr x) '**)))
+}
+
+To support a more conventional notation with omitted parentheses and an order
+of operations, we need to parse flat structures into more hierarchically
+structured forms. One way to think about the fully-parenthesized forms we've
+been dealing with now is as intermediate forms between the natural notation and
+the computed result. This is essentially the same idea that is behind Lisp's
+syntax being representative of the abstract syntax tree.
+
+For example, if we have the expression
+
+@verbatim{
+3 + x * 5
+}
+
+we want to turn it into
+
+@verbatim{
+3 + (x * 5)
+}
+
+But is this form a product or a sum? Or is it both? We can use the rules of
+differentiation to decide on a good answer. It is clear that @tt{d/dx 3+x*5} is
+the same as @tt{d/dx 3 + d/dx x*5}, @tt{5}. However, this is not the same as
+
+@verbatim{
+(3 + x) * (d/dx 5) + (d/dx 3 + x) * 5
+= x + 8
+}
+
+Since the rule for sums applies to the expression but the rule for products
+does not, it is reasonable to say that the expression is a sum and not a
+product. Intuitively, this is because an expression is a product only if the
+last operation performed is multiplication. In other words, the type of the
+expression is the operation in the expression with the least precedence in our
+order of operations.
+
+To make this and a later task easier, we'll first define a procedure for finding
+all of the items before and after a specific element in a list. If the element is
+not in the list, we will return false. If there are no elements in a group, we will
+return an empty list for that group.
+
+@codeblock{
+(define (find-groups item x)
+  (define (group-iter item before after)
+    (cond ((null? after) #f)
+          ((eq? item (car after))
+           (cons before (cdr after)))
+          (else
+           (group-iter item
+                       (append before (list (car after)))
+                       (cdr after)))))
+  (group-iter item '() x))
+}
+
+Since summing is the least precedent operation, @tt{sum?} is easy to define. We
+can use @tt{find-groups} to determine if @tt{+} is in the expression and if
+there are elements before and after it.
+
+@codeblock{
+(define (sum? x)
+  (let ((groups (find-groups '+ x)))
+    (if groups
+        (and (not (null? (car groups)))
+             (not (null? (cdr groups))))
+        #f)))
+}
+
+To implement @tt{product?}, since addition is the operation below
+multiplication in precedence, we can return true if the expression is a valid
+multiplication and if the expression is not a sum.
+
+@codeblock{
+(define (product? x)
+  (let ((groups (find-groups '* x)))
+    (if groups
+        (and (not (null? (car groups)))
+             (not (null? (cdr groups)))
+             (not (sum? x)))
+        #f)))
+}
+
+However, this is obviously a good case for an abstraction. Since the order
+requirement does not depend on the group requirements, we can create a more
+general @tt{valid-operation?} procedure and reimplement @tt{sum?} and
+@tt{product?} in terms of it:
+
+@codeblock{
+(define (valid-operation? op x)
+  (let ((groups (find-groups op x)))
+    (if groups
+        (and (not (null? (car groups)))
+             (not (null? (cdr groups))))
+        #f)))
+
+(define (sum? x)
+  (valid-operation? '+ x))
+
+(define (product? x)
+  (and (valid-operation? '* x)
+       (not (sum? x))))
+}
+
+Exponentiation has precedence over multiplication, so we can implement this
+check by making sure that an expression is neither a product nor a sum,
+in addition to being a valid exponentiation.
+
+@codeblock{
+(define (exponentiation? x)
+  (and (valid-operation? '** x)
+       (not (product? x))
+       (not (sum? x))))
+}
+
+Alternatively, instead of checking the order of operations inside of these
+procedures, you could define it in the general evaluator -- in this case,
+@tt{deriv}. If you tested them in order of ascending precedence, you would
+know, for example, if an expression was being tested as a product, it was
+definitely not a sum. When dealing with more operations, this becomes a better
+solutions -- you can avoid a good amount of retesting and make your
+operation-testing procedures simpler. This is what we will be doing, leaving
+the final procedures as such:
+
+@codeblock{
+(define (sum? x)
+  (valid-operation? '+ x))
+
+(define (product? x)
+  (valid-operation? '* x))
+
+(define (exponentiation? x)
+  (valid-operation? '** x))
+}
+
+To define the operand-selecting procedures, we can use the information from
+@tt{find-groups}. Since this procedure just returns a pair, the new work we
+have to do is minimal.
+
+@codeblock{
+(define (addend s) (car (find-groups '+ s)))
+
+(define (augend s) (cdr (find-groups '+ s)))
+
+(define (multiplier p) (car (find-groups '* p)))
+
+(define (multiplicand p) (cdr (find-groups '* p)))
+
+(define (base x) (car (find-groups '** x)))
+
+(define (exponent x) (cdr (find-groups '** x)))
+}
+
+Our procedures for constructing sums, products, and exponentiations still
+return fully-parenthesized results. This does not need to be fixed. However, we
+do need to change how variables and numbers are handled, now that both operands
+are lists by default. An easy way to do this is to add another case to @tt{deriv}
+for lists of a single value. This leaves @tt{deriv} (already with the correct order
+of operations, by chance) as such:
+
+@codeblock{
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp)
+         (if (same-variable? exp var) 1 0))
+        ((and (list? exp) (null? (cdr exp)))
+         (deriv (car exp) var))
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)
+                   (deriv (augend exp) var)))
+        ((product? exp)
+         (make-sum
+          (make-product (multiplier exp)
+                        (deriv (multiplicand exp) var))
+          (make-product (deriv (multiplier exp) var)
+                        (multiplicand exp))))
+        ((constant-exponentiation? exp)
+         (make-product
+          (make-product
+           (exponent exp)
+           (make-exponentiation (base exp)
+                                (- (exponent exp) 1)))
+          (deriv (base exp) var)))
+        (else
+         (error "unknown expression type -- DERIV" exp))))
+}
+
+As one small point, we also must change @tt{constant-exponentiation?} to expect
+the exponent to be in a list:
+
+@codeblock{
+(define (constant-exponentiation? x)
+  (and (exponentiation? x) (number? (car (exponent x)))))
+}
+
+And with this, we're done.
