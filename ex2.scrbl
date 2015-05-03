@@ -2125,3 +2125,236 @@ the exponent to be in a list:
 }
 
 And with this, we're done.
+
+@section[#:tag "c2e59"]{Exercise 2.59}
+
+@tt{union-set} is very similar to @tt{intersection-set}, with two key differences:
+
+@itemlist[
+@item{If an element of the first set is already in the second, it is not added to
+the result, and vice versa. This is the opposite of how intersections work.}
+@item{If either of the sets is empty, the other set is returned, not the empty set.}
+]
+
+@codeblock{
+(define (union-set set1 set2)
+  (cond ((null? set1) set2)
+        ((null? set2) set1)
+        ((element-of-set? (car set1) set2)
+         (union-set (cdr set1) set2))
+        (else (cons (car set1)
+                    (union-set (cdr set1) set2)))))
+}
+
+@section[#:tag "c2e60"]{Exercise 2.60}
+
+When sets are represented as lists allowing duplicates, @tt{element-of-set?}
+and @tt{intsersection-set} can be identical. And in @tt{adjoin-set} and
+@tt{union-set}, we can remove anything having to do with a call to
+@tt{element-of-set?} because we no longer care about making sure elements are
+unique.
+
+@codeblock{
+(define (adjoin-set x set)
+  (cons x set))
+}
+
+@codeblock{
+(define (union-set set1 set2)
+  (append set1 set2))
+}
+
+Notice how @tt{union-set} is no longer defined recursively -- it simply uses
+the general function @tt{append} to do all of the work.
+
+Naturally, this set implementation will be slower, possibly much slower, when
+@tt{element-of-set?} is called, just because the size of the set representation
+is no longer constrained by the number of unique elements in it. This in turn
+means that @tt{intersection-set} is also slower. However, @tt{adjoin-set} and
+@tt{union-set} are going to be faster with this representation, because they no
+longer need to examine sets before operating on them.
+
+If your application adds to sets much more frequently than it examines them, it
+might be faster overall to use this representation, especially if it mostly adds
+unique elements anyway.
+
+@section[#:tag "c2e61"]{Exercise 2.61}
+
+The new @tt{adjoin-set} does not examine the given set at all if the element is
+smaller than or equal to its first element. In these cases, we know that the
+resulting set is either the @tt{cons} of the element and the set or just the
+set, respectively. If the element is larger than the first element of the set,
+then it does need to traverse to the next element until one of the cases
+above is true (or until the set is empty, in which case a new set just containing
+the element is returned).
+
+@codeblock{
+(define (adjoin-set x set)
+  (if (null? set) (list x)
+      (let ((y (car set)))
+        (cond ((= x y) set)
+              ((< x y) (cons x set))
+              (else (cons y (adjoin-set x (cdr set))))))))
+}
+
+Note that we need to have a @tt{null?} check in @tt{adjoin-set} now, because of
+the operations requiring that set to not be empty. Before, when @tt{cons}ing
+the element and the set, it didn't matter if the set was empty -- and
+@tt{element-of-set?|} didn't care either.
+
+Since we can expect that, on average, elements added to a set will be in the
+middle of the set, we can expect about half as many recursive calls to
+@tt{adjoin-set} as we did previously.
+
+@section[#:tag "c2e62"]{Exercise 2.62}
+
+Like the new @tt{intersection-set}, this implementation of @tt{union-set} is @tt{O(n)}
+because we examine the elements of each set one time at most.
+
+@codeblock{
+(define (union-set set1 set2)
+  (cond ((null? set1) set2)
+        ((null? set2) set1)
+        (else
+         (let ((x1 (car set1)) (x2 (car set2)))
+           (cond ((= x1 x2)
+                  (cons x1 (union-set (cdr set1) (cdr set2))))
+                 ((< x1 x2)
+                  (cons x1 (union-set (cdr set1) set2)))
+                 ((< x2 x1)
+                  (cons x2 (union-set set1 (cdr set2)))))))))
+}
+
+@section[#:tag "c2e63"]{Exercise 2.63}
+
+We're comparing the following procedures for converting binaries trees into
+lists:
+
+@codeblock{
+(define (tree->list-1 tree)
+  (if (null? tree)
+      '()
+      (append (tree->list-1 (left-branch tree))
+              (cons (entry tree)
+                    (tree->list-1 (right-branch tree))))))
+}
+
+@codeblock{
+(define (tree->list-2 tree)
+  (define (copy-to-list tree result-list)
+    (if (null? tree) result-list
+        (copy-to-list (left-branch tree)
+                      (cons (entry tree)
+                            (copy-to-list (right-branch tree)
+                                          result-list)))))
+  (copy-to-list tree '()))
+}
+
+The first procedure @tt{append}s the list representation of the
+@tt{left-branch} of the tree to the list formed by @tt{cons}ing the @tt{entry}
+of the tree with the list representation of the @tt{right-branch} of the
+tree. This produces a list with elements sorted in ascending order from left to
+right. (The base case, where the tree is empty, is to return an empty list.)
+
+The second procedure defines an inner procedure, @tt{copy-to-list}, taking a
+tree and a list as parameters. The base case of an empty tree is the same;
+however, rather than returning an empty list, the given @tt{result-list}
+argument is returned. Otherwise, it calls @tt{copy-to-list}, with the first
+argument being the @tt{left-branch} of the tree and the second being the list
+formed by @tt{cons}ing the @tt{entry} of the tree and the list representation
+of the @tt{right-branch} of the tree. To create the second argument,
+@tt{copy-to-list} is called with the @tt{right-branch} of the tree and the
+@tt{result-list} from the outer @tt{copy-to-list} scope supplied as arguments.
+
+The arguments to @tt{cons} suggest that the resulting list will also be in
+ascending order. The two procedures visit the nodes in the same order -- they
+just accumulate their answers in a different way. The first procedure is
+arguably more straightforward, by just @tt{append}ing results of recursive
+calls in a predictable order. The second procedure, however, first accumulates
+new results in the innermost @tt{copy-to-list} call, and then uses that with
+@tt{cons} to add the value of the current node, and then uses this with an
+outer @tt{copy-to-list} as a result-list when working through the left side of
+the tree. The end result is the same, but the pipelining of data is more
+explicit.
+
+We can use the trees in from figure 2.16 to verify that these procedures
+produce the same results:
+
+@verbatim{
+> (define ta (list 7 (list 3 (list 1 '() '()) (list 5 '() '())) (list 9 '() (list 11 '() '()))))
+> (define tb (list 3 (list 1 '() '()) (list 7 (list 5 '() '()) (list 9 '() (list 11 '() '())))))
+> (define tc (list 5 (list 3 (list 1 '() '()) '()) (list 9 (list 7 '() '()) (list 11 '() '()))))
+
+(tree->list-1 ta)
+=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+(tree->list-2 ta)
+=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+
+(tree->list-1 tb)
+=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+(tree->list-2 tb)
+=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+
+(tree->list-1 tc)
+=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+(tree->list-2 tc)
+=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+}
+
+However, although these procedures produce the same results, they do not have
+the same order of growth. The second procedure, visiting every node in the tree
+once and applying @tt{cons} once per visit, is clearly @tt{O(N)}.
+
+However, the first procedure calls @tt{append} when visiting each node. Recall
+from earlier in the chapter that @tt{append} is an @tt{O(N)} operation. We can
+formalize the running time of the first procedure as a recurrence relation:
+
+@verbatim{
+T(n) = O(n) + 2T(n/2)
+}
+
+This has a solution of @tt{O(nlogn)}.
+
+@section[#:tag "c2e64"]{Exercise 2.64}
+
+We are asked to explain how the following procedure @tt{partial-tree} works:
+
+@codeblock{
+(define (partial-tree elts n)
+  (if (= n 0)
+      (cons '() elts)
+      (let ((left-size (quotient (- n 1) 2)))
+        (let ((left-result (partial-tree elts left-size)))
+          (let ((left-tree (car left-result))
+                (non-left-elts (cdr left-result))
+                (right-size (- n (+ left-size 1))))
+            (let ((this-entry (car non-left-elts))
+                  (right-result (partial-tree (cdr non-left-elts)
+                                              right-size)))
+              (let ((right-tree (car right-result))
+                    (remaining-elts (cdr right-result)))
+                (cons (make-tree this-entry left-tree right-tree)
+                      remaining-elts))))))))
+}
+
+Before beginning, I would first reformat the procedure using a form we haven't
+learned yet, @tt{let*}, which allows for earlier bindings available to later
+ones. This removes the need for the creeping indentation we see above.
+
+@codeblock{
+(define (partial-tree elts n)
+  (if (= n 0)
+      (cons '() elts)
+      (let* ((left-size (quotient (- n 1) 2))
+             (left-result (partial-tree elts left-size))
+             (left-tree (car left-result))
+             (non-left-elts (cdr left-result))
+             (right-size (- n (+ left-size 1)))
+             (this-entry (car non-left-elts))
+             (right-result (partial-tree (cdr non-left-elts) right-size))
+             (right-tree (car right-result))
+             (remaining-elts (cdr right-result)))
+        (cons (make-tree this-entry left-tree right-tree) remaining-elts))))
+}
+
+@bold{TODO: The hard part}
