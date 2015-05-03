@@ -2317,7 +2317,11 @@ This has a solution of @tt{O(nlogn)}.
 
 @section[#:tag "c2e64"]{Exercise 2.64}
 
-We are asked to explain how the following procedure @tt{partial-tree} works:
+@bold{NOTE: This is not quite going to be in the form of a "short paragraph". I
+hope you understand.}
+
+We are asked to explain how the following procedure @tt{partial-tree}
+works:
 
 @codeblock{
 (define (partial-tree elts n)
@@ -2357,4 +2361,154 @@ ones. This removes the need for the creeping indentation we see above.
         (cons (make-tree this-entry left-tree right-tree) remaining-elts))))
 }
 
-@bold{TODO: The hard part}
+This procedure is more involved than most we've worked with so far, but if we
+break down what every definition is computing, we can piece together what the
+procedure is doing fairly easily. We'll do it line-by-line.
+
+@verbatim{
+(if (= n 0)
+    ...)
+}
+
+This sets up the base case of the procedure, which is clearly going to be
+recursive.  We can look at the way @tt{partial-tree} is called to understand
+what the base case means:
+
+@verbatim{
+(define (list->tree elements)
+  (car (partial-tree elements (length elements))))
+}
+
+So @tt{n} is the number of elements that this call of @tt{partial-tree} is going to
+process. If there are none left, then we evaluate
+
+@verbatim{
+(cons '() elts)
+}
+
+and return an empty list (meaning an empty tree -- there are no elements left
+to add) paired with the @tt{elts} we passed to @tt{partial-tree}.
+
+@verbatim{
+(let* ((left-size (quotient (- n 1) 2))
+      ...))
+}
+
+This sets up the general case. It exists inside a @tt{let*} form (or the first
+of quite a few regular @tt{let}s in the original), giving us a scope to define
+values that we will use to get our result. The first of these is @tt{left-size},
+which is @tt{(n - 1) / 2}. We'll see why we subtract @tt{1} later; for now, just
+understand that this is our value called @tt{left-size}.
+
+@verbatim{
+(left-result (partial-tree elts left-size))
+}
+
+The value @tt{left-result} is given the meaning of the tree representation of
+@tt{left-size} elements from @tt{elts}. Instead of creating a sublist with just
+this many elements, we use the @tt{n} argument in @tt{partial-tree} to regulate
+how many elements are taken in all of the recursive calls (as seen here --
+we're only turning the first half of the list into a tree).
+
+@verbatim{
+(left-tree (car left-result))
+(non-left-elts (cdr left-result))
+}
+
+We know that @tt{partial-tree}, in the base case, returns a pair consisting of
+an empty list and the elements passed to it that weren't used in that base
+case.  This confirms that, in general, the @tt{car} of the pair is the
+generated tree (which in the base case is empty) and the @tt{cdr} is the
+remaining elements (which in the base case is all of them).
+
+Can we be sure that @tt{non-left-elts} will contain the elements not used in
+the left side of the tree? We can start to imagine why this might be correct
+with a case where @tt{n} is equal to @tt{1}. Clearly, @tt{left-size} will be
+@tt{0}, making @tt{left-result} an empty list, @tt{left-tree} an empty tree,
+and @tt{non-left-elts} contain all of our original elements, none of which are
+in @tt{left-tree}. The reasons for this behavior will become clearer in a
+moment, but it is at least plausible that this works.
+
+@verbatim{
+(right-size (- n (+ left-size 1)))
+}
+
+This is similar to @tt{left-size}, and is probably the number of elements that
+are going to be in the right-side tree. And again, we see that the size is not
+equal to @tt{n} minus @tt{left-size}, but is one less than that. In other words,
+@tt{left-size} and @tt{right-size}, moving inward, leave one element in the middle of
+the list. And what is this used for? We can see in the next line:
+
+@verbatim{
+(this-entry (car non-left-elts))
+}
+
+We assign the first element in @tt{non-left-elts} to a new value,
+@tt{this-entry}. It is reasonable to suspect that this is going to be the root
+of the tree. This makes it obvious why the sizes of the left and right branches
+leave space for one more element -- of course the root element of a tree can't
+be in either of its subtrees. This is what happens to the first element of
+@tt{elts} in the case considered above, where @tt{n} is @tt{1} -- exactly as we
+would expect.
+
+@verbatim{
+(right-result (partial-tree (cdr non-left-elts) right-size))
+}
+
+This computes the right side of the tree, using @tt{right-size} and the elements of
+@tt{non-left-elts} following the root of the tree.
+
+@verbatim{
+(right-tree (car right-result))
+(remaining-elts (cdr right-result))
+}
+
+These correspond to the definitions earlier, getting the computed tree and the elements
+not used it in from the pair produced by @tt{partial-tree}.
+
+Having now processed all of the bindings in the @tt{let*} expression, we only have
+the body of the procedure left:
+
+@verbatim{
+(cons (make-tree this-entry left-tree right-tree) remaining-elts)
+}
+
+This is just the general case of the result we saw earlier in the base case, and have
+used twice in the procedure so far. By this time, it should be clear how it works.
+
+Evaluating @tt{list->tree} on the given list, we get the following tree:
+
+@verbatim{
+(5
+ (1 ()
+    (3 () ()))
+ (9 (7 () ())
+    (11 () ())))
+}
+
+Or, in a particularly bad graphical style,
+
+@verbatim{
+5
+|- 1
+|  |- 3
+|  |-
+|
+|- 9
+   |- 7
+   |- 11
+}
+
+@tt{***}
+
+Now that we understand how the procedure works, what is the order of growth in
+time complexity? Actually, it's rather easy. Even though we have recursive
+calls to @tt{partial-tree}, we are careful to only visit every element of the
+list once. Once elements are added to a tree, they are never visited again, and
+elements that haven't been added to the tree yet are not visited until they are
+explicitly added to it. And elements are added to the tree with an @TT{O(1)}
+@tt{cons}. Therefore, the procedure has an order of growth in execution time of
+@tt{O(N)}.
+
+@section[#:tag "c2e65"]{Exercise 2.65}
+
