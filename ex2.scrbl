@@ -2506,7 +2506,7 @@ time complexity? Actually, it's rather easy. Even though we have recursive
 calls to @tt{partial-tree}, we are careful to only visit every element of the
 list once. Once elements are added to a tree, they are never visited again, and
 elements that haven't been added to the tree yet are not visited until they are
-explicitly added to it. And elements are added to the tree with an @TT{O(1)}
+explicitly added to it. And elements are added to the tree with an @tt{O(1)}
 @tt{cons}. Therefore, the procedure has an order of growth in execution time of
 @tt{O(N)}.
 
