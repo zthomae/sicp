@@ -2512,3 +2512,85 @@ explicitly added to it. And elements are added to the tree with an @tt{O(1)}
 
 @section[#:tag "c2e65"]{Exercise 2.65}
 
+In exercises @secref{c2e63} and @secref{c2e64} we found @tt{O(N)} algorithms
+for converting between ordered lists and balanced binary trees. We already have
+@tt{O(N)} algorithms for computing the intersections and unions of sets
+represented as ordered lists. Therefore, we can find the intersections and
+unions of sets represented as binary trees in @tt{O(N)} time by first
+converting from binary trees to lists, then finding the intersection or union
+of these lists, and finally converting the result back into a tree. As the sum
+of a fixed number of @tt{O(N)} processes, this process is also @tt{O(N)}.
+
+I use @tt{let*} again for clarity. For the sake of avoiding name collisions,
+I've assumed that the @tt{intersection-set} and @tt{union-set} procedures for
+operating on ordered lists are actually suffixed with @tt{oset}. This is ugly,
+but remember that it is ugly; we'll be seeing how to deal with this sort of
+situation later.
+
+First, I implemented the procedures in the naive way:
+
+@codeblock{
+(define (intersection-btset set1 set2)
+  (let* ((oset1 (tree->list-2 set1))
+         (oset2 (tree->list-2 set2))
+         (intersection (intersection-oset oset1 oset2)))
+    (list->tree intersection)))
+}
+
+@codeblock{
+(define (union-btset set1 set2)
+  (let* ((oset1 (tree->list-2 set1))
+         (oset2 (tree->list-2 set2))
+         (union (union-oset oset1 oset2)))
+    (list->tree union)))
+}
+
+However, this is plainly duplicative. We can extract a new procedure, here
+named @tt{btset-convert-op} (a name so bad it will not conflict with anything
+useful) that takes a procedure as an argument and returns a procedure taking
+two sets and returning that operation applied to them:
+
+@codeblock{
+(define (btset-convert-op op)
+  (lambda (set1 set2)
+    (let* ((oset1 (tree->list-2 set1))
+           (oset2 (tree->list-2 set2))
+           (list-result (op oset1 oset2)))
+      (list->tree list-result))))
+}
+
+Then, we can define our intersection and union procedures easily:
+
+@codeblock{
+(define intersection-btset (btset-convert-op intersection-oset))
+
+(define union-btset (btset-convert-op union-oset))
+}
+
+Assuming that operations will only take two arguments, I think this is good
+enough.  It could reduce the duplication of @tt{tree->list-2} with a @tt{map},
+and @tt{apply}ing the operation to this, but this code is more straightforward,
+and I think this is a win.
+
+But unions and intersections of sets are @emph{not} only useful as binary
+operations. There are two different ways to handle this. One is to make
+@tt{btset-convert-op} take an arbitrary number of arguments, and process them
+using the techniques above. However, this means that operations have to handle
+arbitrary numbers of arguments as well. Another way to solve this problem, and
+I believe a better way, is to @tt{accumulate} over all of the sets with the
+operation.
+
+@codeblock{
+(define (btset-convert-op op)
+  (lambda sets
+    (let ((osets (map tree->list-2 sets)))
+      (list->tree (accumulate op (car osets) (cdr osets))))))
+}
+
+Despite the naming conventions, I believe this is a reasonable answer.
+
+@bold{TODO: I complain about the names. I should fix them.}
+
+@section[#:tag "c2e66"]{Exercise 2.66}
+
+
