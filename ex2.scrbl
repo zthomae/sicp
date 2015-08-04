@@ -2593,4 +2593,186 @@ Despite the naming conventions, I believe this is a reasonable answer.
 
 @section[#:tag "c2e66"]{Exercise 2.66}
 
+@bold{TODO: Will be done after recovering from data loss}
 
+@section[#:tag "c2e67"]{Exercise 2.67}
+
+To decode the given @tt{sample-message}, using the given Huffman tree,
+we can simply call @tt{decode} with them as arguments:
+
+@verbatim{
+> (decode sample-message sample-tree)
+(mcons 'a (mcons 'd (mcons 'a (mcons 'b (mcons 'b (mcons 'c (mcons 'a '())))))))
+}
+
+The message is decoded this:
+
+@verbatim{
+0 1 1 0 0 1 0 1 0 1 1 1 0
+A     D A   B   B     C A
+}
+
+@section[#:tag "c2e68"]{Exercise 2.68}
+
+@tt{encode-symbol} requires us to visit all of the nodes in the tree, and must
+return a list of bits representing the path to the node containing the symbol
+we are looking for if it is present in the tree. The exercise asks us to throw
+an error if the symbol is not found. We will handle this (and only this) in an
+outer procedure, while doing the traversal and message returning inside an inner
+procedure, because it is rather elegant to return nil if the symbol is not found.
+
+First, the inner procedure, named @tt{encode-symbol-1}:
+
+@codeblock{
+(define (encode-symbol-1 symbol tree bits)
+  (if (leaf? tree)
+      (if (eq? symbol (symbol-leaf tree))
+          bits
+          '())
+      (append
+       (encode-symbol-1 symbol (left-branch tree) (append bits '(0)))
+       (encode-symbol-1 symbol (right-branch tree) (append bits '(1))))))
+}
+
+When @tt{encode-symbol-1} is visiting a current node (the root of @tt{tree}),
+@tt{bits} contains the encoded path to this node. Therefore, if the current
+node is a leaf and its symbol is the one we're looking for, we can return
+@tt{bits}. If the current node is a leaf and the symbol is not the one we're
+looking for, there's no more work to be done in the tree and we return nil,
+for reasons that will become clearer soon.
+
+If the current node is not a leaf, we need to search both the left and right
+subtrees for the symbol. We can call @tt{encode-symbol-1} with the left and
+right branches of the tree and with @tt{0} and @tt{1} appended to @tt{bits},
+respectively. This encodes the path we have taken through the tree into the
+list of bits.
+
+However, despite doing two recursive searches for the symbol, we only want
+to return one list of bits. The easiest way to do this is to @tt{append} the
+results together, and to make sure that we return nil if we don't find the
+symbol. This will make the final result be the same as the bit encoding of
+the symbol in the tree.
+
+To return an error when the symbol isn't found, we can write a simple wrapper
+procedure as our actual @tt{encode-symbol}:
+
+@codeblock{
+(define (encode-symbol symbol tree)
+  (let ((result (encode-symbol-1 symbol tree '())))
+    (if (null? result)
+        (error "Couldn't find symbol in tree")
+        result)))
+}
+
+To verify that this works, we can add to our @tt{equal?} procedure from
+@secref{c2e54} to also check equality of numbers, and then use if to verify
+that the sample encoded message is the same as a message we encode ourselves
+using our previously decoded message:
+
+@codeblock{
+(define (equal? a b)
+  (cond
+   ((and (null? a) (null? b)) #t)
+   ((and (symbol? a) (symbol? b))
+    (eq? a b))
+   ((and (number? a) (number? b))
+    (= a b))
+   ((and (list? a) (list? b))
+    (if (or (null? a) (null? b)) #f
+     (and
+      (equal? (car a) (car b))
+      (equal? (cdr a) (cdr b)))))
+   (else #f)))
+}
+
+@verbatim{
+> (equal? sample-message (encode (decode sample-message sample-tree) sample-tree))
+#t
+}
+
+@section[#:tag "c2e69"]{Exercise 2.69}
+
+We are asked to write the procedure @tt{successive-merge}, which will
+be used in generating Huffman trees as follows:
+
+@codeblock{
+(define (generate-huffman-tree pairs)
+  (successive-merge (make-leaf-set pairs)))
+}
+
+Most of the hard work has already been done for us in the procedures written
+during this section. @tt{make-leaf-set} will order the set of pairs, so we can
+take the first two elements from the set to get the two elements with the lowest
+weights. During the successive merging, we will have to maintain this ordering
+by placing the newly-merged trees in the correct place by their merged weights.
+We can do this by using the @tt{adjoin-set} procedure that @tt{make-leaf-set}
+also uses. @tt{adjoin-set} is given as its arguments the newly-merged tree,
+constructed from the first two elements of the @tt{leaf-set}, and the rest
+(@tt{cddr}) of the @tt{leaf-set}.
+
+With a new leaf set constructed, we have to call @tt{successive-merge} again,
+to continue merging until we're done. The base case is that @tt{leaf-set} is
+a list containing the final tree as its only element. In this case, the @tt{cdr}
+is @tt{nil}, and we return the tree itself.
+
+The final procedure is below:
+
+@codeblock{
+(define (successive-merge leaf-set)
+  (if (null? (cdr leaf-set))
+      (car leaf-set)
+      (successive-merge
+       (adjoin-set
+        (make-code-tree (car leaf-set) (cadr leaf-set))
+        (cddr leaf-set)))))
+}
+
+@section[#:tag "c2e70"]{Exercise 2.70}
+
+We can set up the tree and the message as such:
+
+@codeblock{
+(define song-weights
+  '((a 2) (boom 1) (get 2) (job 2) (na 16) (sha 3) (yip 9) (wah 1)))
+
+(define song
+  '(get a job
+        sha na na na na na na na na
+        get a job
+        sha na na na na na na na na
+        wah yip yip yip yip yip yip yip yip yip
+        sha boom))
+
+(define song-tree (generate-huffman-tree song-weights))
+}
+
+@bold{TODO: Create the weights from the message?}
+
+Encoding the message is then simple, and we can see that it has a length of @tt{84}:
+
+@verbatim{
+> (length (encode song song-tree))
+84
+}
+
+If we used a fixed-length code, we would need to use a code of 3 bits, for @tt{2^3 = 8}
+symbols. Since there are
+
+@verbatim{
+> (length song)
+36
+}
+
+symbols in the song, we would need @tt{3 * 36 = 108} bits using our fixed-length code.
+Just like the first example in the chapter, the encoded length with the Huffman tree is
+@tt{7/9}th the length of the fixed-length encoding.
+
+@bold{TODO: More about efficiency?}
+
+@section[#:tag "c2e71"]{Exercise 2.71}
+
+@bold{TODO}
+
+@section[#:tag "c2e72"]{Exercise 2.72}
+
+@bold{TODO}
