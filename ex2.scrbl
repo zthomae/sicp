@@ -2776,3 +2776,191 @@ Just like the first example in the chapter, the encoded length with the Huffman 
 @section[#:tag "c2e72"]{Exercise 2.72}
 
 @bold{TODO}
+
+@section[#:tag "c2e73"]{Section 2.73}
+
+We are asked to consider rewriting a procedure for symbolic differentiation,
+originally written like this:
+
+@codeblock{
+(define (deriv-1 exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp) (if (same-variable? exp var) 1 0))
+        ((sum? exp)
+         (make-sum (deriv (addend exp) var)
+                   (deriv (augend exp) var)))
+        ((product? exp)
+         (make-sum
+          (make-product (multiplier exp)
+                        (deriv (multiplicand exp) var))
+          (make-product (deriv (multiplier exp) var)
+                        (multiplicand exp))))
+        (else (error "unknown expression type -- DERIV" exp))))
+}
+
+so that it uses data-directed programming, like this:
+
+@codeblock{
+(define (deriv exp var)
+  (cond ((number? exp) 0)
+        ((variable? exp) (if (same-variable? exp var) 1 0))
+        (else ((get 'deriv (operator exp)) (operands exp)
+                                           var))))
+
+(define (operator exp) (car exp))
+(define (operand exp) (cdr exp))
+}
+
+The general case is to find operators, which are represented as symbols such as
+@tt{'+} and exist in pairs with their operands, and dispatch on the entries in
+the @tt{deriv} table for differentiating these operations. This means that we can't
+dispatch on numbers or variables, because they aren't pairs with operators and
+operands.
+
+For example, we could add the entries for taking derivatives of additions or
+multiplications like this:
+
+@codeblock{
+(put 'deriv '(+)
+     (lambda (exp var)
+       (make-sum (deriv (addend exp) var)
+                 (deriv (augend exp) var))))
+
+(put 'deriv '(*)
+     (lambda (exp var)
+       (make-sum
+        (make-product (multiplier exp)
+                      (deriv (multiplicand exp) var))
+        (make-product (deriv (multiplier exp) var)
+                      (multiplicand exp)))))
+}
+
+We could also add a procedure for constant exponentiation, as per @secref{c2e56}:
+
+@codeblock{
+(put 'deriv '(^)
+     (lambda (exp var)
+       (make-product
+        (make-product
+         (exponent exp)
+         (make-exponentiation (base exp)
+                              (- (exponent exp) 1)))
+        (deriv (base exp) var))))
+}
+
+If, however, we instead made tables with the operators as the @tt{op}s and @tt{'deriv}
+as the @tt{type}, the opposite of what we do now, we would have to register these
+differently, swapping the second and third arguments to @tt{put} and changing the call
+to @tt{get} in @tt{deriv}.
+
+@bold{TODO: come back later and test this}
+
+@section[#:tag "c2e74"]{Exercise 2.74}
+
+@bold{This exercise is powered by Magical Thinking(TM).
+      It also needs to be finished.}
+
+We assume that lookup procedures are stored in a @tt{'lookup} table
+keyed by the division names.
+
+@codeblock{
+(define (get-record division name)
+  ((get 'lookup division) name))
+}
+
+We choose to pass a record to @tt{get-salary} to avoid coupling
+with @tt{get-record}.
+
+@codeblock{
+(define (get-salary division employee-record)
+  ((get 'salary division) employee-record))
+}
+
+We assume that the lookup procedures return @tt{nil} if a record can't
+be found, and use @tt{flatmap} to get rid of them, leaving only a valid
+record if one exists.
+
+@codeblock{
+(define (find-employee-record divisions name)
+  (flatmap
+   (lambda (d) (get-record d name))
+   divisions))
+}
+
+If Insatiable takes over a new company, they have a few options for integrating
+their separate employee records systems. One is to add another layer of
+indirection by creating a new table keyed by the company. For example:
+
+@codeblock{
+(define (get-record company division name)
+  (((get 'get company) 'lookup division) name))
+}
+
+This is less invasive than possibly modifying the names of the divisions to
+avoid collisions.
+
+Looking up @tt{get} is not the only thing we could do -- we could write a new
+version of @tt{get} that takes the company and the division and handles a second
+layer of lookups itself. Writing a more generic version of @tt{get}, instead of
+having procedures tied directly to tables (as I assume is the case now), has
+benefits of its own. But at this point, we're reinventing databases.
+
+@section[#:tag "c2e75"]{Exercise 2.75}
+
+We can write @tt{make-from-mag-ang} in the new message-passing style
+like this:
+
+@codeblock{
+(define (make-from-mag-ang r a)
+  (define (dispatch op)
+    (cond ((eq? op 'real-part) (* r (cos a)))
+          ((eq? op 'imag-part) (* r (sin a)))
+          ((eq? op 'magnitude) r)
+          ((eq? op 'angle) a)
+          (else
+           (error "Unknown op -- MAKE-FROM-MAG-ANG" op))))
+  dispatch)
+}
+
+Just like the new @tt{make-from-real-imag}, this relies on using the magnitude
+and angle arguments directly from the outer scope, rather than accessing them
+through functions.
+
+@section[#:tag "c2e76"]{Exercise 2.76}
+
+We've learned three strategies for constructing generic systems with multiple
+implementations.
+
+The simplest thing we can do is to pool the implementations into a single
+scope, differentiating between them by procedure name. This is how we ended
+up with explicitly named @tt{real-part-rectangular} and @tt{real-part-polar}
+procedures. To make this work, we have to pair a type tag with the data
+to be able to use these operations, leaving us with @tt{rectangular?} and
+@tt{polar?} procedures that are called inside the generic operations, such as
+@tt{real-part}, in order to dispatch to the correct methods.
+
+Alternatively, we could put these procedures into a table instead of directly
+into the relevant scope, and access them via an operation and a type. For
+example, we could get the equivalent of the @tt{real-part-rectangular} procedure
+by wrapping around the essential operation of
+
+@codeblock{
+((get 'real-part 'rectangular) z)
+}
+
+where the call to @tt{get} returns the procedure that is called on the complex
+number object. Adding a new operation to our system is easy, because we can
+create a new table and add implementations of the operation for our types
+without having to modify any of the other tables. However, adding new types
+forces us to modify all of the tables to expand our operations.
+
+We can reverse this tradeoff by using "smarter" types that can dispatch
+messages on their own. In this "message passing" style, adding new types is
+easy, because they can be added independently. However, adding new operations
+requires us to modify all of our existing types.
+
+This is an instance of the
+@hyperlink["http://c2.com/cgi/wiki?ExpressionProblem" "Expression Problem"].
+
+@section[#:tag "c2e77"]{Exercise 2.77}
+
