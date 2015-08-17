@@ -2964,3 +2964,192 @@ This is an instance of the
 
 @section[#:tag "c2e77"]{Exercise 2.77}
 
+We're evaluating the expression @tt{(magnitude z)}, where @tt{z} is equal to
+@tt{'(complex (rectangular (3 4)))}. Earlier, the procedure @tt{magnitude}
+was defined like this:
+
+@codeblock{
+(define (magnitude z) (apply-generic 'magnitude z))
+}
+
+As is, this call wouldn't work because there is no entry in the table for
+the @tt{magnitude} operation on the @tt{complex} type -- that is, for the
+type wrapping the @tt{rectangular} and @tt{polar} types we created earlier.
+However, all we need to do to fix this is to install the @tt{magnitude}
+procedure itself as the entry for this type, as so:
+
+@codeblock{
+(put 'magnitude '(complex) magnitude)
+}
+
+With this in place, the call to @tt{magnitude} can be expanded like this
+(I've simplified some of the steps for readability):
+
+@verbatim{
+(magnitude '(complex (rectangular (3 4))))
+(apply-generic 'magnitude '(complex (rectangular (3 4))))
+(apply (get 'magnitude (type-tag '(complex (rectangular (3 4))))) (contents '(complex (rectangular (3 4)))))
+(apply (get 'magnitude 'complex) (contents '(complex (rectangular (3 4)))))
+(apply (get 'magnitude 'complex) '(rectangular (3 4)))
+(apply magnitude '(rectangular (3 4)))
+(apply-generic 'magnitude '(rectangular (3 4)))
+(apply (get 'magnitude (type-tag '(rectangular (3 4)))) (contents '(rectangular (3 4))))
+(apply (get 'magnitude 'rectangular) (3 4))
+}
+
+@tt{apply-generic} gets called twice, or once for each layer of typing our
+generic @tt{complex} object has. In the first call, @tt{magnitude} dispatches
+to itself, and in the second call, the procedure for the given type of the 
+object (in this case, @tt{rectangular}).
+
+@section[#:tag "c2e78"]{Exercise 2.78}
+
+We are asked to remove a layer of our typing for pure Scheme numbers, knowing
+that the language is capable of discerning whether an object is a number. We
+can do this by adding calls to @tt{number?} to @tt{attach-tag}, @tt{type-tag},
+and @tt{contents}, probably like this:
+
+@codeblock{
+(define (type-tag datum)
+  (if (pair? datum)
+      (car datum)
+      (if (number? datum)
+          'scheme-number
+          (error "Bad tagged datum -- TYPE-TAG" datum))))
+
+(define (contents datum)
+  (if (pair? datum)
+      (cdr datum)
+      (if (number? datum)
+          datum
+          (error "Bad tagged datum -- CONTENTS" datum))))
+
+(define (attach-tag type-tag contents)
+  (if (and
+       (eq? type-tag 'scheme-number)
+       (number? contents))
+      contents
+      (cons type-tag contents)))
+}
+
+I've elected to check the type of @tt{contents} and the given @tt{type-tag}
+in @tt{attach-tag} for extra safety.
+
+@section[#:tag "c2e79"]{Exercise 2.79}
+
+@bold{TODO: Explain and verify}
+
+@codeblock{
+(define (install-equ?-predicate)
+  (define (equ?-scheme-number x y) (= x y))
+  (define (equ?-rational x y)
+    (and (= (numer x) (numer y))
+         (= (denom x) (denom y))))
+  (define (equ?-complex z1 z2)
+    (and (= (real-part z1) (real-part z2))
+         (= (imag-part z1) (imag-part z2))))
+  (put 'equ? '(scheme-number scheme-number)
+       (lambda (x y)
+         (attach-tag 'scheme-number (equ?-scheme-number x y))))
+  (put 'equ? '(rational rational)
+       (lambda (x y)
+         (attach-tag 'rational (equ?-rational x y))))
+  (put 'equ? '(complex complex)
+       (lambda (z1 z2)
+         (attach-tag 'complex (equ?-complex z1 z2)))))
+
+(define (equ? x y) (apply-generic 'equ? x y))
+}
+
+@section[#:tag "c2e80"]{Exercise 2.80}
+
+@bold{TODO: Explain and verify}
+
+@codeblock{
+(define (install-=zero?-predicate)
+  (define (=zero?-scheme-number x)
+    (= 0 x))
+  (define (=zero?-rational x)
+    (and (= 0 (numer x))
+         (not (= 0 (denom x)))))
+  (define (=zero?-complex z)
+    (and (= 0 (real-part z))
+         (= 0 (imag-part z))))
+  (put '=zero? 'scheme-number =zero?-scheme-number)
+  (put '=zero? 'rational =zero?-rational)
+  (put '=zero? 'complex =zero?-complex))
+
+(define (=zero? x) (apply-generic '=zero? x))
+}
+
+@section[#:tag "c2e81"]{Exercise 2.81}
+
+Louis Reasoner wants to install coercions from types to themselves, because
+@tt{apply-generic} may try to do this is a procedure isn't found. Of course,
+the only reason this would happen is if an operation on the two types couldn't
+be found in the first place, and coercing a type to itself won't change that
+(this is Loose Reasoner, after all), but let's play along anyway.
+
+So suppose we have a new procedure for exponentiation only defined on Scheme
+numbers, created like this:
+
+@codeblock{
+(define (exp x y) (apply-generic 'exp x y))
+
+(put 'exp '(scheme-number scheme-number)
+     (lambda (x y) (tag (expt x y))))
+}
+
+If we try to call this procedure on two complex numbers, @tt{apply-generic}
+won't be able to find a procedure using @tt{get}, and so will attempt to
+coerce the complex numbers to complex numbers and see if there is a procedure
+then. But looking at how @tt{apply-generic} is defined, we can see that we
+don't have to write these self-coercions:
+
+@codeblock{
+(let ((t1->t2 (get-coercion type1 type2))
+       (t2->t1 (get-coercion type2 type1)))
+  (cond (t1->t2
+         (apply-generic op (t1->t2 a1) a2))
+        (t2->t1
+         (apply-generic op a1 (t2->t1 a2)))
+        (else
+         (error "no method for these types"
+                (list op type-tags)))))
+}
+
+If we don't install self-coercions into the table, neither @tt{t1->t2} nor
+@tt{t2->t1} will exist, and the call to @tt{exp} will yield and error as
+expected. However, if we do install the self-coercions, @tt{apply-generic}
+will be called again with one "coerced" argument.
+
+But of course, the next time through @tt{apply-generic}, the same thing
+will happen -- a suitable procedure won't be found, and so the first argument
+will be "coerced" and @tt{apply-generic} will be called again. Installing these
+procedures will make @tt{apply-generic} nonterminating whenever a procedure
+for two arguments of the same type isn't found. This is clearly wrong.
+
+We could modify @tt{apply-generic} to not attempt to look up coercions if
+the types are the same. It might look something like this:
+
+@codeblock{
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))
+          (if (and (= (length args) 2)
+                   (not (eq? (car type-tags)
+                             (cadr type-tags))))
+              ;; ...
+              (error "No method for these types"
+                     (list op type-tags)))))))
+}
+
+You could also check if the types are equal inside the @tt{if} (conveniently
+after you have names for them), but I prefer this a little bit because it
+doesn't increase the number of exit points in the procedure (that is, I would
+need to add another call to @tt{error}).
+
+@section[#:tag "c2e82"]{Exercise 2.82}
+
