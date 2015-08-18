@@ -3223,7 +3223,7 @@ need to add another call to @tt{error}).
 
 @bold{TODO}
 
-@section[#:tag "c2e96]{Exercise 2.96}
+@section[#:tag "c2e96"]{Exercise 2.96}
 
 @bold{TODO}
 

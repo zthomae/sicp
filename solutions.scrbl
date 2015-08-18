@@ -6,3 +6,4 @@
 
 @include-section["ex1.scrbl"]
 @include-section["ex2.scrbl"]
+@include-section["ex3.scrbl"]
