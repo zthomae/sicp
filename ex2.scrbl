@@ -3153,3 +3153,80 @@ need to add another call to @tt{error}).
 
 @section[#:tag "c2e82"]{Exercise 2.82}
 
+@bold{TODO}
+
+@section[#:tag "c2e83"]{Exercise 2.83}
+
+@bold{This is half-baked}
+
+@codeblock{
+(define (install-raise-package)
+  (define (raise-integer-rational x)
+    (attach-tag 'rational (make-rational x 1)))
+  (define (raise-rational-real x)
+    (attach-tag 'real (make-real (/ (numer x) (denom x)))))
+  (define (raise-real-complex x)
+    (attach-tag 'complex (make-complex-from-real-imag x 0)))
+  (put 'raise 'integer raise-integer-rational)
+  (put 'raise 'rational raise-rational-real)
+  (put 'raise 'real raise-real-complex))
+
+(define (raise x)
+  ((get 'raise (type-tag x)) x))
+}
+
+@section[#:tag "c2e84"]{Exercise 2.84}
+
+@bold{TODO}
+
+@section[#:tag "c2e85"]{Exercise 2.85}
+
+@bold{TODO}
+
+@section[#:tag "c2e86"]{Exercise 2.86}
+
+@bold{TODO}
+
+@section[#:tag "c2e87"]{Exercise 2.87}
+
+@bold{TODO}
+
+@section[#:tag "c2e88"]{Exercise 2.88}
+
+@bold{TODO}
+
+@section[#:tag "c2e89"]{Exercise 2.89}
+
+@bold{TODO}
+
+@section[#:tag "c2e90"]{Exercise 2.90}
+
+@bold{TODO}
+
+@section[#:tag "c2e91"]{Exercise 2.91}
+
+@bold{TODO}
+
+@section[#:tag "c2e92"]{Exercise 2.92}
+
+@bold{TODO}
+
+@section[#:tag "c2e93"]{Exercise 2.93}
+
+@bold{TODO}
+
+@section[#:tag "c2e94"]{Exercise 2.94}
+
+@bold{TODO}
+
+@section[#:tag "c2e95"]{Exercise 2.95}
+
+@bold{TODO}
+
+@section[#:tag "c2e96]{Exercise 2.96}
+
+@bold{TODO}
+
+@section[#:tag "c2e97"]{Exercise 2.97}
+
+@bold{TODO}
