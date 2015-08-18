@@ -50,6 +50,11 @@ is equal to a special message. If so, the other arguments are ignored.
 
 I shouldn't need to mention that handling plaintext passwords is a bad idea.
 
+There is one subtlety in this code: Because the inner @tt{dispatch}
+procedure is always expected to return a procedure, we have to
+wrap the sending of the "Incorrect password" message in a dummy
+procedure. I have done this in a rather terse way.
+
 @codeblock{
 (define (make-account balance password)
   (define (withdraw amount)
@@ -67,7 +72,7 @@ I shouldn't need to mention that handling plaintext passwords is a bad idea.
         (cond ((eq? m 'withdraw) withdraw)
                  ((eq? m 'deposit) deposit)
                  (else (error "Unknown request -- MAKE-ACCOUNT" m)))
-        "Incorrect password"))
+        (lambda args "Incorrect password")))
   dispatch)
 }
 
@@ -75,11 +80,6 @@ I shouldn't need to mention that handling plaintext passwords is a bad idea.
 
 I also shouldn't need to mention that this is not a robust way
 to deal with possible attempted account theft.
-
-There is one subtlety in this code: Because the inner @tt{dispatch}
-procedure is always expected to return a procedure, we have to
-wrap the sending of the "Incorrect password" message in a dummy
-procedure.
 
 @codeblock{
 (define (make-account balance password)
@@ -94,9 +94,7 @@ procedure.
         (begin (set! balance (+ balance amount))
                balance)
         "Must deposit a non-negative amount"))
-  (define (incorrect-password . args)
-    "Incorrect password")
-  (define (dispatch p m)
+   (define (dispatch p m)
     (if (eq? p password)
         (cond ((eq? m 'withdraw) withdraw)
                  ((eq? m 'deposit) deposit)
@@ -104,7 +102,7 @@ procedure.
         (begin
           (set! incorrect-count (+ incorrect-count 1))
           (if (> incorrect-count 7) (call-the-cops))
-          incorrect-password)))
+          (lambda args "Incorrect password"))))
   dispatch)
 }
 
@@ -171,4 +169,122 @@ while the @tt{'reset} message returns nothing of value.
 }
 
 @section[#:tag "c3e7"]{Exercise 3.7}
+
+Making a joint account is not difficult: All you need to do is add
+a new layer of password checking (so that the new password only
+works with the newly-created joint account). This behaves similarly
+to the password checking we already made, except it returns the unlocked
+main account if the given joint password is correct.
+
+@codeblock{
+(define (make-joint account password new-password)
+  (lambda (p m)
+    (if (eq? p new-password)
+        (account password m)
+        (lambda args "Incorrect password"))))
+}
+
+@section[#:tag "c3e8"]{Exercise 3.8}
+
+I feel like I've come up with an ugly solution. I'm going to mark this as
+@bold{TODO} for now.
+
+@codeblock{
+(define f
+  (let ((y 0))
+    (lambda (x)
+      (if (= y 0)
+          (begin
+            (set! y x)
+            0)
+          (begin
+            (set! y x)
+            1)))))
+}
+
+I verified that this worked by swapping the order of the calls. Assuming
+the order of evaluation is fixed, this should demonstrate the different
+behaviors that would happen if the order of evaluation was actually changed.
+
+@section[#:tag "c3e9"]{Exercise 3.9}
+
+@bold{TODO: ASCII art}
+
+@section[#:tag "c3e10"]{Exercise 3.10}
+
+The new @tt{make-withdraw} is subtly different from the earlier examples
+in that the body is not merely a @tt{lambda} expression, but an immediately-
+invoked @tt{lambda}.
+
+(This is somewhat difficult to explain without diagrams, but I've put the
+skeleton of my answer here anyway. @bold{It's probably wrong.})
+
+The first thing we should do before trying to apply the environment
+model is to fully expand on all syntactic sugar around @tt{lambda}
+expressions. When we do this, the definition for @tt{make-withdraw} is
+as follows:
+
+@codeblock{
+(define make-withdraw
+  (lambda (initial-amount)
+    ((lambda (balance)
+       (lambda (amount)
+         (if (>= balance amount)
+             (begin
+               (set! balance (- balance amount))
+               balance)
+             "Insufficient funds")))
+     initial-amount)))
+}
+
+Here, @tt{make-withdraw} will be a name in the global environment
+referring to the procedure inside.
+
+When we evaluate the expression @tt{(define W1 (make-withdraw 100))},
+we create a name @tt{W1} in the global environment that refers to the
+result of @tt{(make-withdraw 100)}. When this is evaluated, a new
+environment, which we'll call @tt{E1}, is constructed with the global
+environment as its parent. It has @tt{initial-amount} bound to @tt{100}.
+The procedure we are evaluating in this environment has the body
+
+@codeblock{
+((lambda (balance)
+   (lambda (amount)
+     (if (>= balance amount)
+         (begin
+           (set! balance (- balance amount))
+           balance)
+         "Insufficient funds")))
+ initial-amount)
+}
+
+This body is a procedure application, so it creates a new environment, @tt{E2},
+whose parent is the environment in which this procedure was defined --
+that is, @tt{E1}. However, the procedure which is being applied is also
+defined here. So we create a procedure object that takes one parameter, whose
+defining environment is @tt{E2}, and with the body
+
+@codeblock{
+(lambda (amount)
+  (if (>= balance amount)
+      (begin
+        (set! balance (- balance amount))
+        balance)
+      "Insufficient funds"))
+}
+
+This procedure object is returned and given the name @tt{W1}.
+
+Then we evaluate @tt{(W1 50)}. This creates a new environment, @tt{E3}, whose
+parent frame is @tt{E2}, the environment in which the procedure that has
+the name @tt{W1} was defined. We then evaluate the procedure, which updates
+the @tt{balance} value stored in @tt{E2} from @tt{100}, the value initially
+given from @tt{initial-amount} in @tt{E1}, to @tt{50}.
+
+Evaluating @tt{(define W2 (make-withdraw 100))} makes a parallel procedure and
+set of environments like @tt{W1}, with its own private @tt{balance}.
+
+@bold{TODO: Pretty pictures}
+
+@section[#:tag "c3e11"]{Exercise 3.11}
 
