@@ -288,3 +288,198 @@ set of environments like @tt{W1}, with its own private @tt{balance}.
 
 @section[#:tag "c3e11"]{Exercise 3.11}
 
+@bold{TODO: Even more pictures}
+
+When we evaluate @tt{(define acc (make-account 50))}, we create
+a name @tt{acc} in the global environment referring to the result
+of the application @tt{(make-account 50)}. This sets up a new
+environment subordinate to the global environment with @tt{balance},
+the parameter of @tt{make-account}, bound to @tt{50}. Then, we define
+procedures @tt{withdraw}, @tt{deposit}, and @tt{dispatch} in this
+environment and return the procedure @tt{dispatch}.
+
+Suppose then we evaluate @tt{((acc 'deposit) 40)}. This is a procedure
+application, so we create a new environment subordinate to the global
+environment. However, the procedure being evaluated is the result of evaluating
+@tt{(acc 'deposit)}. So a new environment is created subordinate to the
+environment @tt{acc} was defined in with @tt{m}, the formal paramter of
+@tt{dispatch}, bound to @tt{'deposit}. The procedure is then evaluated and the
+procedure @tt{deposit} from earlier is returned.
+
+This procedure is then called with its formal paramter @tt{amount} bound
+to @tt{40}. This occurs in an environment subordinate to the one @tt{withdraw}
+was defined in and updates the @tt{balance} set in this environment. The
+new balance of @tt{90} is returned.
+
+Similar happens when evaluating @tt{((acc 'withdraw) 60)}.
+
+If we define a new account, as in @tt{(define acc2 (make-account 100))},
+it refers to a separate procedure returned as the result of
+@tt{(make-account 100)}. @tt{acc} and @tt{acc2} both share entries from
+the global environment, as they are both subordinate to it. However, the
+actual procedures these names refer to are different and are defined in
+different environments, which keeps their local states separate.
+
+@section[#:tag "c3e12"]{Exercise 3.12}
+
+@bold{TODO: Still no diagrams}
+
+Suppose we evaluate @tt{(define x (list 'a 'b))}.
+
+When we evaluate @tt{(cdr x)} the first time, we get the list @tt{'(b ())},
+which is the @tt{cdr} that @tt{x} was defined with.
+
+Then suppose we evaluate @tt{(define x (append! x  y))}, where @tt{y} was
+defined to be @tt{(list 'c 'd)}. This sets the @tt{nil} pointer that followed
+the @tt{'b} in @tt{x} to now point to the list @tt{y}. So now, @tt{(cdr x)}
+evaluates to @tt{'(b (c (d ())))}.
+
+@section[#:tag "c3e13"]{Exercise 3.13}
+
+Suppose we define the procedure
+
+@codeblock{
+(define (make-cycle x)
+  (set-cdr! (last-pair x) x))
+}
+
+Then, whe we try to compute @tt{(last-pair x)}, we get an infinite loop,
+because the end of @tt{x} now points to the front of @tt{x}. In other words,
+we will never come across a pair where the @tt{cdr} is @tt{nil}, so
+@tt{last-pair} will never terminate.
+
+@section[#:tag "c3e14"]{Exercise 3.14}
+
+Consider the procedure below:
+
+@codeblock{
+(define (mystery x)
+  (define (loop x y)
+    (if (null? x)
+        y
+        (let ((temp (cdr x)))
+          (set-cdr! x y)
+          (loop temp x))))
+  (loop x '()))
+}
+
+In general, this procedure will reverse a list (while trashing
+the list being reversed -- more on this later). Consider this brief
+trace:
+
+Suppose @tt{x} is the list @tt{v}, defined as @tt{(list 'a 'b 'c 'd)}.
+We start by evaluating @tt{(loop x '())}. Since @tt{x} is not @tt{nil},
+we then set aside @tt{(cdr x)}, which is @tt{'(b c d)}, and set the
+@tt{cdr} of @tt{x} to @tt{'()}. The list @tt{v} is now @tt{'(a)}. Then
+we call @tt{loop} again, as @tt{(loop temp x)}.
+
+Since @tt{temp}, the new @tt{x}, is not null, we set aside its @tt{cdr}
+and set the @tt{cdr} to be the list @tt{'(a)}. The list is now @tt{'(b a)}.
+We then call @tt{(loop temp x)} again.
+
+We continue looping until @tt{temp} is empty, which will happen after
+every element of the list has been prepended to the front of the list
+we are now calling @tt{x}. This list is then returned. However, the original
+list is still set to @tt{'(a)} -- that is, what @tt{x} was set to in the
+first loop. @tt{x} still has the value from the first loop because subsequent
+calls to @tt{loop} shadowed it, resulting in the modification of other
+lists. The only lists we are left with are this shortened version of @tt{x}
+and the fully-reversed original list.
+
+It would possibly be more useful to define a procedure that points @tt{x}
+to the reversed list. In that way, we could reverse a list in place, with
+the list taking on the name of its reversed self. However, doing so is
+fraught with peril. We can't simply make @tt{mystery} return
+@tt{(set! x (loop x '()))} because this will only change what the name
+@tt{x} points to, not the actual list passed in as a parameter. And
+using @tt{set-car!} and @tt{set-cdr!} to change this list is also dangerous.
+Suppose we do something like
+
+@codeblock{
+(let ((reversed (loop x '())))
+  (set-car! x (car reversed))
+  (set-cdr! x (cdr reversed)))
+}
+
+This looks like it will set @tt{x} to be the list made up of the
+components of the reversed list. However, it does not do this.
+First we set the first element of @tt{x} to be the first element
+of the reversed list. However, this also changes the value at the
+end of the reversed list, making it @tt{'(c b d)}! And then setting
+the rest of @tt{x} to be the rest of the reversed list, where the last
+element of the reversed list is actually @tt{x}, will create a cycle.
+
+@bold{TODO: Can we actually solve this?}
+
+@section[#:tag "c3e15"]{Exercise 3.15}
+
+@bold{TODO: Art}
+
+@section[#:tag "c3e16"]{Exercise 3.16}
+
+@bold{I'm not sure I understand what this question is asking. TODO}
+
+@section[#:tag "c3e17"]{Exercise 3.17}
+
+@bold{TODO}
+
+@section[#:tag "c3e18"]{Exercise 3.18}
+
+Detecting cycles can be done simply. We can traverse the list and keep a
+list of all the entries we've seen so far, and if we ever run into a node
+that's already in the list of things we've seen, then we know we have a cycle.
+
+@codeblock{
+(define (detect-cycle l)
+  (define (update l seen)
+    (cond ((null? l) #f)
+          ((contains seen l) #t)
+          (else
+           (update (cdr l) (cons l seen)))))
+  (update l '()))
+}
+
+One thing to notice about this procedure is that the @tt{seen} list contains
+references to entire lists, and not just the @tt{car}s of the lists. This is
+important:  We really want to see if we pass by an entire list we've already
+seen before, not just a value we've seen before. Otherwise, the list
+@tt{'(1 2 1 2)} would contain a cycle.
+
+The @tt{contains} procedure is mostly trivial. Notice how it compares
+@tt{(car lst)} to @tt{v} -- this is because every entry in the @tt{seen}
+list is in fact a list, and @tt{(car lst)} gives us one of those lists.
+
+@codeblock{
+(define (contains lst v)
+  (cond ((null? lst) #f)
+        ((eq? (car lst) v) #t)
+        (else
+         (contains (cdr lst) v))))
+}
+
+@section[#:tag "c3e19"]{Exercise 3.19}
+
+We can detect cycles in constant space by using two pointers into the list.
+The basic idea is that we have the two pointers traverse the list at
+different speeds -- one moving forward one entry at a time, and the other
+by two. At some point, if the list contains a cycle, these two pointers
+will point to the same thing. Alternatively, if a pointer reaches the end
+of the list before this happens, we know we don't have a cycle.
+
+@codeblock{
+(define (tortoise-hare l)
+  (define (loop tortoise hare)
+    (cond ((or (null? tortoise)
+               (null? hare))
+           #f)
+          ((eq? tortoise hare) #t)
+          (else
+           (let ((t2 (cdr tortoise))
+                 (h2 (cdr hare)))
+             (if (null? h2)
+                 (loop t2 h2)
+                 (loop t2 (cdr h2)))))))
+  (loop l (cdr l)))
+}
+
+@section[#:tag "c3e20"]{Exercise 3.20}
