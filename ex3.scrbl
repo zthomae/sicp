@@ -441,7 +441,7 @@ that's already in the list of things we've seen, then we know we have a cycle.
 
 One thing to notice about this procedure is that the @tt{seen} list contains
 references to entire lists, and not just the @tt{car}s of the lists. This is
-important:  We really want to see if we pass by an entire list we've already
+important: We really want to see if we pass by an entire list we've already
 seen before, not just a value we've seen before. Otherwise, the list
 @tt{'(1 2 1 2)} would contain a cycle.
 
@@ -483,3 +483,203 @@ of the list before this happens, we know we don't have a cycle.
 }
 
 @section[#:tag "c3e20"]{Exercise 3.20}
+
+@bold{TODO}
+
+@section[#:tag "c3e21"]{Exercise 3.21}
+
+Ben expects the queue to be printed like a list, with the front
+item of the queue first and the rear item last. However, the queue
+data structure is not a list: It is merely a pair of pointers to
+lists. The REPL prints this as a pair, with the first entry being
+the list starting at the front pointer and the second being the list
+starting from the rear pointer (which only has one element). Deleting
+the first element of a two-element queue will make the front pointer
+and the rear pointer both point to a list of one item, for example.
+
+Additionally, Ben is confused because removing all the entries from
+the queue still leaves the rear pointer pointing to @tt{'b}. This
+is because the implementation of @tt{delete-queue!} doesn't bother
+to clear the rear pointer, knowing that the emptiness of the queue
+is checked by only using the front pointer. This is reasonable,
+although it will have consequences for garbage collection.
+
+However, printing the queue as a list is actually easy, since the
+items in the queue are connected to each other in a list structure.
+All you have to do is print the list starting from the front pointer.
+
+@codeblock{
+(define (print-queue queue)
+  (display (car queue))
+  (newline))
+}
+
+It would perhaps be more useful to return the queue, since this might
+be useful for other purposes and the REPL will print the result anyway,
+but this is completely trivial (even more than the above was).
+
+@section[#:tag "c3e22"]{Exercise 3.22}
+
+Implementing a queue as a mutable object is not difficult. The internal
+procedures are almost exactly the same, except they no longer take a queue
+as a parameter, because they're internal to the queue now. Additionally,
+the @tt{front-ptr} and @tt{rear-ptr} procedures are no longer needed because
+these are stored as internal definitions that can be accessed directly.
+
+One thing to note is that all of the calls to @tt{dispatch} return procedures
+-- even if the procedure returned takes no argument.
+
+@codeblock{
+(define (make-queue)
+  (let ((front-ptr '())
+        (rear-ptr '()))
+    (define (empty-queue?)
+      (null? front-ptr))
+    (define (front-queue)
+      (if (empty-queue?)
+          (error "FRONT called with an empty queue")
+          (car front-ptr)))
+    (define (insert-queue! item)
+      (let ((new-pair (cons item '())))
+        (cond ((empty-queue?)
+               (set! front-ptr new-pair)
+               (set! rear-ptr new-pair))
+              (else
+               (set-cdr! rear-ptr new-pair)
+               (set! rear-ptr new-pair)))))
+    (define (delete-queue!)
+      (cond ((empty-queue?)
+             (error "DELETE! called with an empty queue"))
+            (else
+             (set! front-ptr (cdr front-ptr)))))
+    (define (dispatch m)
+      (cond ((eq? m 'empty-queue?)
+             empty-queue?)
+            ((eq? m 'front-queue)
+             front-queue)
+            ((eq? m 'insert-queue!)
+             insert-queue!)
+            ((eq? m 'delete-queue!)
+             delete-queue!)))
+    dispatch))
+}
+
+@section[#:tag "c3e23"]{Exercise 3.23}
+
+In order to make a deque with @tt{O(1)} insertion and deletion operations,
+we need to use a new data structure: A doubly-linked list. This allows us
+to add and remove from the deque at both ends in constant time. Otherwise,
+for example, it would be impossible to remove the item at the rear of
+the queue without traversing through the entire deque to get a pointer
+to the item before it.
+
+I've chosen to represent a doubly-linked list as a list of lists. Each inner
+list represents a node, and has three values: The value of the node, the
+pointer to the next item in the list, and the pointer to the previous
+item in the list. Nodes on the ends of the deque will have @tt{nil} pointers
+in one (or both) of these places.
+
+I've chosen to implement a deque as a mutable object with pointers to the
+front and rear, like in the last example. The code is not especially difficult,
+but it is a bit longer than usual examples.
+
+There are a few things to note about it, in particular the special cases that
+occur when adding nodes to an empty deque or removing the last node. However,
+there is a symmetry between the operations that occur at the front and rear
+ends of the deque.
+
+@codeblock{
+(define (make-deque)
+  (let ((front-ptr '()))
+    (let ((rear-ptr front-ptr))
+      (define (set-next-ptr from to)
+        (set-car! (cdr from) to))
+      (define (set-prev-ptr from to)
+        (set-car! (cddr from) to))
+      (define (empty-deque?)
+        (null? front-ptr))
+      (define (front-deque)
+        (if (empty-deque?)
+            (error "FRONT-DEQUE called on empty deque")
+            (car front-ptr)))
+      (define (rear-deque)
+        (if (empty-deque?)
+            (error "REAR-DEQUE called on empty deque")
+            (car rear-ptr)))
+      (define (front-insert-deque! item)
+        (let ((new-item (list item front-ptr nil)))
+          (if (empty-deque?)
+              (begin
+                (set! front-ptr new-item)
+                (set! rear-ptr new-item))
+              (begin
+                (set-prev-ptr front-ptr new-item)
+                (set! front-ptr new-item)))))
+      (define (rear-insert-deque! item)
+        (let ((new-item (list item nil rear-ptr)))
+          (if (empty-deque?)
+              (begin
+                (set! front-ptr new-item)
+                (set! rear-ptr new-item))
+              (begin
+                (set-next-ptr rear-ptr new-item)
+                (set! rear-ptr new-item)))))
+      (define (front-delete-deque!)
+        (if (empty-deque?)
+            (error "FRONT-DELETE-DEQUE! called on empty deque")
+            (begin
+              (set! front-ptr (cadr front-ptr))
+              (if (null? front-ptr)
+                  (set! rear-ptr front-ptr)
+                  (set-prev-ptr front-ptr nil)))))
+      (define (rear-delete-deque!)
+        (if (empty-deque?)
+            (error "REAR-DELETE-DEQUE! called on empty deque")
+            (begin
+              (set! rear-ptr (caddr rear-ptr))
+              (if (null? rear-ptr)
+                  (set! front-ptr rear-ptr)
+                  (set-next-ptr rear-ptr nil)))))
+      (define (dispatch m)
+        (cond ((eq? m 'empty-deque?) empty-deque?)
+              ((eq? m 'front-deque) front-deque)
+              ((eq? m 'rear-deque) rear-deque)
+              ((eq? m 'front-insert-deque!) front-insert-deque!)
+              ((eq? m 'rear-insert-deque!) rear-insert-deque!)
+              ((eq? m 'front-delete-deque!) front-delete-deque!)
+              ((eq? m 'rear-delete-deque!) rear-delete-deque!)
+              (else
+               (error "unknown message" m))))
+      dispatch)))
+}
+
+At this point, I think it should be mentioned that I dislike using the
+calling conventions for these mutable data objects. I prefer dealing
+with functions that take objects as parameters. However, it isn't difficult
+to create those functions on top of an object like this.
+
+@codeblock{
+(define (empty-deque? dq)
+  ((dq 'empty-deque?)))
+
+(define (front-deque dq)
+  ((dq 'front-deque)))
+
+(define (rear-deque dq)
+  ((dq 'rear-deque)))
+
+(define (front-insert-deque! dq item)
+  ((dq 'front-insert-deque!) item))
+
+(define (rear-insert-deque! dq item)
+  ((dq 'rear-insert-deque!) item))
+
+(define (front-delete-deque! dq)
+  ((dq 'front-delete-deque!)))
+
+(define (rear-delete-deque! dq)
+  ((dq 'rear-delete-deque!)))
+}
+
+@section[#:tag "c3e24"]{Exercise 3.24}
+
