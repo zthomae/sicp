@@ -1,7 +1,7 @@
 SICP Solutions
 --------------
 
-These are my solutions to the exercise in the
+These are my solutions to the exercises in the
 [Structure and Interpretation of Computer Programs](https://mitpress.mit.edu/sicp/full-text/book/book.html)
 written with [Scribble](http://docs.racket-lang.org/scribble/). Occasionally
 I make progress on these.
