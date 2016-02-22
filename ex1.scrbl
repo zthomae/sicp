@@ -54,10 +54,12 @@ example will evaluate to @tt{0}.
 @section[#:tag "c1e6"]{Exercise 1.6}
 
 The @tt{sqrt-iter} procedure using the @tt{new-if} procedure never terminates.
-This has to do with how all operands are evaluated, unlike with the
-special form @tt{if}.
 
-@bold{TODO: Elaborate}
+When evaluating a function in applicative order, the operands are evaluated
+first, and then the function is applied to the evaluated operands. This means
+that, when evaluating a function using @tt{new-if}, both branches of the
+conditional will always be evaluated, meaning that even when the recursion
+should end, it won't. Thus the procedure will never terminate.
 
 @section[#:tag "c1e7"]{Exercise 1.7}
 
