@@ -1,46 +1,40 @@
 #lang scribble/manual
 
 @require[scribble/lp]
-@require["extra.rkt"]
 
 @title[#:version "" #:style 'toc]{Chapter 1}
 
+@(require racket/sandbox
+          scribble/eval)
+          @(define my-evaluator
+             (parameterize ([sandbox-output 'string]
+                               [sandbox-error-output 'string])
+                                    (make-evaluator 'racket/base)))
+                                    
 @local-table-of-contents[]
 
 @section[#:tag "c1e1"]{Exercise 1.1}
 
-@repl["10" "10"]
-
-@repl["(+ 5 3 4)" "12"]
-
-@repl["(- 9 1)" "8"]
-
-@repl["(/ 6 2)" "3"]
-
-@repl["(+ (* 2 4) (- 4 6))" "6"]
-
-@repl["(define a 3)" ""]
-
-@repl["(define b (+ a 1))" ""]
-
-@repl["(+ a b (* a b))" "19"]
-
-@repl["(= a b)" "#f"]
-
-@repl["(if (and (> b a) (< b (* a b)))
-           b
-           a)" "4"]
-
-@repl["(cond ((= a 4) 6)
-             ((= b 4) (+ 6 7 a))
-             (else 25))" "16"]
-
-@repl["(+ 2 (if (> b a) b a))" "6"]
-
-@repl["(* (cond ((> a b) a)
-               ((< a b) b)
-               (else -1))
-         (+ a 1))" "16"]
+@examples[#:eval my-evaluator
+         10
+         (- 9 1)
+         (/ 6 2)
+         (+ (* 2 4) (- 4 6))
+         (define a 3)
+         (define b (+ a 1))
+         (+ a b (* a b))
+         (= a b)
+         (if (and (> b a) (< b (* a b)))
+             b
+             a)
+         (cond ((= a 4) 6)
+               ((= b 4) (+ 6 7 a))
+               (else 25))
+         (+ 2 (if (> b a) b a))
+         (* (cond ((> a b) a)
+                  ((< a b) b)
+                  (else -1))
+            (+ a 1))]
 
 @section[#:tag "c1e2"]{Exercise 1.2}
 
