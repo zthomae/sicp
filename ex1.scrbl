@@ -1,21 +1,16 @@
 #lang scribble/manual
 
 @require[scribble/lp]
+@require[scribble/eval]
+@require["eval.rkt"]
 
 @title[#:version "" #:style 'toc]{Chapter 1}
-
-@(require racket/sandbox
-          scribble/eval)
-          @(define my-evaluator
-             (parameterize ([sandbox-output 'string]
-                               [sandbox-error-output 'string])
-                                    (make-evaluator 'racket/base)))
                                     
 @local-table-of-contents[]
 
 @section[#:tag "c1e1"]{Exercise 1.1}
 
-@examples[#:eval my-evaluator
+@examples[#:eval @make-eval[]
          10
          (- 9 1)
          (/ 6 2)

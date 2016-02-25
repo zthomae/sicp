@@ -1,4 +1,4 @@
-solutions: solutions.scrbl ex1.scrbl ex2.scrbl ex3.scrbl extra.rkt
+solutions: solutions.scrbl ex1.scrbl ex2.scrbl ex3.scrbl eval.rkt
 	rm -rf solutions/
 	raco scribble --htmls --dest . solutions.scrbl
 
