@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 @require[scribble/lp]
-@require[scribble/eval]
+@require[scribble/examples]
 @require["eval.rkt"]
 
 @title[#:version "" #:style 'toc]{Chapter 1}
@@ -770,16 +770,38 @@ of multiple summations or something else more complicated than this.
 
 Comparing outputs with the book:
 
-@verbatim|{
-> (integral cube 0 1 0.01)
-0.24998750000000042
-> (integral cube 0 1 0.001)
-0.249999875000001
-> (simpson-integral cube 0 1 100.0)
-0.24999999999999992
-> (simpson-integral cube 0 1 1000.0)
-0.2500000000000003
-}|
+@define[ev @make-eval[]]
+@examples[#:eval ev
+          #:hidden
+(define (sum term a next b)
+  (if (> a b)
+      0
+      (+ (term a)
+         (sum term (next a) next b))))
+(define (cube x) (* x x x))
+(define (inc x) (+ x 1))
+(define (divides? a b)
+   (= (remainder b a) 0))
+(define (integral f a b dx)
+  (define (add-dx x) (+ x dx))
+    (* (sum f (+ a (/ dx 2.0)) add-dx b)
+         dx))
+(define (simpson-integral f a b n)
+  (define h (/ (- b a) n))
+  (define (term k)
+    (let ((y (f (+ a (* k h)))))
+      (cond ((= k 0) y)
+            ((= k n) y)
+            ((divides? 2 k) (* 2 y))
+            (else (* 4 y)))))
+  (* (/ h 3) (sum term 1 inc n)))]
+
+@examples[#:eval ev
+(integral cube 0 1 0.01)
+(integral cube 0 1 0.001)
+(simpson-integral cube 0 1 100.0)
+(simpson-integral cube 0 1 1000.0)
+]
 
 @section[#:tag "c1e30"]{Exercise 1.30}
 
