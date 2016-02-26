@@ -1,10 +1,28 @@
 #lang scribble/manual
 
 @require[scribble/lp]
+@require[scribble/examples]
+@require["eval.rkt"]
 
 @title[#:version "" #:style 'toc]{Chapter 2}
 
 @local-table-of-contents[]
+
+@define[ev @make-eval[]]
+
+@; TODO: Get working with a real sicp language
+@examples[#:eval ev #:hidden
+(define (square x) (* x x))
+(define (cube x) (* x x x))
+(define true #t)
+(define false #f)
+(define nil '())
+(define (identity x) x)
+(define (inc x) (+ x 1))
+(define (dec x) (- x 1))
+;(define (runtime)
+;  (inexact->exact (truncate (* 1000 (current-inexact-milliseconds)))))
+]
 
 @section[#:tag "c2e1"]{Exercise 2.1}
 
@@ -12,7 +30,7 @@ This new @tt{make-rat} procedure is ultimately a case analysis. There are
 many ways to do it -- I have chosen one that handles both cases of negative
 rational numbers in one case.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-rat n d)
   (cond ((and (> n 0) (> d 0))
          (cons n d))
@@ -20,7 +38,7 @@ rational numbers in one case.
          (cons (abs n) (abs d)))
         (else
          (cons (* -1 (abs n)) (abs d)))))
-}
+]
 
 @section[#:tag "c2e2"]{Exercise 2.2}
 
@@ -29,53 +47,53 @@ just operations on pairs of their parts.  @tt{make-segment} and @tt{make-point} 
 to @tt{cons}, @tt{start-segment} and @tt{x-point} are both @tt{car}s, and @tt{end-segment} and
 @tt{y-point} are both @tt{cdr}s.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-segment start end)
   (cons start end))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (start-segment segment)
   (car segment))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (end-segment segment)
   (cdr segment))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-point x y)
   (cons x y))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (x-point point)
   (car point))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (y-point point)
   (cdr point))
-}
+]
 
 @tt{midpoint-segment} is a simple operation relying on an @tt{average} procedure that
 is trivial enough to not include here.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (midpoint-segment s)
   (let ((x (average (x-point (start-segment s))
                     (x-point (end-segment s))))
         (y (average (y-point (start-segment s))
                     (y-point (end-segment s)))))
     (make-point x y)))
-}
+]
 
 To illustrate the power of these similar means of abstraction even more, we can
 generalize the @tt{print-point} procedure. The original as listed in the exercise
 is as follows:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (print-point p)
   (newline)
   (display "(")
@@ -83,7 +101,7 @@ is as follows:
   (display ",")
   (display (y-point p))
   (display ")"))
-}
+]
 
 We could implement a separate @tt{print-segment} procedure that calls @tt{print-point},
 but I believe we can do better. @tt{print-point} can be imagined as an instance
@@ -100,14 +118,14 @@ of a process doing the following things:
 Therefore, we could write a generalized @tt{print-pair} procedure and implement
 @tt{print-point}, and also a new procedure @tt{print-segment}, with it.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (print-pair pair pre between end inner-print)
   (display pre)
   (display (car pair))
   (display between)
   (display (cdr pair))
   (display end))
-}
+]
 
 However, while this will work perfectly well for reimplementing @tt{print-point},
 it works less than well for making @tt{print-segment}. It would be desirable to
@@ -118,26 +136,26 @@ we should do better. This can be done by supplying one more argument to print-pa
 an @tt{inner-print} procedure that is called to print the @tt{car} and @tt{cdr} of the pair
 And so we get the actual @tt{print-pair} procedure:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (print-pair pair pre between end inner-print)
   (display pre)
   (inner-print (car pair))
   (display between)
   (inner-print (cdr pair))
   (display end))
-}
+]
 
 And with this, we can make @tt{print-point} and @tt{print-segment}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (print-point p)
   (print-pair p "(" "," ")" display))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (print-segment s)
   (print-pair s "" " -> " "" print-point))
-}
+]
 
 There is another benefit that we can get out of this. Suppose we implemented
 @tt{print-segment} using the first version of @tt{print-point} given in the book.
@@ -147,10 +165,10 @@ new @tt{print-point} procedure. This is significantly easier to handle with the 
 @tt{print-pair} procedure -- we can simply supply newlines to be printed wherever
 we want. The problem could be solved like so:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (println-segment s)
   (print-pair s "" " -> " "\n" print-point))
-}
+]
 
 It would be even better if the @tt{car}s and @tt{cdr}s of the pairs sent to
 @tt{print-pair} knew how to print themselves, but that is getting beyond the scope
@@ -172,7 +190,7 @@ need to be tested in both of the construction procedures.
 
 First, the procedures for making rectangles out of width and height line segments:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-rectangle-segments width height)
   (define (is-origin point)
     (= 0 (x-point point) (y-point point)))
@@ -187,7 +205,7 @@ First, the procedures for making rectangles out of width and height line segment
           ((not (= 0 (x-point (end-segment height))))
            (error "height segment must have no x component"))
           (else (cons width height)))))
-}
+]
 
 This procedure is, after error-checking to make sure both the width and height
 segments begin from the origin and that they are both parallel to their
@@ -198,32 +216,32 @@ calculate the area and perimeter of the rectangle, we need to get the
 width and height of the rectangle as numbers. By extracting the coordinates
 from the ends of the width and height segments, we can do this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (get-width-segment rect) (car rect))
 
 (define (get-width rect)
   (x-point (end-segment (get-width-segment rect))))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (get-height-segment rect) (cdr rect))
 
 (define (get-height rect)
   (y-point (end-segment (get-height-segment rect))))
-}
+]
 
 Then we can calculate the area and perimeter using these @tt{get-width} and
 @tt{get-height} procedures:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (area rect)
   (* (get-width rect) (get-height rect)))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (perimeter rect)
   (* 2 (+ (get-width rect) (get-height rect))))
-}
+]
 
 Now let's move on to our second representation, using a bottom ("width") corner
 and a top ("height") corner -- or perhaps it's better to describe this as being
@@ -233,33 +251,33 @@ the new procedure @tt{make-rectangle-points} is simpler in providing the same
 guarantees as @tt{make-rectangle-segments}, because it has no origins points in
 line segments to check.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-rectangle-points width-corner height-corner)
   (cond ((not (= 0 (y-point width-corner)))
          (error ("width corner must have no y component")))
         ((not (= 0 (x-point height-corner)))
          (error ("height corner must have no x component")))
         (else (cons width-corner height-corner))))
-}
+]
 
 Getting the width and height of the rectangle is also easier, since there
 are fewer data structures to traverse:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (get-width-corner rect)
   (car rect))
 
 (define (get-width rect)
   (x-point (get-width-corner rect)))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (get-height-corner rect)
   (cdr rect))
 
 (define (get-height rect)
   (y-point (get-height-corner rect)))
-}
+]
 
 And with that, we can use @tt{area} and @tt{perimeter} just as before.
 
@@ -272,15 +290,17 @@ standard interfaces like @tt{make-rectangle}, @tt{get-width}, and
 
 The definitions of @tt{cons} and @tt{car} we are given are as follows:
 
-@codeblock{
+@define[cons-ev @make-eval[]]
+
+@examples[#:eval cons-ev #:no-prompt
 (define (cons x y)
   (lambda (m) (m x y)))
-}
+]
 
-@codeblock{
+@examples[#:eval cons-ev #:no-prompt
 (define (car z)
   (z (lambda (p q) p)))
-}
+]
 
 @tt{cons} is a procedure of two arguments, @tt{x} and @tt{y}, that returns a
 procedure of one argument, @tt{m}, that calls @tt{m} on @tt{x} and @tt{y}.
@@ -303,10 +323,10 @@ that @tt{car} is correct.
 We can do similarly for @tt{cdr}. Its definition is almost identical to @tt{car}'s,
 except it passes a procedure returning its second of two arguments.
 
-@codeblock{
+@examples[#:eval cons-ev #:no-prompt
 (define (cdr z)
   (z (lambda (p q) q)))
-}
+]
 
 Using the substitution model to evaluate:
 
@@ -326,14 +346,14 @@ y
 
 @bold{TODO: Words}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define zero (lambda (f) (lambda (x) x)))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (add-1 n)
   (lambda (f) (lambda (x) (f ((n f) x)))))
-}
+]
 
 @verbatim{
 (n f)
@@ -351,7 +371,7 @@ x
 (lambda (f) (lambda (x) (f x)))
 }
 
-@codeblock{
+@verbatim{
 (define one (lambda (f) (lambda (x) (f x))))
 }
 
@@ -371,16 +391,16 @@ x
 (lambda (f) (lambda (x) (f (f x))))
 }
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define two (lambda (f) (lambda (x) (f (f x)))))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (add-church m n)
   (lambda (f)
     (lambda (x)
       ((m f) ((n f) x)))))
-}
+]
 
 @section[#:tag "c2e7"]{Exercise 2.7}
 
@@ -388,22 +408,26 @@ We can see by examining the implementations of the operations that @tt{make-inte
 takes the lower bound as the first parameter and the upper bound as the second. For
 example, in @tt{add-interval}:
 
-@codeblock{
+@examples[#:eval ev #:hidden
+(define (make-interval a b) (cons a b))
+]
+
+@examples[#:eval ev #:no-prompt
 (define (add-interval x y)
   (make-interval (+ (lower-bound x) (lower-bound y))
                  (+ (upper-bound x) (upper-bound y))))
-}
+]
 
 Therefore, knowing that @tt{make-interval} is a @tt{cons} call, we know to define
 @tt{lower-bound} and @tt{upper-bound} as so:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (lower-bound i) (car i))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (upper-bound i) (cdr i))
-}
+]
 
 @section[#:tag "c2e8"]{Exercise 2.8}
 
@@ -414,19 +438,19 @@ sum of the arguments' upper bounds. We can define a similar procedure
 where the lower bound is the difference between the two lower bounds (and similarly
 for the upper bound).
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (sub-interval x y)
   (make-interval (- (lower-bound x) (lower-bound y))
                  (- (lower-bound x) (lower-bound y))))
-}
+]
 
 @section[#:tag "c2e9"]{Exercise 2.9}
 
 First, a definition of the @tt{width} procedure:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (width x) (/ (- (upper-bound x) (lower-bound x)) 2))
-}
+]
 
 We can use algebra to define the widths of the sum and difference of intervals
 in terms of the widths of the operands:
@@ -454,20 +478,32 @@ divided) by a third interval.
 I could demonstrate this algebraically, but instead I will operate on the intervals
 using our procedures:
 
-@verbatim{
+@examples[#:eval ev #:hidden
+(define (mul-interval x y)
+  (let ((p1 (* (lower-bound x) (lower-bound y)))
+        (p2 (* (lower-bound x) (upper-bound y)))
+        (p3 (* (upper-bound x) (lower-bound y)))
+        (p4 (* (upper-bound x) (upper-bound y))))
+    (make-interval (min p1 p2 p3 p4)
+                   (max p1 p2 p3 p4))))
+
+(define (div-interval x y)
+  (mul-interval x
+                (make-interval (/ 1.0 (upper-bound y))
+                               (/ 1.0 (lower-bound y)))))
+]
+
+@examples[#:eval ev
 (define i1 (make-interval 0 5))
 (define i2 (make-interval 5 10))
 (= (width i1) (width i2))
-=> #t
 
 (define i3 (make-interval 1 10))
 
 (= (width (mul-interval i1 i3)) (width (mul-interval i2 i3)))
-=> #f
 
 (= (width (div-interval i1 i3)) (width (div-interval i2 i3)))
-=> #f
-}
+]
 
 @section[#:tag "c2e10"]{Exercise 2.10}
 
@@ -477,15 +513,15 @@ to divide by an interval that spans zero?
 When in doubt, we can manipulate interval with our procedures to investigate.
 But first, a procedure for computing the reciprocal of an interval:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (reciprocal i)
   (make-interval (/ 1.0 (upper-bound i))
                  (/ 1.0 (lower-bound i))))
-}
+]
 
 Now we can do the following:
 
-@verbatim{
+@examples[#:eval ev
 (define i1 (make-interval 1 10))
 (define i2 (make-interval -5 5))
 
@@ -493,11 +529,9 @@ Now we can do the following:
 (define ri2 (reciprocal i2))
 
 ri1
-=> (0.1 . 1.0)
 
 ri2
-=> (0.2 . -0.2)
-}
+]
 
 Notice how the upper bound of @tt{ri1} is still greater than the lower bound, but that
 this is @emph{not} true for @tt{ri2}. In other words, taking the reciprocal of an interval
@@ -518,12 +552,12 @@ therefore not valid.
 Fixing Alyssa's code is simple (and more readable because of the new
 @tt{reciprocal} procedure):
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (div-interval x y)
   (if (and (< (lower-bound y) 0) (> (upper-bound y) 0))
       (error "Cannot divide by an interval spanning zero")
       (mul-interval x (reciprocal y))))
-}
+]
 
 @section[#:tag "c2e11"]{Exercise 2.11}
 
@@ -539,12 +573,12 @@ our new procedure agrees with the existing @tt{mul-interval} for all sign combin
 First, a useful procedure that should already have been defined, for determining if
 two intervals are the same:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (equal-intervals? x y)
   (and
    (= (lower-bound x) (lower-bound y))
    (= (upper-bound x) (upper-bound y))))
-}
+]
 
 We can use this to test if multiplied intervals by two different procedures are
 equal. Applying this to every combination of signs for the bounds of two intervals
@@ -552,7 +586,7 @@ equal. Applying this to every combination of signs for the bounds of two interva
 procedure to exhaustively test the nine sign combination cases to make sure that
 our new procedure gets the same result as the old one every time.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (test-new-mul-interval new-mul-interval)
   (define (equal-products? x y)
     (equal-intervals? (mul-interval x y) (new-mul-interval x y)))
@@ -590,7 +624,7 @@ our new procedure gets the same result as the old one every time.
             (make-interval (neg lx) (neg ux)) (make-interval (neg ly) (neg uy))))
       (error "new-mul-interval fails for lx < 0, ux < 0, ly < 0, uy < 0"))
      (else #t))))
-}
+]
 
 The code is not pretty, but it works, and will pinpoint exactly what cases are
 in error. I made mistakes when I first wrote the new multiplication procedure,
@@ -601,7 +635,7 @@ It uses a @tt{cond} statement checking combinations of signs for all bounds (and
 a stylistic choice, leaves the case with more than @tt{2} multiplications for the
 @tt{else} case).
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (mul-interval-ben x y)
   (let ((lx (lower-bound x))
         (ux (upper-bound x))
@@ -627,35 +661,34 @@ a stylistic choice, leaves the case with more than @tt{2} multiplications for th
      (else
       (make-interval (min (* lx uy) (* ux ly))
                      (max (* lx ly) (* ux uy)))))))
-}
+]
 
 And using our testing procedure, we can verify that this procedure is correct:
 
-@verbatim{
+@examples[#:eval ev
 (test-new-mul-interval mul-interval-ben)
-=> #t
-}
+]
 
 @section[#:tag "c2e12"]{Exercise 2.12}
 
 @tt{make-center-percent} is not hard to implement. Just calculate the width
 from the center and the percent and then use @tt{make-center-width}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-center-percent c p)
   (let ((w (* c (/ p 100))))
     (make-center-width c w)))
-}
+]
 
 @tt{percent} can be calculated by subtracting the center from the upper bound
 and then dividing by the width:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (percent i)
   (let ((c (center i))
         (w (width i)))
     (/ (- (upper-bound i) c) w)))
-}
+]
 
 @section[#:tag "c2e13"]{Exercise 2.13}
 
@@ -677,48 +710,60 @@ and then dividing by the width:
 
 @bold{TODO: Words}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (last-pair l)
   (if (null? (cdr l)) l
       (last-pair (cdr l))))
-}
+]
 
 @section[#:tag "c2e18"]{Exercise 2.18}
 
 @bold{TODO: Words}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (reverse l)
   (if (null? (cdr l)) l
       (append (reverse (cdr l)) (list (car l)))))
-}
+]
 
 @section[#:tag "c2e19"]{Exercise 2.19}
 
 @tt{first-denomination}, @tt{except-first-denomination}, and @tt{no-more?} are all primitive
 operations on lists:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (first-denomination coin-values)
   (car coin-values))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (except-first-denomination coin-values)
   (cdr coin-values))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (no-more? coin-values)
   (null? coin-values))
-}
+]
 
 The order of the list @tt{coin-values} does not affect the answer of @tt{cc}:
 
-@verbatim{
+@examples[#:eval ev #:no-prompt
+(define (cc amount coin-values)
+  (cond ((= amount 0) 1)
+        ((or (< amount 0) (no-more? coin-values)) 0)
+        (else
+          (+ (cc amount
+                 (except-first-denomination coin-values))
+             (cc (- amount
+                    (first-denomination coin-values))
+                 coin-values)))))
+]
+
+@examples[#:eval ev
+(define us-coins (list 50 25 10 5 1))
 (= (cc 100 us-coins) (cc 100 (reverse us-coins)))
-=> #t
-}
+]
 
 @section[#:tag "c2e20"]{Exercise 2.20}
 
@@ -726,7 +771,7 @@ I found it easiest to define @tt{same-parity} iteratively, using an iterative in
 procedure taking the first argument, the results list, and the rest of the numbers
 to check as arguments.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (same-parity x . xs)
   (define (is-same-parity? x y)
     (= (remainder x 2) (remainder y 2)))
@@ -737,13 +782,13 @@ to check as arguments.
           (else
            (same-parity-iter x l (cdr xs)))))
   (same-parity-iter x nil xs))
-}
+]
 
 One of the reasons I chose to do it this way is that @tt{same-parity} expects
 its arguments to be individual, rather than in the form of a list. I could
 alternatively have used @tt{apply} to get around this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (same-parity x . xs)
   (define (is-same-parity? x y)
     (= (remainder x 2) (remainder y 2)))
@@ -752,7 +797,7 @@ alternatively have used @tt{apply} to get around this:
          (cons (car xs) (apply same-parity (cons x (cdr xs)))))
         (else
          (apply same-parity (cons x (cdr xs))))))
-}
+]
 
 However, although I have used it before, we technically don't know @tt{apply}
 at this point in the book.
@@ -761,20 +806,20 @@ at this point in the book.
 
 First, the implementation of @tt{square-list} that does not use @tt{map}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (square-list items)
   (if (null? items)
       nil
       (cons (square (car items))
             (square-list (cdr items)))))
-}
+]
 
 And the implementation that does:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (square-list items)
   (map (lambda (x) (square x)) items))
-}
+]
 
 @section[#:tag "c2e22"]{Exercise 2.22}
 
@@ -795,13 +840,13 @@ I have chosen to use @tt{nil} as the return value rather than true. This isn't
 exactly what I'd like to do, but I don't think @tt{for-each} should have a
 return value, and at this time I think this is closer to that.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (for-each f items)
   (if (null? items) nil
       ((lambda ()
          (f (car items))
          (for-each f (cdr items))))))
-}
+]
 
 @section[#:tag "c2e24"]{Exercise 2.24}
 
@@ -811,49 +856,45 @@ Omitted.
 
 I give solutions both in reduced and unreduced form.
 
-@verbatim{
+@examples[#:eval ev
 (define 25-1 (list 1 3 (list 5 7) 9))
 (= 7 (car (cdr (car (cdr (cdr 25-1))))))
-=> #t
+
 (= 7 (car (cdaddr 25-1)))
-=> #t
 
 (define 25-2 (list (list 7)))
 (= 7 (car (car 25-2)))
-=> #t
+
 (= 7 (caar 25-2))
-=> #t
 
 (define 25-3 (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
 (= 7 (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr 25-3)))))))))))))
-=> #t
+
 (= 7 (cadadr (cadadr (cadadr 25-3))))
-=> #t
-}
+]
 
 @section[#:tag "c2e26"]{Exercise 2.26}
 
-@verbatim{
+@examples[#:eval ev
+(define x (list 1 2 3))
+(define y (list 4 5 6))
 (append x y)
-=> (1 2 3 4 5 6)
-}
+]
 
 We get this result because @tt{append} takes two lists and returns a new list
 containing all the items from the first list followed by all the items from
 the second list.
 
-@verbatim{
+@examples[#:eval ev
 (cons x y)
-=> ((1 2 3) 4 5 6)
-}
+]
 
 We get this result because @tt{cons} creates a pair where the first element points
 to the list @tt{(1 2 3)} and is  is the valid list @tt{(4 5 6)}.
 
-@verbatim{
+@examples[#:eval ev
 (list x y)
-=> ((1 2 3) (4 5 6))
-}
+]
 
 We get this result because @tt{list} creates a list structure where the first element
 is the list @tt{(1 2 3)} and the second element is the list @tt{(4 5 6)}.
@@ -875,19 +916,19 @@ is still turned into a list).
 
 The procedure is as follows:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (deep-reverse l)
   (cond
    ((not (pair? l)) l)
    ((null? (cdr l)) (deep-reverse (car l)))
    (else (cons (deep-reverse (cdr l)) (list (deep-reverse (car l)))))))
-}
+]
 
 There need to be three cases here because even though @tt{(deep-reverse (cdr l))} will
 return @tt{nil} if that's what @tt{(cdr l)} is, @tt{cons}ing @tt{nil} in front will
 create the wrong list structure. In other words,
 
-@verbatim{
+@examples[#:eval ev
 (define (deep-reverse l)
   (cond
    ((not (pair? l)) l)
@@ -895,8 +936,7 @@ create the wrong list structure. In other words,
    (else (cons (deep-reverse (cdr l)) (list (deep-reverse (car l)))))))
 
 (deep-reverse x)
-=> ((() ((() 4) 3)) ((() 2) 1))
-}
+]
 
 @section[#:tag "c2e28"]{Exercise 2.28}
 
@@ -905,38 +945,38 @@ non-lists, single-item lists, and general lists. However, the non-pair case
 produces a list, and the general case uses @tt{append} to keep the resulting
 list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (fringe l)
   (cond ((not (pair? l)) (list l))
         ((null? (cdr l)) (fringe (car l)))
         (else (append (fringe (car l)) (fringe (cdr l))))))
-}
+]
 
 @section[#:tag "c2e29"]{Exercise 2.29}
 
 @bold{TODO: Words}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (left-branch mobile)
   (car mobile))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (right-branch mobile)
   (cadr mobile))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (branch-length branch)
   (car branch))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (branch-structure branch)
   (cadr branch))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (weigh-branch branch)
     (let ((s (branch-structure branch)))
       (if (not (list? s)) s
@@ -944,9 +984,9 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
 
 (define (total-weight mobile)
   (+ (weigh-branch (left-branch mobile)) (weigh-branch (right-branch mobile))))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (is-mobile-balanced? mobile)
   (define (torque branch)
     (* (branch-length branch) (weigh-branch branch)))
@@ -961,7 +1001,7 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
         (and
          (are-submobiles-balanced? left)
          (are-submobiles-balanced? right)))))
-}
+]
 
 @bold{TODO: Testing}
 
@@ -972,40 +1012,40 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
 These procedures are direct modifications of the corresponding ones for
 @tt{scale-tree}. This is relevant to the next exercise.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (square-tree tree)
   (cond ((null? tree) nil)
         ((not (pair? tree)) (square tree))
         (else (cons (square-tree (car tree))
                     (square-tree (cdr tree))))))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (square-tree tree)
   (map (lambda (sub-tree)
          (if (pair? sub-tree)
              (square-tree sub-tree)
              (square sub-tree)))
        tree))
-}
+]
 
 @section[#:tag "c2e31"]{Exercise 2.31}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (tree-map proc tree)
   (map (lambda (sub-tree)
          (if (pair? sub-tree)
              (tree-map proc sub-tree)
              (proc sub-tree)))
        tree))
-}
+]
 
 As an example, we could define @tt{scale-tree} this way:
 
-@verbatim{
+@examples[#:eval ev #:no-prompt
 (define (scale-tree tree factor)
   (tree-map (lambda (x) (* x factor)) tree))
-}
+]
 
 @section[#:tag "c2e32"]{Exercise 2.32}
 
@@ -1036,7 +1076,7 @@ a subset of @tt{(cdr s)} is:
 
 The complete procedure is below.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (subsets s)
   (if (null? s)
       (list nil)
@@ -1045,7 +1085,7 @@ The complete procedure is below.
          rest
          (map (lambda (subset) (append subset (list (car s))))
               rest)))))
-}
+]
 
 @section[#:tag "c2e33"]{Exercise 2.33}
 
@@ -1055,26 +1095,32 @@ procedure @tt{cons}ing the result of applying @tt{p} to its first argument
 And since @tt{accumulate} evolves a recursive process, the values of the
 new sequence will be in the right order.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
+
 (define (map p sequence)
   (accumulate (lambda (x y) (cons (p x) y)) nil sequence))
-}
+]
 
 To implement @tt{append}, we set up one sequence as the initial value and
 apply @tt{cons} to successive elements from the other. The second argument
 is used as the initial value because @tt{cons} will append new values to
 the front of the list.
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (append seq1 seq2)
   (accumulate cons seq2 seq1))
-}
+]
 
 To implement @tt{length}, we give a procedure that adds 1 to its second argument.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (length sequence)
   (accumulate (lambda (x y) (+ y 1)) 0 sequence))
-}
+]
 
 @section[#:tag "c2e34"]{Exercise 2.34}
 
@@ -1083,40 +1129,40 @@ In every step, we add @tt{this-coeff} to the product of the already-computed
 
 @bold{TODO: More explanation}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (horner-eval x coefficient-sequence)
   (accumulate (lambda (this-coeff higher-terms) (+ this-coeff (* higher-terms x)))
               0
               coefficient-sequence))
-}
+]
 
 @section[#:tag "c2e35"]{Exercise 2.35}
 
 I can think of a silly way to write @tt{count-leaves} using the template provided
 by the exercise:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (count-leaves t)
   (accumulate (lambda (x y) (+ y 1))
               0
               (map identity (enumerate-tree t))))
-}
+]
 
 Of course, this could be simplified like this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (count-leaves t)
   (accumulate (lambda (x y) (+ y 1)) 0 (enumerate-tree t)))
-}
+]
 
 However, we don't have to write @tt{count-leaves} as an accumulation, because
 we already have an @tt{accumulate} procedure for counting things: @tt{length}
 from @secref{c2e33}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (count-leaves t)
   (length (enumerate-tree t)))
-}
+]
 
 @section[#:tag "c2e36"]{Exercise 2.36}
 
@@ -1124,36 +1170,36 @@ The added parts of the procedure are both based on a simple idea: To get the
 first element of each of @tt{seqs}, you can @tt{map} @tt{car} over them. And
 to get the rest of each of them, you can @tt{map} @tt{cdr} over them.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (accumulate-n op init seqs)
   (if (null? (car seqs))
       nil
       (cons (accumulate op init (map car seqs))
             (accumulate-n op init (map cdr seqs)))))
-}
+]
 
 @section[#:tag "c2e37"]{Exercise 2.37}
 
 @tt{matrix-*-matrix} maps over each row of the matrix a procedure that maps
 multiplication by the scalar @tt{v} over the entries in the row.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (matrix-*-vector m v)
   (map (lambda (r) (map (lambda (e) (* e v)) r)) m))
-}
+]
 
 @tt{transpose} uses @tt{cons} with @tt{accumulate-n} to create a list of lists
 made up of the columns of the original matrix.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (transpose mat)
   (accumulate-n cons nil mat))
-}
+]
 
 @tt{matrix-*-matrix} computes the @tt{dot-product} of each row of @tt{m} with
 each column of @tt{n} (where the columns are found with @tt{transpose}).
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (matrix-*-matrix m n)
   (let ((cols (transpose n)))
     (map
@@ -1161,30 +1207,39 @@ each column of @tt{n} (where the columns are found with @tt{transpose}).
        (map (lambda (col) (dot-product row col))
             cols))
      m)))
-}
+]
 
 @section[#:tag "c2e38"]{Exercise 2.38}
 
-@verbatim{
+@examples[#:eval ev #:hidden
+(define fold-right accumulate)
+]
+
+@examples[#:eval ev
 (fold-right / 1 (list 1 2 3))
-=> 3/2
-}
+]
 
 First @tt{(/ 3 2)} is computed, then this is divided by @tt{1}, making
 @tt{3/2} the final answer.
 
-@verbatim{
+@examples[#:eval ev
+(define (fold-left op initial sequence)
+  (define (iter result rest)
+    (if (null? rest)
+        result
+        (iter (op result (car rest))
+              (cdr rest))))
+  (iter initial sequence))
+
 (fold-left / 1 (list 1 2 3))
-=> 1/6
-}
+]
 
 However, here @tt{1} is divided by @tt{2} first, and then this is divided
 by @tt{3}, making @tt{1/6} the final answer.
 
-@verbatim{
+@examples[#:eval ev
 (fold-right list nil (list 1 2 3))
-=> (1 (2 (3 ())))
-}
+]
 
 First, @tt{3} is @tt{cons}ed with @tt{nil}. Then, @tt{2} is @tt{cons}ed with this.
 Then, @tt{1} is @tt{cons}ed with this. Because a number is always @tt{cons}ed with
@@ -1205,9 +1260,9 @@ a number, this produces the opposite of a list structure.
 
 Writing @tt{reverse} in terms of @tt{fold-right} uses an inner procedure of
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (lambda (x y) (append y (list x)))
-}
+]
 
 @tt{y} contains the list so far (with an initial value of @tt{nil}), while
 @tt{x} is the current element being folded over. The current element gets added
@@ -1215,17 +1270,17 @@ to the end of the list, and since the values in the original list get added
 in reverse order (due to the way the recursive process unfolds), this produces
 a reversed list.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (reverse sequence)
   (fold-right (lambda (x y) (append y (list x))) nil sequence))
-}
+]
 
 Writing @tt{reverse} in terms of @tt{fold-left} is almost identical, with an
 inner procedure of
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (lambda (x y) (append (list y) x))
-}
+]
 
 The two arguments of a procedure passed to @tt{fold-left} are reversed compared to
 those for @tt{fold-right}. So now, @tt{y} is the current element being visited.
@@ -1233,10 +1288,10 @@ Since @tt{fold-left} evolves an iterative process where the elements of the list
 being reversed are operated on in forward order, appending the values to the front
 of the list as they are seen produces a list in reversed order.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (reverse-foldl sequence)
   (fold-left (lambda (x y) (append (list y) x)) nil sequence))
-}
+]
 
 @section[#:tag "c2e40"]{Exercise 2.40}
 
@@ -1249,22 +1304,22 @@ would go from @tt{1} to @tt{0}), which would get ignored when @tt{flatmap}
 clever trick knowing how @tt{flatmap} works, but I prefer it this way. The
 definition of the unique pairs given in the book states that @tt{i > 1} anyway.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (unique-pairs n)
   (map
    (lambda (i)
      (map (lambda (j) (list i j))
           (enumerate-interval 1 (- i 1))))
    (enumerate-interval 2 n)))
-}
+]
 
 @tt{prime-sum-pairs} now looks like this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (prime-sum-pairs n)
   (map make-pair-sum
        (filter prime-sum? (unique-pairs n))))
-}
+]
 
 @section[#:tag "c2e41"]{Exercise 2.41}
 
@@ -1272,7 +1327,7 @@ Outside the main procedure I defined a general procedure
 @tt{make-ordered-triples} for generating ordered triples with positive integer
 values up to @tt{n}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-ordered-triples n)
   (flatmap
    (lambda (i)
@@ -1284,7 +1339,7 @@ values up to @tt{n}:
          (enumerate-interval 1 n)))
       (enumerate-interval 1 n)))
    (enumerate-interval 1 n)))
-}
+]
 
 This procedure uses a pattern found earlier in @tt{unique-pairs} from
 @secref{c2e40}. In the innermost procedure, a list of lists is created with
@@ -1299,7 +1354,7 @@ distinct values summing to @tt{s}, is defined inside
 seen one...). It checks if the sum of the values of the triple equals @tt{s} by
 accumulating @tt{+} from @tt{0}, a basic pattern we've seen before.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (ordered-distinct-triples-sum n s)
   (define (valid-triple? s)
     (lambda (t)
@@ -1309,7 +1364,7 @@ accumulating @tt{+} from @tt{0}, a basic pattern we've seen before.
             (not (= (car t) (caddr t)))
             (not (= (cadr t) (caddr t)))))))
   (filter (valid-triple? s) (make-ordered-triples n)))
-}
+]
 
 @bold{TODO: Rename that procedure. Really.}
 
@@ -1322,18 +1377,18 @@ accumulating @tt{+} from @tt{0}, a basic pattern we've seen before.
 First, a utility procedure for finding if any element in a sequence evaluates
 to true:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (any? s)
   (cond ((null? s) #f)
         ((car s) #t)
         (else (any? (cdr s)))))
-}
+]
 
 We can use this in the @tt{safe?} procedure, testing if the new piece conflicts
 with any of the other ones. This uses a @tt{conflicts?} procedure which tests if
 two pieces lay in the same row or on a diagonal.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (safe? k positions)
   (define (conflicts? positions i j)
     (let ((ri (list-ref positions i))
@@ -1345,7 +1400,7 @@ two pieces lay in the same row or on a diagonal.
    (any?
     (map (lambda (i) (conflicts? positions i (- k 1)))
          (enumerate-interval 0 (- k 2))))))
-}
+]
 
 The procedure @tt{on-diagonal?} has an awkward interface and is sort of
 obscure. Assuming that the @tt{j} is greater than @tt{i}, it returns true if
@@ -1354,7 +1409,7 @@ element in row @tt{i} (meaning the piece in column @tt{j} is diagonally up and t
 the right from that in @tt{i}), or if the reverse is true and the piece in column
 @tt{i} is on an upper diagonal from that in column @tt{j}.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (on-diagonal? i ri j rj)
   ;; assumption: i < j
   (let ((d (- j i)))
@@ -1363,20 +1418,20 @@ the right from that in @tt{i}), or if the reverse is true and the piece in colum
      (= rj (+ ri d))
      ;; case 2: diagonal down
      (= ri (+ rj d)))))
-}
+]
 
 Simply representing the current queen position as a list with one element per queen,
 it is natural that @tt{empty-board} is just an empty list and that @tt{adjoin-position}
 just appends the new position to the end of an existing list:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define empty-board nil)
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (adjoin-position new-row k rest-of-queens)
   (append rest-of-queens (list new-row)))
-}
+]
 
 @tt{adjoin-position} takes the new column @tt{k} in the given @tt{queens} procedure.
 I don't have a use for it.
@@ -1413,7 +1468,7 @@ Chief among these right now is @tt{below}, since we need to place one painter
 on top of another to meet the image specification. We can see by reading the
 provided code that @tt{below} can be sketched like this:
 
-@codeblock{
+@verbatim{
 (define (below low high)
 ;; return a painter with `low' placed below `high'
 )
@@ -1422,7 +1477,7 @@ provided code that @tt{below} can be sketched like this:
 For example, notice how @tt{top-left} is the second argument in the first call to
 @tt{below} and @tt{bottom-right} is the first argument in the second call:
 
-@codeblock{
+@verbatim{
 (define (corner-split painter n)
 ;; ...
           (beside (below painter top-left)
@@ -1435,20 +1490,20 @@ For example, notice how @tt{top-left} is the second argument in the first call t
 work, we can use it properly to place the smaller split painters above the original
 as specified:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (up-split painter n)
   (if (= n 0)
       painter
       (let ((smaller (up-split painter (- n 1))))
         (below painter (beside smaller smaller)))))
-}
+]
 
 @section[#:tag "c2e45"]{Exercise 2.45}
 
 Writing @tt{up-split}, it should have been apparent that it was almost identical to
 @tt{right-split}. Now we generalize it into a general @tt{split} procedure:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (split macro-op micro-op)
   (define (apply-split painter n)
     (if (= n 0)
@@ -1456,7 +1511,7 @@ Writing @tt{up-split}, it should have been apparent that it was almost identical
         (let ((smaller (apply-split painter (- n 1))))
           (macro-op painter (micro-op smaller smaller)))))
   apply-split)
-}
+]
 
 We cannot use a normal @tt{lambda} because the procedure we return has to call itself.
 I chose to use an internal @tt{define} to create the procedure and to return it without
@@ -1466,17 +1521,17 @@ calling it after.
 
 Vectors can simply be another pair joined by @tt{cons}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-vect x y) (cons x y))
 
 (define (xcor-vect v) (car v))
 
 (define (ycor-vect v) (cdr v))
-}
+]
 
 The operators @tt{add-vect}, @tt{sub-vect}, and @tt{scale-vect} are similarly trivial:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (add-vect v1 v2)
   (make-vect (+ (xcor-vect v1) (xcor-vect v2))
              (+ (ycor-vect v1) (ycor-vect v2))))
@@ -1488,30 +1543,30 @@ The operators @tt{add-vect}, @tt{sub-vect}, and @tt{scale-vect} are similarly tr
 (define (scale-vect s v)
   (make-vect (* s (xcor-vect v))
              (* s (ycor-vect v))))
-}
+]
 
 @section[#:tag "c2e47"]{Exercise 2.47}
 
 If frames are defined using a list:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (origin-frame frame) (car frame))
 
 (define (edge1-frame frame) (cadr frame))
 
 (define (edge2-frame frame) (caddr frame))
-}
+]
 
 If frames are defined by @tt{cons}ing an origin vector onto a pair of edge
 vectors:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (origin-frame frame) (car frame))
 
 (define (edge1-frame frame) (cadr frame))
 
 (define (edge2-frame frame) (cddr frame))
-}
+]
 
 Since the only difference is the position of the @tt{edge2} vector, the
 procedures are all identical except for @tt{edge2-frame}. And these are
@@ -1526,6 +1581,7 @@ list-making procedures like @tt{cons} and @tt{append} before rote practice
 reinforced my understanding of the list model and the procedures working in it.
 However, these exercises are very boring to comment on.
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (make-segment start end) (cons start end))
 
@@ -1541,6 +1597,7 @@ These procedures are victims to creeping indentation due to the nested
 
 First, an outline painter:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define outline-painter
   (let ((bottom-left (make-vect 0.0 0.0))
@@ -1557,6 +1614,7 @@ First, an outline painter:
 
 Next, an "X" painter:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define x-painter
   (let ((bottom-left (make-vect 0.0 0.0))
@@ -1575,6 +1633,7 @@ painters working on the corners of a frame, but I won't.
 A painter for a diamond whose corners are the midpoints of the frame (using
 hardcoded midpoints because we are working on the unit frame):
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define diamond-painter
   (let ((bottom (make-vect 0.5 0.0))
@@ -1598,6 +1657,7 @@ worth the work it takes to find these edges based on the images in the book.
 The first, @tt{flip-horiz}, is defined similarly to @tt{flip-vert}, with the new origin
 in the bottom-right corner and the edges coming left and up from it:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (flip-horiz painter)
   (transform-painter painter
@@ -1608,15 +1668,18 @@ in the bottom-right corner and the edges coming left and up from it:
 
 The rest are defined in terms of painter transformations we already have:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (rotate180 painter)
   (flip-vert painter))
 }
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (rotate270 painter)
   (flip-horiz (rotate90 painter)))
 }
+
 @section[#:tag "c2e51"]{Exercise 2.51}
 
 We discussed how @tt{below} worked in @secref{c2e44}. Now we implement that.
@@ -1637,6 +1700,7 @@ nonspecific names @tt{painter1} and @tt{painter2}.
 I believe this procedure is easier to read than the @tt{beside} procedure it is
 supposed to be based on.
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (below painter-bottom painter-top)
   (let ((bottom-left (make-vect 0.0 0.0))
@@ -1674,6 +1738,7 @@ upright at the end. This means turning them @tt{90} degrees clockwise (or
 
 The whole procedure is as follows:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (below bottom top)
   (rotate90
@@ -1688,6 +1753,7 @@ segments to it.
 To modify @tt{corner-split}, I will apply a @tt{flip-horiz} to the base case
 and to the bottom-left painter:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (corner-split painter n)
   (if (= n 0)
@@ -1704,6 +1770,7 @@ and to the bottom-left painter:
 To modify @tt{square-limit}, I will make the patterns face outward by swapping
 the left and right halves in the @tt{square-of-four} call:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (square-limit painter n)
   (let ((combine4 (square-of-four identity flip-horiz
@@ -1715,32 +1782,25 @@ the left and right halves in the @tt{square-of-four} call:
 
 @section[#:tag "c2e53"]{Exercise 2.53}
 
-@verbatim{
+@examples[#:eval ev
 (list 'a 'b 'c)
-=> (a b c)
 
 (list (list 'george))
-=> ((george))
 
 (cdr '((x1 x2) (y1 y2)))
-=> ((y1 y2))
 
 (cadr '((x1 x2) (y1 y2)))
-=> (y1 y2)
 
 (pair? (car '(a short list)))
-=> #f
 
 (memq 'red '((red shoes) (blue socks)))
-=> #f
 
 (memq 'red '(red shoes blue socks))
-=> (red shoes blue socks)
-}
+]
 
 @section[#:tag "c2e54"]{Exercise 2.54}
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (equal? a b)
   (cond
    ((and (null? a) (null? b)) #t)
@@ -1752,7 +1812,7 @@ the left and right halves in the @tt{square-of-four} call:
       (equal? (car a) (car b))
       (equal? (cdr a) (cdr b)))))
    (else #f)))
-}
+]
 
 @section[#:tag "c2e55"]{Exercise 2.55}
 
@@ -1775,21 +1835,21 @@ It is clear from this that @tt{quote} is the corect answer.
 The definitions of @tt{exponentiation?}, @tt{base}, and @tt{exponent} are
 trivial, basically identical to similar procedures for other operations:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (exponentiation? x)
   (and (pair? x) (eq? (car x) '**)))
 
 (define (base x) (cadr x))
 
 (define (exponent x) (caddr x))
-}
+]
 
 @tt{make-exponentiation} also follows the template of similar procedures for
 sums and products. In addition to the base cases for exponents of @tt{0} and
 @tt{1} that we were asked to do, I have handled the cases for bases of @tt{0}
 and @tt{1}, as well as the case of a constant raised to a constant power.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-exponentiation base exponent)
   (cond ((=number? exponent 0) 1)
         ((=number? exponent 1) base)
@@ -1798,7 +1858,7 @@ and @tt{1}, as well as the case of a constant raised to a constant power.
         ((and (number? base) (number? exponent))
          (expt base exponent))
         (else (list '** base exponent))))
-}
+]
 
 However, the rule we are implementing only refers to expressions being raised
 to constant powers. We could check that the exponent is a number in
@@ -1809,16 +1869,41 @@ an expression is an exponentiation with a constant exponent. This procedure is
 used inside @tt{deriv} to implement the power rule. A simple implementation is
 as follows:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (constant-exponentiation? x)
   (and (exponentiation? x) (number? (exponent x))))
-}
+]
 
 @bold{TODO: non-simple implementation}
 
 Finally, the extended @tt{deriv} is as follows:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
+(define (variable? x) (symbol? x))
+(define (same-variable? v1 v2)
+  (and (variable? v1) (variable? v2) (eq? v1 v2)))
+(define (=number? exp num)
+  (and (number? exp) (= exp num)))
+(define (make-sum a1 a2)
+  (cond ((=number? a1 0) a2)
+        ((=number? a2 0) a1)
+        ((and (number? a1) (number? a2)) (+ a1 a2))
+        (else (list '+ a1 a2))))
+(define (make-product m1 m2)
+  (cond ((or (=number? m1 0) (=number? m2 0)) 0)
+        ((=number? m1 1) m2)
+        ((=number? m2 1) m1)
+        ((and (number? m1) (number? m2)) (* m1 m2))
+        (else (list '* m1 m2))))
+(define (sum? x)
+  (and (pair? x) (eq? (car x) '+)))
+(define (addend s) (cadr s))
+(define (augend s) (caddr s))
+(define (product? x)
+  (and (pair? x) (eq? (car x) '*)))
+(define (multiplier p) (cadr p))
+(define (multiplicand p) (caddr p))
+
 (define (deriv exp var)
   (cond ((number? exp) 0)
         ((variable? exp)
@@ -1841,7 +1926,7 @@ Finally, the extended @tt{deriv} is as follows:
           (deriv (base exp) var)))
         (else
          (error "unknown expression type -- DERIV" exp))))
-}
+]
 
 @section[#:tag "c2e57"]{Exercise 2.57}
 
@@ -1854,7 +1939,7 @@ already have) if there is one term left, and otherwise return a new sum (or
 product). We do not have to change @tt{deriv} at all. The implementations are
 below.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (augend s)
   (if (null? (cdddr s))
       (caddr s)
@@ -1864,17 +1949,15 @@ below.
   (if (null? (cdddr p))
       (caddr p)
       (append (list '*) (cddr p))))
-}
+]
 
 We can verify that this works by taking the book's cue:
 
-@verbatim{
+@examples[#:eval ev
 (equal?
  (deriv '(* (* x y) (+ x 3)) 'x)
  (deriv '(* x y (+ x 3)) 'x))
-
-=> #t
-}
+]
 
 @section[#:tag "c2e58"]{Exercise 2.58}
 
@@ -1882,18 +1965,18 @@ Changing to fully-parenthesized prefix notation is simple: In
 operation-selection procedures for the first argument (e.g. @tt{addend}), use
 @tt{car}.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (addend s) (car s))
 
 (define (multiplier p) (car p))
 
 (define (base x) (car x))
-}
+]
 
 Then, inside the operation-construction procedures (e.g. @tt{make-sum}), swap
 the positions of the operator and the first argument in the list.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (make-sum a1 a2)
   (cond ((=number? a1 0) a2)
         ((=number? a2 0) a1)
@@ -1915,13 +1998,13 @@ the positions of the operator and the first argument in the list.
         ((and (number? base) (number? exponent))
          (expt base exponent))
         (else (list base '** exponent))))
-}
+]
 
 Then, inside all of the operation-detection procedures (e.g. @tt{sum?}), use
 @tt{cadr}. You could also generalize this to an @tt{operator} procedure, but I
 won't.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (sum? x)
   (and (pair? x) (eq? (cadr x) '+)))
 
@@ -1930,7 +2013,7 @@ won't.
 
 (define (exponentiation? x)
   (and (pair? x) (eq? (cadr x) '**)))
-}
+]
 
 To support a more conventional notation with omitted parentheses and an order
 of operations, we need to parse flat structures into more hierarchically
@@ -1972,7 +2055,7 @@ all of the items before and after a specific element in a list. If the element i
 not in the list, we will return false. If there are no elements in a group, we will
 return an empty list for that group.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (find-groups item x)
   (define (group-iter item before after)
     (cond ((null? after) #f)
@@ -1983,26 +2066,26 @@ return an empty list for that group.
                        (append before (list (car after)))
                        (cdr after)))))
   (group-iter item '() x))
-}
+]
 
 Since summing is the least precedent operation, @tt{sum?} is easy to define. We
 can use @tt{find-groups} to determine if @tt{+} is in the expression and if
 there are elements before and after it.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (sum? x)
   (let ((groups (find-groups '+ x)))
     (if groups
         (and (not (null? (car groups)))
              (not (null? (cdr groups))))
         #f)))
-}
+]
 
 To implement @tt{product?}, since addition is the operation below
 multiplication in precedence, we can return true if the expression is a valid
 multiplication and if the expression is not a sum.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (product? x)
   (let ((groups (find-groups '* x)))
     (if groups
@@ -2010,14 +2093,14 @@ multiplication and if the expression is not a sum.
              (not (null? (cdr groups)))
              (not (sum? x)))
         #f)))
-}
+]
 
 However, this is obviously a good case for an abstraction. Since the order
 requirement does not depend on the group requirements, we can create a more
 general @tt{valid-operation?} procedure and reimplement @tt{sum?} and
 @tt{product?} in terms of it:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (valid-operation? op x)
   (let ((groups (find-groups op x)))
     (if groups
@@ -2031,18 +2114,18 @@ general @tt{valid-operation?} procedure and reimplement @tt{sum?} and
 (define (product? x)
   (and (valid-operation? '* x)
        (not (sum? x))))
-}
+]
 
 Exponentiation has precedence over multiplication, so we can implement this
 check by making sure that an expression is neither a product nor a sum,
 in addition to being a valid exponentiation.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (exponentiation? x)
   (and (valid-operation? '** x)
        (not (product? x))
        (not (sum? x))))
-}
+]
 
 Alternatively, instead of checking the order of operations inside of these
 procedures, you could define it in the general evaluator -- in this case,
@@ -2053,7 +2136,7 @@ solutions -- you can avoid a good amount of retesting and make your
 operation-testing procedures simpler. This is what we will be doing, leaving
 the final procedures as such:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (sum? x)
   (valid-operation? '+ x))
 
@@ -2062,13 +2145,13 @@ the final procedures as such:
 
 (define (exponentiation? x)
   (valid-operation? '** x))
-}
+]
 
 To define the operand-selecting procedures, we can use the information from
 @tt{find-groups}. Since this procedure just returns a pair, the new work we
 have to do is minimal.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (addend s) (car (find-groups '+ s)))
 
 (define (augend s) (cdr (find-groups '+ s)))
@@ -2080,7 +2163,7 @@ have to do is minimal.
 (define (base x) (car (find-groups '** x)))
 
 (define (exponent x) (cdr (find-groups '** x)))
-}
+]
 
 Our procedures for constructing sums, products, and exponentiations still
 return fully-parenthesized results. This does not need to be fixed. However, we
@@ -2089,7 +2172,7 @@ are lists by default. An easy way to do this is to add another case to @tt{deriv
 for lists of a single value. This leaves @tt{deriv} (already with the correct order
 of operations, by chance) as such:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (deriv exp var)
   (cond ((number? exp) 0)
         ((variable? exp)
@@ -2114,15 +2197,15 @@ of operations, by chance) as such:
           (deriv (base exp) var)))
         (else
          (error "unknown expression type -- DERIV" exp))))
-}
+]
 
 As one small point, we also must change @tt{constant-exponentiation?} to expect
 the exponent to be in a list:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (constant-exponentiation? x)
   (and (exponentiation? x) (number? (car (exponent x)))))
-}
+]
 
 And with this, we're done.
 
@@ -2136,7 +2219,7 @@ the result, and vice versa. This is the opposite of how intersections work.}
 @item{If either of the sets is empty, the other set is returned, not the empty set.}
 ]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (union-set set1 set2)
   (cond ((null? set1) set2)
         ((null? set2) set1)
@@ -2144,7 +2227,7 @@ the result, and vice versa. This is the opposite of how intersections work.}
          (union-set (cdr set1) set2))
         (else (cons (car set1)
                     (union-set (cdr set1) set2)))))
-}
+]
 
 @section[#:tag "c2e60"]{Exercise 2.60}
 
@@ -2154,15 +2237,15 @@ and @tt{intsersection-set} can be identical. And in @tt{adjoin-set} and
 @tt{element-of-set?} because we no longer care about making sure elements are
 unique.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (adjoin-set x set)
   (cons x set))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (union-set set1 set2)
   (append set1 set2))
-}
+]
 
 Notice how @tt{union-set} is no longer defined recursively -- it simply uses
 the general function @tt{append} to do all of the work.
@@ -2188,14 +2271,14 @@ then it does need to traverse to the next element until one of the cases
 above is true (or until the set is empty, in which case a new set just containing
 the element is returned).
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (adjoin-set x set)
   (if (null? set) (list x)
       (let ((y (car set)))
         (cond ((= x y) set)
               ((< x y) (cons x set))
               (else (cons y (adjoin-set x (cdr set))))))))
-}
+]
 
 Note that we need to have a @tt{null?} check in @tt{adjoin-set} now, because of
 the operations requiring that set to not be empty. Before, when @tt{cons}ing
@@ -2211,7 +2294,7 @@ middle of the set, we can expect about half as many recursive calls to
 Like the new @tt{intersection-set}, this implementation of @tt{union-set} is @tt{O(n)}
 because we examine the elements of each set one time at most.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (union-set set1 set2)
   (cond ((null? set1) set2)
         ((null? set2) set1)
@@ -2223,23 +2306,23 @@ because we examine the elements of each set one time at most.
                   (cons x1 (union-set (cdr set1) set2)))
                  ((< x2 x1)
                   (cons x2 (union-set set1 (cdr set2)))))))))
-}
+]
 
 @section[#:tag "c2e63"]{Exercise 2.63}
 
 We're comparing the following procedures for converting binaries trees into
 lists:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (tree->list-1 tree)
   (if (null? tree)
       '()
       (append (tree->list-1 (left-branch tree))
               (cons (entry tree)
                     (tree->list-1 (right-branch tree))))))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (tree->list-2 tree)
   (define (copy-to-list tree result-list)
     (if (null? tree) result-list
@@ -2248,7 +2331,7 @@ lists:
                             (copy-to-list (right-branch tree)
                                           result-list)))))
   (copy-to-list tree '()))
-}
+]
 
 The first procedure @tt{append}s the list representation of the
 @tt{left-branch} of the tree to the list formed by @tt{cons}ing the @tt{entry}
@@ -2280,25 +2363,23 @@ explicit.
 We can use the trees in from figure 2.16 to verify that these procedures
 produce the same results:
 
-@verbatim{
-> (define ta (list 7 (list 3 (list 1 '() '()) (list 5 '() '())) (list 9 '() (list 11 '() '()))))
-> (define tb (list 3 (list 1 '() '()) (list 7 (list 5 '() '()) (list 9 '() (list 11 '() '())))))
-> (define tc (list 5 (list 3 (list 1 '() '()) '()) (list 9 (list 7 '() '()) (list 11 '() '()))))
+@;examples[#:eval ev
+@codeblock{
+(define ta (list 7 (list 3 (list 1 '() '()) (list 5 '() '())) (list 9 '() (list 11 '() '()))))
+(define tb (list 3 (list 1 '() '()) (list 7 (list 5 '() '()) (list 9 '() (list 11 '() '())))))
+(define tc (list 5 (list 3 (list 1 '() '()) '()) (list 9 (list 7 '() '()) (list 11 '() '()))))
 
 (tree->list-1 ta)
-=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+
 (tree->list-2 ta)
-=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
 
 (tree->list-1 tb)
-=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+
 (tree->list-2 tb)
-=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
 
 (tree->list-1 tc)
-=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
+
 (tree->list-2 tc)
-=> (mcons 1 (mcons 3 (mcons 5 (mcons 7 (mcons 9 (mcons 11 '()))))))
 }
 
 However, although these procedures produce the same results, they do not have
@@ -2323,7 +2404,7 @@ hope you understand.}
 We are asked to explain how the following procedure @tt{partial-tree}
 works:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (partial-tree elts n)
   (if (= n 0)
       (cons '() elts)
@@ -2339,13 +2420,13 @@ works:
                     (remaining-elts (cdr right-result)))
                 (cons (make-tree this-entry left-tree right-tree)
                       remaining-elts))))))))
-}
+]
 
 Before beginning, I would first reformat the procedure using a form we haven't
 learned yet, @tt{let*}, which allows for earlier bindings available to later
 ones. This removes the need for the creeping indentation we see above.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (partial-tree elts n)
   (if (= n 0)
       (cons '() elts)
@@ -2359,7 +2440,7 @@ ones. This removes the need for the creeping indentation we see above.
              (right-tree (car right-result))
              (remaining-elts (cdr right-result)))
         (cons (make-tree this-entry left-tree right-tree) remaining-elts))))
-}
+]
 
 This procedure is more involved than most we've worked with so far, but if we
 break down what every definition is computing, we can piece together what the
@@ -2529,43 +2610,53 @@ situation later.
 
 First, I implemented the procedures in the naive way:
 
-@codeblock{
+@examples[#:eval ev #:hidden
+(define (intersection-oset set1 set2)
+  (cond ((or (null? set1) (null? set2)) '())
+        ((element-of-set? (car set1) set2)
+         (cons (car set1)
+               (intersection-oset (cdr set1) set2)))
+        (else (intersection-oset (cdr set1) set2))))
+(define union-oset union-set)
+]
+
+@examples[#:eval ev #:no-prompt
 (define (intersection-btset set1 set2)
   (let* ((oset1 (tree->list-2 set1))
          (oset2 (tree->list-2 set2))
          (intersection (intersection-oset oset1 oset2)))
     (list->tree intersection)))
-}
+]
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (union-btset set1 set2)
   (let* ((oset1 (tree->list-2 set1))
          (oset2 (tree->list-2 set2))
          (union (union-oset oset1 oset2)))
     (list->tree union)))
-}
+]
 
 However, this is plainly duplicative. We can extract a new procedure, here
 named @tt{btset-convert-op} (a name so bad it will not conflict with anything
 useful) that takes a procedure as an argument and returns a procedure taking
 two sets and returning that operation applied to them:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (btset-convert-op op)
   (lambda (set1 set2)
     (let* ((oset1 (tree->list-2 set1))
            (oset2 (tree->list-2 set2))
            (list-result (op oset1 oset2)))
       (list->tree list-result))))
-}
+]
 
 Then, we can define our intersection and union procedures easily:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define intersection-btset (btset-convert-op intersection-oset))
 
 (define union-btset (btset-convert-op union-oset))
-}
+]
 
 Assuming that operations will only take two arguments, I think this is good
 enough.  It could reduce the duplication of @tt{tree->list-2} with a @tt{map},
@@ -2580,12 +2671,12 @@ arbitrary numbers of arguments as well. Another way to solve this problem, and
 I believe a better way, is to @tt{accumulate} over all of the sets with the
 operation.
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (btset-convert-op op)
   (lambda sets
     (let ((osets (map tree->list-2 sets)))
       (list->tree (accumulate op (car osets) (cdr osets))))))
-}
+]
 
 Despite the naming conventions, I believe this is a reasonable answer.
 
@@ -2597,13 +2688,69 @@ Despite the naming conventions, I believe this is a reasonable answer.
 
 @section[#:tag "c2e67"]{Exercise 2.67}
 
+@examples[#:eval ev #:hidden
+(define (make-leaf symbol weight)
+  (list 'leaf symbol weight))
+(define (leaf? object)
+  (eq? (car object) 'leaf))
+(define (symbol-leaf x) (cadr x))
+(define (weight-leaf x) (caddr x))
+(define (make-code-tree left right)
+  (list left
+        right
+        (append (symbols left) (symbols right))
+        (+ (weight left) (weight right))))
+(define (left-branch tree) (car tree))
+(define (right-branch tree) (cadr tree))
+(define (symbols tree)
+  (if (leaf? tree)
+      (list (symbol-leaf tree))
+      (caddr tree)))
+(define (weight tree)
+  (if (leaf? tree)
+      (weight-leaf tree)
+      (cadddr tree)))
+(define (decode bits tree)
+  (define (decode-1 bits current-branch)
+    (if (null? bits)
+        '()
+        (let ((next-branch
+               (choose-branch (car bits) current-branch)))
+          (if (leaf? next-branch)
+              (cons (symbol-leaf next-branch)
+                    (decode-1 (cdr bits) tree))
+              (decode-1 (cdr bits) next-branch)))))
+  (decode-1 bits tree))
+(define (choose-branch bit branch)
+  (cond ((= bit 0) (left-branch branch))
+        ((= bit 1) (right-branch branch))
+        (else (error "bad bit - CHOOSE-BRANCH" bit))))
+(define (adjoin-set x set)
+  (cond ((null? set) (list x))
+        ((< (weight x) (weight (car set))) (cons x set))
+        (else (cons (car set)
+                    (adjoin-set x (cdr set))))))
+(define (make-leaf-set pairs)
+  (if (null? pairs)
+      '()
+      (let ((pair (car pairs)))
+        (adjoin-set (make-leaf (car pair)
+                               (cadr pairs))
+                    (make-leaf-set (cdr pairs))))))
+]
 To decode the given @tt{sample-message}, using the given Huffman tree,
 we can simply call @tt{decode} with them as arguments:
 
-@verbatim{
-> (decode sample-message sample-tree)
-(mcons 'a (mcons 'd (mcons 'a (mcons 'b (mcons 'b (mcons 'c (mcons 'a '())))))))
-}
+@examples[#:eval ev
+(define sample-tree
+  (make-code-tree (make-leaf 'A 4)
+                  (make-code-tree
+                   (make-leaf 'B 2)
+                   (make-code-tree (make-leaf 'D 1)
+                                   (make-leaf 'C 1)))))
+(define sample-message '(0 1 1 0 0 1 0 1 0 1 1 1 0))
+(decode sample-message sample-tree)
+]
 
 The message is decoded this:
 
@@ -2623,7 +2770,7 @@ procedure, because it is rather elegant to return nil if the symbol is not found
 
 First, the inner procedure, named @tt{encode-symbol-1}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (encode-symbol-1 symbol tree bits)
   (if (leaf? tree)
       (if (eq? symbol (symbol-leaf tree))
@@ -2632,7 +2779,7 @@ First, the inner procedure, named @tt{encode-symbol-1}:
       (append
        (encode-symbol-1 symbol (left-branch tree) (append bits '(0)))
        (encode-symbol-1 symbol (right-branch tree) (append bits '(1))))))
-}
+]
 
 When @tt{encode-symbol-1} is visiting a current node (the root of @tt{tree}),
 @tt{bits} contains the encoded path to this node. Therefore, if the current
@@ -2656,20 +2803,20 @@ the symbol in the tree.
 To return an error when the symbol isn't found, we can write a simple wrapper
 procedure as our actual @tt{encode-symbol}:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (encode-symbol symbol tree)
   (let ((result (encode-symbol-1 symbol tree '())))
     (if (null? result)
         (error "Couldn't find symbol in tree")
         result)))
-}
+]
 
 To verify that this works, we can add to our @tt{equal?} procedure from
 @secref{c2e54} to also check equality of numbers, and then use if to verify
 that the sample encoded message is the same as a message we encode ourselves
 using our previously decoded message:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (equal? a b)
   (cond
    ((and (null? a) (null? b)) #t)
@@ -2683,22 +2830,26 @@ using our previously decoded message:
       (equal? (car a) (car b))
       (equal? (cdr a) (cdr b)))))
    (else #f)))
-}
+]
 
-@verbatim{
-> (equal? sample-message (encode (decode sample-message sample-tree) sample-tree))
-#t
-}
+@examples[#:eval ev
+(define (encode message tree)
+  (if (null? message)
+      '()
+      (append (encode-symbol (car message) tree)
+              (encode (cdr message) tree))))
+(equal? sample-message (encode (decode sample-message sample-tree) sample-tree))
+]
 
 @section[#:tag "c2e69"]{Exercise 2.69}
 
 We are asked to write the procedure @tt{successive-merge}, which will
 be used in generating Huffman trees as follows:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (generate-huffman-tree pairs)
   (successive-merge (make-leaf-set pairs)))
-}
+]
 
 Most of the hard work has already been done for us in the procedures written
 during this section. @tt{make-leaf-set} will order the set of pairs, so we can
@@ -2717,7 +2868,7 @@ is @tt{nil}, and we return the tree itself.
 
 The final procedure is below:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (successive-merge leaf-set)
   (if (null? (cdr leaf-set))
       (car leaf-set)
@@ -2725,12 +2876,13 @@ The final procedure is below:
        (adjoin-set
         (make-code-tree (car leaf-set) (cadr leaf-set))
         (cddr leaf-set)))))
-}
+]
 
 @section[#:tag "c2e70"]{Exercise 2.70}
 
 We can set up the tree and the message as such:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define song-weights
   '((a 2) (boom 1) (get 2) (job 2) (na 16) (sha 3) (yip 9) (wah 1)))
@@ -2750,17 +2902,17 @@ We can set up the tree and the message as such:
 
 Encoding the message is then simple, and we can see that it has a length of @tt{84}:
 
-@verbatim{
-> (length (encode song song-tree))
-84
+@;examples[#:eval ev
+@codeblock{
+(length (encode song song-tree))
 }
 
 If we used a fixed-length code, we would need to use a code of 3 bits, for @tt{2^3 = 8}
 symbols. Since there are
 
-@verbatim{
-> (length song)
-36
+@;examples[#:eval ev
+@codeblock{
+(length song)
 }
 
 symbols in the song, we would need @tt{3 * 36 = 108} bits using our fixed-length code.
@@ -2782,7 +2934,7 @@ Just like the first example in the chapter, the encoded length with the Huffman 
 We are asked to consider rewriting a procedure for symbolic differentiation,
 originally written like this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (deriv-1 exp var)
   (cond ((number? exp) 0)
         ((variable? exp) (if (same-variable? exp var) 1 0))
@@ -2796,11 +2948,11 @@ originally written like this:
           (make-product (deriv (multiplier exp) var)
                         (multiplicand exp))))
         (else (error "unknown expression type -- DERIV" exp))))
-}
+]
 
 so that it uses data-directed programming, like this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (deriv exp var)
   (cond ((number? exp) 0)
         ((variable? exp) (if (same-variable? exp var) 1 0))
@@ -2809,7 +2961,7 @@ so that it uses data-directed programming, like this:
 
 (define (operator exp) (car exp))
 (define (operand exp) (cdr exp))
-}
+]
 
 The general case is to find operators, which are represented as symbols such as
 @tt{'+} and exist in pairs with their operands, and dispatch on the entries in
@@ -2944,6 +3096,7 @@ into the relevant scope, and access them via an operation and a type. For
 example, we could get the equivalent of the @tt{real-part-rectangular} procedure
 by wrapping around the essential operation of
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 ((get 'real-part 'rectangular) z)
 }
@@ -2968,6 +3121,7 @@ We're evaluating the expression @tt{(magnitude z)}, where @tt{z} is equal to
 @tt{'(complex (rectangular (3 4)))}. Earlier, the procedure @tt{magnitude}
 was defined like this:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (magnitude z) (apply-generic 'magnitude z))
 }
@@ -2978,6 +3132,7 @@ type wrapping the @tt{rectangular} and @tt{polar} types we created earlier.
 However, all we need to do to fix this is to install the @tt{magnitude}
 procedure itself as the entry for this type, as so:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (put 'magnitude '(complex) magnitude)
 }
@@ -3009,7 +3164,7 @@ that the language is capable of discerning whether an object is a number. We
 can do this by adding calls to @tt{number?} to @tt{attach-tag}, @tt{type-tag},
 and @tt{contents}, probably like this:
 
-@codeblock{
+@examples[#:eval ev #:no-prompt
 (define (type-tag datum)
   (if (pair? datum)
       (car datum)
@@ -3030,7 +3185,7 @@ and @tt{contents}, probably like this:
        (number? contents))
       contents
       (cons type-tag contents)))
-}
+]
 
 I've elected to check the type of @tt{contents} and the given @tt{type-tag}
 in @tt{attach-tag} for extra safety.
@@ -3039,6 +3194,7 @@ in @tt{attach-tag} for extra safety.
 
 @bold{TODO: Explain and verify}
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (install-equ?-predicate)
   (define (equ?-scheme-number x y) (= x y))
@@ -3065,6 +3221,7 @@ in @tt{attach-tag} for extra safety.
 
 @bold{TODO: Explain and verify}
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (install-=zero?-predicate)
   (define (=zero?-scheme-number x)
@@ -3093,6 +3250,7 @@ be found in the first place, and coercing a type to itself won't change that
 So suppose we have a new procedure for exponentiation only defined on Scheme
 numbers, created like this:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (exp x y) (apply-generic 'exp x y))
 
@@ -3106,6 +3264,7 @@ coerce the complex numbers to complex numbers and see if there is a procedure
 then. But looking at how @tt{apply-generic} is defined, we can see that we
 don't have to write these self-coercions:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (let ((t1->t2 (get-coercion type1 type2))
        (t2->t1 (get-coercion type2 type1)))
@@ -3132,6 +3291,7 @@ for two arguments of the same type isn't found. This is clearly wrong.
 We could modify @tt{apply-generic} to not attempt to look up coercions if
 the types are the same. It might look something like this:
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))
@@ -3159,6 +3319,7 @@ need to add another call to @tt{error}).
 
 @bold{This is half-baked}
 
+@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (install-raise-package)
   (define (raise-integer-rational x)
