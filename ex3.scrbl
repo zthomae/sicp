@@ -9,7 +9,7 @@
 @define[ev @make-eval[]]
 
 @; TODO: Get working with a real sicp language
-@examples[#:eval ev #:hidden
+@examples[#:label #f #:eval ev #:hidden
 (define (square x) (* x x))
 (define (cube x) (* x x x))
 (define true #t)
@@ -29,7 +29,7 @@ in @tt{make-withdraw} -- we define it to be a function that uses
 @tt{set!} to modify the argument passed into the constructor. The code
 is self-explanatory.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-accumulator initial)
   (lambda (more)
     (begin (set! initial (+ initial more))
@@ -51,7 +51,7 @@ of any number of arguments, rather than just one. This implementation handles
 messages in the simplest way in that it only checks if the first argument
 is equal to a special message. If so, the other arguments are ignored.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-monitored f)
   (let ((count 0))
     (lambda args
@@ -73,7 +73,7 @@ procedure is always expected to return a procedure, we have to
 wrap the sending of the "Incorrect password" message in a dummy
 procedure. I have done this in a rather terse way.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-account balance password)
   (define (withdraw amount)
     (if (>= balance amount)
@@ -99,7 +99,7 @@ procedure. I have done this in a rather terse way.
 I also shouldn't need to mention that this is not a robust way
 to deal with possible attempted account theft.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-account balance password)
   (define incorrect-count 0)
   (define (withdraw amount)
@@ -130,7 +130,7 @@ In the interest of sharing, I thought I'd show you that I made a @tt{rand}
 of my own by using the @tt{random} function (which computes a random number
 from @tt{0} to its given argument) with the biggest value it will accept.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (rand)
   (random 4294967087))
 ]
@@ -148,7 +148,7 @@ In this case, we set up the experiment procedure with the bounds of the
 rectangle we are generating points in and the predicate we want to test.
 @tt{estimate-integral} turns out to be a simple procedure:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (estimate-integral P trials x1 x2 y1 y2)
   (define (test-point)
     (let ((x (random-in-range x1 x2))
@@ -159,7 +159,7 @@ rectangle we are generating points in and the predicate we want to test.
 
 We can define the predicate in the book like this:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (P x y)
   (>= 9
       (+ (square (- x 5))
@@ -174,7 +174,7 @@ initial value (the @tt{random-init} value) is not especially hard. I've
 chosen to have the @tt{'generate} message return the new random number,
 while the @tt{'reset} message returns nothing of value.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (rand m)
   (let ((x random-init))
     (cond ((eq? m 'generate)
@@ -194,7 +194,7 @@ works with the newly-created joint account). This behaves similarly
 to the password checking we already made, except it returns the unlocked
 main account if the given joint password is correct.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-joint account password new-password)
   (lambda (p m)
     (if (eq? p new-password)
@@ -207,7 +207,7 @@ main account if the given joint password is correct.
 I feel like I've come up with an ugly solution. I'm going to mark this as
 @bold{TODO} for now.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define f
   (let ((y 0))
     (lambda (x)
@@ -242,7 +242,7 @@ model is to fully expand on all syntactic sugar around @tt{lambda}
 expressions. When we do this, the definition for @tt{make-withdraw} is
 as follows:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define make-withdraw
   (lambda (initial-amount)
     ((lambda (balance)
@@ -282,7 +282,7 @@ that is, @tt{E1}. However, the procedure which is being applied is also
 defined here. So we create a procedure object that takes one parameter, whose
 defining environment is @tt{E2}, and with the body
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (lambda (amount)
   (if (>= balance amount)
       (begin
@@ -356,7 +356,7 @@ evaluates to @tt{'(b (c (d ())))}.
 
 Suppose we define the procedure
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-cycle x)
   (set-cdr! (last-pair x) x))
 ]
@@ -370,7 +370,7 @@ we will never come across a pair where the @tt{cdr} is @tt{nil}, so
 
 Consider the procedure below:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (mystery x)
   (define (loop x y)
     (if (null? x)
@@ -447,7 +447,7 @@ Detecting cycles can be done simply. We can traverse the list and keep a
 list of all the entries we've seen so far, and if we ever run into a node
 that's already in the list of things we've seen, then we know we have a cycle.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (detect-cycle l)
   (define (update l seen)
     (cond ((null? l) #f)
@@ -467,7 +467,7 @@ The @tt{contains} procedure is mostly trivial. Notice how it compares
 @tt{(car lst)} to @tt{v} -- this is because every entry in the @tt{seen}
 list is in fact a list, and @tt{(car lst)} gives us one of those lists.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (contains lst v)
   (cond ((null? lst) #f)
         ((eq? (car lst) v) #t)
@@ -484,7 +484,7 @@ by two. At some point, if the list contains a cycle, these two pointers
 will point to the same thing. Alternatively, if a pointer reaches the end
 of the list before this happens, we know we don't have a cycle.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (tortoise-hare l)
   (define (loop tortoise hare)
     (cond ((or (null? tortoise)
@@ -526,7 +526,7 @@ However, printing the queue as a list is actually easy, since the
 items in the queue are connected to each other in a list structure.
 All you have to do is print the list starting from the front pointer.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (print-queue queue)
   (display (car queue))
   (newline))
@@ -547,7 +547,7 @@ these are stored as internal definitions that can be accessed directly.
 One thing to note is that all of the calls to @tt{dispatch} return procedures
 -- even if the procedure returned takes no argument.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-queue)
   (let ((front-ptr '())
         (rear-ptr '()))
@@ -606,7 +606,7 @@ occur when adding nodes to an empty deque or removing the last node. However,
 there is a symmetry between the operations that occur at the front and rear
 ends of the deque.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-deque)
   (let ((front-ptr '()))
     (let ((rear-ptr front-ptr))
@@ -676,7 +676,7 @@ calling conventions for these mutable data objects. I prefer dealing
 with functions that take objects as parameters. However, it isn't difficult
 to create those functions on top of an object like this.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (empty-deque? dq)
   ((dq 'empty-deque?)))
 

@@ -1,7 +1,7 @@
 #lang scribble/manual
 
 @require[scribble/lp]
-@require[scribble/examples]
+@require[scribble/example]
 @require["eval.rkt"]
 
 @title[#:version "" #:style 'toc]{Chapter 1}
@@ -11,7 +11,7 @@
 @define[ev @make-eval[]]
 
 @; TODO: Get working with a real sicp language
-@examples[#:eval ev #:hidden
+@examples[#:label #f #:eval ev #:hidden
 (define (square x) (* x x))
 (define (cube x) (* x x x))
 (define true #t)
@@ -26,7 +26,7 @@
 
 @section[#:tag "c1e1"]{Exercise 1.1}
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
          10
          (- 9 1)
          (/ 6 2)
@@ -49,7 +49,7 @@
 
 @section[#:tag "c1e2"]{Exercise 1.2}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (ex1-2)
   (/ (+ 5 (+ 4 (- 2 (- 3 (+ 6 (/ 4 5))))))
      (* 3 (* (- 6 2) (- 2 7)))))
@@ -57,7 +57,7 @@
 
 @section[#:tag "c1e3"]{Exercise 1.3}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (ex1-3 a b c)
   (define (sqr x) (* x x))
   (define (sum-sq lst)
@@ -75,7 +75,7 @@ greater than @tt{0}. If @tt{b > 0}, then @tt{b = abs(b)} and can be added to
 @var{a}. Otherwise, @tt{-b = abs(b)} and so @tt{a - b = a + abs(b)}. Note that
 @tt{-b = abs(b)} for the case where @tt{b = 0}.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (a-plus-abs-b a b)
   ((if (> b 0) + -) a b))
 ]
@@ -119,20 +119,20 @@ the actual number is too small to be realistically reached?
 A better @tt{sqrt} procedure using a @tt{good-enough?} test based on observing
 the relative change between guesses and accepting a guess when this is small:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (sqrt x)
     (sqrt-iter x 1.0 0.0))
 ]
 
 (The choice of starting guesses of 1 and 0 is arbitary.)
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (sqrt-iter x guess previous-guess)
   (if (good-enough? guess previous-guess) guess
       (sqrt-iter x (improve guess x) guess)))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (good-enough? guess previous-guess)
   (< (abs (- guess previous-guess)) good-enough-factor))
 ]
@@ -157,7 +157,7 @@ later in the chapter.
 (I use my previously-defined @tt{good-enough?} procedure with a @tt{good-enough-factor}
 of @tt{0.001}.)
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (cube-root x)
   (root-iter x 1.0 0.0 cube-root-improve))
 
@@ -290,19 +290,19 @@ Finally, @tt{(A 3 3)}
 In short, Ackermann's function is @emph{very} recursive. For the rest of the exercise, we consider
 procedures that evaluate @tt{A} for fixed @tt{x} values.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (f n) (A 0 n))
 ]
 
 @tt{f} evaluates a base case, with a result of @tt{2 * n}.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (g n) (A 1 n))
 ]
 
 @tt{g} generalizes the first expansion we did, which evaluates to @tt{2 ^ n}.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (h n) (A 2 n))
 ]
 
@@ -318,7 +318,7 @@ Put concisely, @tt{(h n) = 2^(h (dec n))}.
 
 @section[#:tag "c1e11"]{Exercise 1.11}
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (define (f-rec n)
   (if (< n 3) n
       (+ (f-rec (- n 1))
@@ -326,7 +326,7 @@ Put concisely, @tt{(h n) = 2^(h (dec n))}.
          (* 3 (f-rec (- n 3))))))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (f-iter n)
   (define (loop i a b c)
     (let ((f_i (+ a (* 2 b) (* 3 c))))
@@ -342,7 +342,7 @@ This procedure calculates the value in Pascal's triangle at
 depth @tt{depth} and column @tt{column}. Both the depth and
 column are 0-indexed.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (pascal-value depth col)
   (cond ((= 0 col) 1)
         ((= depth col) 1)
@@ -353,7 +353,7 @@ column are 0-indexed.
 We can define two more procedures to (primitively) print the
 triangle:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (make-new-row depth)
   (define (loop depth col str)
     (if (> col depth) str
@@ -363,7 +363,7 @@ triangle:
   (loop depth 0 ""))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (pascals-triangle depth)
   (display (make-pascal-triangle 0 depth "")))
 ]
@@ -406,12 +406,12 @@ will generate no pairs other than these padding ones for the row at depth @tt{0}
 Unlike the exercise directs, this procedure also generates an iterative
 process.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (empty? l)
   (eq? nil l))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (pascal-triangle depth)
   (define (make-pairs l)
     (define (loop l pairs)
@@ -524,11 +524,29 @@ of the last one.
 
 @section[#:tag "c1e15"]{Exercise 1.15}
 
-@bold{TODO}
+When evaluating @tt{(sine 12.15)}, the expression expands as
+follows:
+
+@verbatim{
+(sine 12.15)
+(p (sine 4.05))
+(p (p (sine 1.35)))
+(p (p (p (sine 0.45))))
+(p (p (p (p (sine 0.15)))))
+(p (p (p (p (p (sine 0.05))))))
+}
+
+@tt{p} is evaluated five times.
+
+Since the angle is divided by a constant factor, the number of calls to @tt{p}
+increases linearly with the angle. And since @tt{p} does a constant amount of
+work, we can conclude that @tt{sine} is O(n) in time. (Similar reasoning can
+show that it is also O(n) in space, with the stack frame growing as the number
+of calls to @tt{p} does).
 
 @section[#:tag "c1e16"]{Exercise 1.16}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (fast-expt-iter b n)
   (define (loop a b i)
     (cond ((= i 0) a)
@@ -537,22 +555,40 @@ of the last one.
   (loop 1 b n))
 ]
 
-@bold{TODO: Explain}
+During the execution of this procedure, the invariant that @tt{B^n = ab^i}
+holds (where @tt{b} is the value of @tt{b} in recursive calls to @tt{loop} and
+@tt{B} is the original value). @tt{a} begins as @tt{1} and @tt{b} begins as
+@tt{b}, making this trivial.
+
+In every call of the loop, @tt{i} is either even or odd. If it is
+even, then @tt{loop} is called again with the arguments @tt{a}, @tt{b^2},
+and @tt{i / 2}. Since @tt{ab^i = a(b^2)^(i/2)}, the invariant still holds.
+Alternatively, if @tt{i} is odd, then @tt{loop} is called with arguments
+@tt{a * b}, @tt{b}, and @tt{i - 1}. Since @tt{ab^i = (a*b)b^(i-1)}, the
+invariant also still holds.
+
+@tt{loop} stops recursing when @tt{i} is equal to zero and returns @tt{a}. In
+this case, @tt{b^i} will be equal to @tt{1}. Since the invariant still holds,
+we can conclude that @tt{a} holds the desired value of @tt{B^n}. We conclude
+that @tt{fast-expt-iter} is correct.
 
 @section[#:tag "c1e17"]{Exercise 1.17}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (fast-times a b)
   (cond ((= b 0) 0)
         ((even? b) (double (fast-times a (halve b))))
         (else (+ a (fast-times a (- b 1))))))
 ]
 
-@bold{TODO: Explain}
+@tt{fast-times} works by using @tt{2*a} and @tt{b/2} as recursive values
+whenever @tt{b} is even, in addition to adding @tt{a} to
+@tt{(fast-times a (- b 1))} when it is odd (and positive). This significantly
+reduces the number of recursive calls made.
 
 @section[#:tag "c1e18"]{Exercise 1.18}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (fast-times-iter a b)
   (define (loop x a b)
     (cond ((= b 0) x)
@@ -561,16 +597,40 @@ of the last one.
   (loop 0 a b))
 ]
 
-@bold{TODO: Explain}
+@tt{fast-times-iter} works by using an inner procedure @tt{loop} of three
+arguments @tt{x}, @tt{a}, and @tt{b}, holding the invariant that
+@tt{AB = x + ab}.
+
+The first call to @tt{loop} has the arguments @tt{0}, @tt{A}, and @tt{B},
+making the invariant hold trivially.
+
+Inside @tt{loop}, there are three cases. If @tt{b} is positive and even,
+then @tt{loop} is recursively called with the arguments @tt{x}, @tt{2a},
+and @tt{b/2}, and the invariant still holds. If @tt{b} is positive and odd,
+then the recursive arguments are @tt{a + x}, @tt{a}, and @tt{b - 1}. Since
+@tt{x + ab = (x + a) + a(b-1)}, the invariant holds. If @tt{b} is zero,
+then @tt{x} is returned. Since @tt{x + a(0) = x}, @tt{x} will have the
+value @tt{AB}. Therefore, @tt{fast-times-iter} is correct.
 
 @section[#:tag "c1e19"]{Exercise 1.19}
 
-@examples[#:eval ev #:no-prompt
+By expanding two successive transformations, we can find the values
+of @tt{p'} and @tt{q'}:
+
+@verbatim{
+a <- (bp + aq)q + (bq + a1 + ap)q + (bq + aq + ap)p
+   = bp + aq^2 + bq^2 + aq^2 + apq + bpq + apq + ap^2
+   = b(2pq + q^2) + a(2q^2 + 2pq + p^2)
+   = b(2pq + q^2) + a(2pq + q^2) + a(p^2 + q^2)
+}
+
+Therefore, @tt{q' = 2pq + q^2} and @tt{p' = p^2 + q^2}. We can
+use this to finish the procedure below:
+
+@examples[#:label #f #:eval ev #:no-prompt
 (define (fib n)
   (fib-iter 1 0 0 1 n))
-]
 
-@examples[#:eval ev #:no-prompt
 (define (fib-iter a b p q count)
   (cond ((= count 0) b)
         ((even? count)
@@ -586,8 +646,6 @@ of the last one.
                         (- count 1)))))
 ]
 
-@bold{TODO: Explain}
-
 @section[#:tag "c1e20"]{Exercise 1.20}
 
 @bold{TODO: Show normal-order evaluation}
@@ -600,14 +658,14 @@ Under applicative-order evaluation, @tt{remainder} is called 4 times.
 
 @section[#:tag "c1e21"]{Exercise 1.21}
 
-@examples[#:eval ev #:hidden
+@examples[#:label #f #:eval ev #:hidden
 (define (smallest-divisor n)
   (find-divisor n 2))
 
 (define (find-divisor n test-divisor)
   (cond ((> (square test-divisor) n) n)
-          (( divides? test-divisor n) test-divisor)
-                  (else (find-divisor n (+ test-divisor 1)))))
+        (( divides? test-divisor n) test-divisor)
+        (else (find-divisor n (+ test-divisor 1)))))
 
 (define (divides? a b)
   (= (remainder b a) 0))
@@ -634,7 +692,7 @@ algorithm we're using suggests. This procedure is meant to check for primality "
 odd integers in a specified range". With this range specified by a minimum and maximum value,
 the procedure could be written like this:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (search-for-primes start end)
   (define (loop current end)
     (if (> current end) (newline)
@@ -657,7 +715,7 @@ needing trial and error. This function also contains a subtle bug. I think we ca
 
 First, a function for computing the first @tt{n} primes greater than a certain number:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (next-primes start num)
   (define (loop current-number current-list)
     (cond ((= (length current-list) num) current-list)
@@ -759,7 +817,7 @@ size @tt{n/2}. This makes the problem O(n) instead of O(logn).
 
 Here is a procedure to test for congruence for a number @tt{n} with every integer @tt{1 <= a <= n - 1}:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (congruence-test num)
   (define (loop current)
     (cond ((= current num) #t)
@@ -778,7 +836,7 @@ It is trivial to verify that this procedure returns true for the given Carmichae
 
 This procedure computes integrals with Simpson's rule:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (simpson-integral f a b n)
   (define h (/ (- b a) n))
   (define (term k)
@@ -798,7 +856,7 @@ of multiple summations or something else more complicated than this.
 
 Comparing outputs with the book:
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
           #:hidden
 (define (sum term a next b)
   (if (> a b)
@@ -819,7 +877,7 @@ Comparing outputs with the book:
             (else (* 4 y)))))
   (* (/ h 3) (sum term 1 inc n)))]
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (integral cube 0 1 0.01)
 (integral cube 0 1 0.001)
 (simpson-integral cube 0 1 100.0)
@@ -828,7 +886,7 @@ Comparing outputs with the book:
 
 @section[#:tag "c1e30"]{Exercise 1.30}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (sum term a next b)
   (define (iter a result)
     (if (> a b)
@@ -839,7 +897,7 @@ Comparing outputs with the book:
 
 Curiously, in my environment, this procedure gives very slightly different answers compared to above:
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (integral cube 0 1 0.01)
 (integral cube 0 1 0.001)
 (simpson-integral cube 0 1 100.0)
@@ -850,7 +908,7 @@ Curiously, in my environment, this procedure gives very slightly different answe
 
 We can define a @tt{product} procedure very similarly to the first @tt{sum} procedure:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (product term a next b)
   (if (> a b)
       1
@@ -860,14 +918,14 @@ We can define a @tt{product} procedure very similarly to the first @tt{sum} proc
 
 We can use this procedure to define factorial as follows:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (factorial n)
   (product identity 1 inc n))
 ]
 
 We can use this procedure to compute pi as follows:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (pi-product n)
   (define (numer n)
     (define (numer-term i)
@@ -886,7 +944,7 @@ We can use this procedure to compute pi as follows:
 
 A @tt{product} procedure computing an iterative process is as follows:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (product term a next b)
   (define (iter a result)
     (if (> a b)
@@ -900,7 +958,7 @@ A @tt{product} procedure computing an iterative process is as follows:
 
 A general @tt{accumulate} procedure can be written as follows:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (accumulate combiner null-value term a next b)
   (if (> a b)
       null-value
@@ -910,19 +968,19 @@ A general @tt{accumulate} procedure can be written as follows:
 
 We can write @tt{sum} and @tt{product} using @tt{accumulate}:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (sum term a next b)
   (accumulate + 0 term a next b))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (product term a next b)
   (accumulate * 1 term a next b))
 ]
 
 We can write an iterative @tt{accumulate} like this:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (accumulate combiner null-value term a next b)
   (define (iter a result)
     (if (> a b) result
@@ -932,7 +990,7 @@ We can write an iterative @tt{accumulate} like this:
 
 @section[#:tag "c1e33"]{Exercise 1.33}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (filtered-accumulate predicate combiner null-value term a next b)
   (define (iter a result)
     (cond ((> a b) result)
@@ -943,12 +1001,12 @@ We can write an iterative @tt{accumulate} like this:
   (iter a null-value))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (sum-of-primes a b)
   (filtered-accumulate prime? + 0 identity a inc b))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (product-of-relatively-prime n)
   (define (is-relatively-prime? i)
     (= 1 (gcd i n)))
@@ -959,7 +1017,7 @@ We can write an iterative @tt{accumulate} like this:
 
 Suppose we have the following procedure @tt{f}:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (f g)
   (g 2))
 ]
@@ -979,7 +1037,7 @@ This fails, because @tt{2} is not a procedure.
 We can see that the golden ratio is the fixed point of the function @tt{f(x) = x + 1/x} simply
 by evaluating:
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (define (golden-transform x) (+ 1 (/ 1 x)))
 (define golden-start 1.61803398875)
 (golden-transform golden-start)
@@ -994,7 +1052,7 @@ to @tt{b} by @tt{(a + b) / a = a / b = phi}. The left side can be expanded to @t
 
 We can then write a procedure to compute the golden ratio using @tt{fixed-point} as such:
 
-@examples[#:eval ev #:hidden
+@examples[#:label #f #:eval ev #:hidden
 (define tolerance 0.00001)
 (define (fixed-point f first-guess)
   (define (close-enough? v1 v2)
@@ -1007,7 +1065,7 @@ We can then write a procedure to compute the golden ratio using @tt{fixed-point}
                                         (try first-guess))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define golden-ratio
   (fixed-point golden-transform 1))
 ]
@@ -1020,7 +1078,7 @@ of the @tt{try} procedure.
 
 We can see the difference that average damping makes easily:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (36-f x) (/ (log 1000) (log x)))
 ]
 
@@ -1088,7 +1146,7 @@ And this does calculate the fixed point of the function:
 
 A procedure for evaluating a continued fraction for up to depth @tt{k}:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (cont-frac n d k)
   (define (loop i)
     (if (= i k) (/ (n i) (d i))
@@ -1099,14 +1157,14 @@ A procedure for evaluating a continued fraction for up to depth @tt{k}:
 
 Using an auxiliary procedure @tt{test-37}, we can see @tt{1/phi} being approximated:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (test-37 k)
   (/ 1 (cont-frac (lambda (i) 1.0)
                   (lambda (i) 1.0)
                   k)))
 ]
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (test-37 10)
 (test-37 100)
 ]
@@ -1116,7 +1174,7 @@ realize that it is much easier to create the fraction from the inside
 out, starting from @tt{k} and moving to @tt{1}. Then the answer is
 straightforward:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (cont-frac n d k)
   (define (loop current i)
     (if (= i 0) current
@@ -1131,7 +1189,7 @@ Using an internally-defined @tt{denom} function, which reduces the index
 by @tt{2} if it's greater than @tt{2} to make the logic simpler, we can
 use @tt{cont-frac} to approximate @tt{e} using Euler's expansion like this:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (euler-e-frac k)
   (define (denom i)
     (if (< i 3) i
@@ -1146,14 +1204,14 @@ use @tt{cont-frac} to approximate @tt{e} using Euler's expansion like this:
 
 Testing this procedure, we can see it does calculate @tt{e}:
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (euler-e-frac 10)
 (euler-e-frac 100)
 ]
 
 @section[#:tag "c1e39"]{Exercise 1.39}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (tan-cf x k)
   (define (numer i)
     (if (= i 1) x (* (square x) -1.0)))
@@ -1168,7 +1226,7 @@ We want @tt{cubic} to be a procedure of three parameter @tt{a}, @tt{b}, and @tt{
 that returns a procedure of one parameter @tt{x} that evaluates the function
 @tt{x^3 + ax^2 + bx + c}. This can be done as so:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (cubic a b c)
   (lambda (x)
     (+ (cube x)
@@ -1180,7 +1238,7 @@ that returns a procedure of one parameter @tt{x} that evaluates the function
 We can verify this works with an example, finding the root of the function
 @tt{x^3 + 2x^2 + 3x - 5} (which is approximately 0.89456):
 
-@examples[#:eval ev #:hidden
+@examples[#:label #f #:eval ev #:hidden
 (define dx 0.00001)
 (define (deriv g)
   (lambda (x)
@@ -1195,7 +1253,7 @@ We can verify this works with an example, finding the root of the function
   (fixed-point (newton-transform g) guess))
 ]
 
-@examples[#:eval ev
+@examples[#:label #f #:eval ev
 (newtons-method (cubic 2 3 -5) 1.0)
 ]
 
@@ -1203,7 +1261,7 @@ We can verify this works with an example, finding the root of the function
 
 The procedure definition of @tt{double} is simple:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (double f)
   (lambda (x) (f (f x))))
 ]
@@ -1231,7 +1289,7 @@ increments @tt{4^2 = 16} times. The answer to the expression is @tt{21}.
 Function composition is a powerful idea, but Scheme is expressive enough for
 a self-explanatory implementation:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (compose f g)
   (lambda (x) (f (g x))))
 ]
@@ -1240,7 +1298,7 @@ a self-explanatory implementation:
 
 We can define @tt{repeated} simply using @tt{compose} from the last exercise:
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (repeated f times)
   (if (= times 1) f
       (compose f (repeated f (- times 1)))))
@@ -1254,7 +1312,7 @@ which is just @tt{f}.
 
 @bold{TODO: Words}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (smooth f)
   (lambda (x)
     (/
@@ -1264,7 +1322,7 @@ which is just @tt{f}.
      3)))
 ]
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (n-smooth f times)
   (repeated smooth times))
 ]
@@ -1274,7 +1332,7 @@ which is just @tt{f}.
 The number of @tt{average-damp} calls needed for the @tt{n}th root to converge is
 the floor of log2(n).
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (nth-root x n)
   (fixed-point-of-transform (lambda (y) (/ x (expt y (- n 1))))
                             (repeated average-damp (floor (log-base n 2)))
@@ -1285,7 +1343,7 @@ the floor of log2(n).
 
 @section[#:tag "c1e46"]{Exercise 1.46}
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (iterative-improve good-enough? improve-guess)
   (define (iter guess)
     (if (good-enough? guess) guess
@@ -1295,7 +1353,7 @@ the floor of log2(n).
 
 The square root procedure is easy to rewrite using @tt{iterative-improve}.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (sqrt x)
   ((iterative-improve
      (lambda (guess) (< (abs (- (square guess) x)) 0.001))
@@ -1310,7 +1368,7 @@ guess, and returning the next guess if they are close enough. However,
 holds. The two results will be very close (as they have to be, if
 @tt{close-enough?} is going to return true), but not identical.
 
-@examples[#:eval ev #:no-prompt
+@examples[#:label #f #:eval ev #:no-prompt
 (define (fixed-point f first-guess)
   (define tolerance 0.00001)
   (define (close-enough? v1 v2)
