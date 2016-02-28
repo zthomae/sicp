@@ -648,13 +648,108 @@ use this to finish the procedure below:
 
 @section[#:tag "c1e20"]{Exercise 1.20}
 
-@bold{TODO: Show normal-order evaluation}
+The normal-evaluation of @tt{gcd} will be somewhat ugly to write. That said,
+the number of times @tt{remainder} is called will be equal to the number of
+@tt{remainder} calls in the fully-expanded expression.
 
-Under normal-order evaluation, @tt{remainder} is called 18 times.
+@verbatim{
+(gcd 206 40)
 
-@bold{TODO: Show applicative-order evaluation}
+(if (= 40 0)
+    206
+    (gcd 40 (remainder 206 40)))
 
-Under applicative-order evaluation, @tt{remainder} is called 4 times.
+(if (= (remainder 206 40) 0)
+    ...)
+
+(if (= 6 0)
+    40
+    (gcd (remainder 206 40) (remainder 40 (remainder 206 40))))
+
+(if (= (remainder 40 (remainder 206 40)) 0)
+    ...)
+
+(if (= 4 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+         (remainder (remainder 206 40)
+                    (remainder 40 (remainder 206 40)))))
+
+(if (= (remainder (remainder 206 40)
+                  (remainder 40 (remainder 206 40)))
+       0)
+    ...)
+
+(if (= 2 0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40)
+                    (remainder 40 (remainder 206 40)))
+         (remainder (remainder 40 (remainder 206 40))
+                    (remainder (remainder 206 40)
+                               (remainder 40 (remainder 206 40))))))
+
+(if (= (remainder (remainder 40 (remainder 206 40))
+                  (remainder (remainder 206 40)
+                             (remainder 40 (remainder 206 40))))
+       0)
+    ....)
+
+(if (= 0 0)
+    (remainder (remainder 206 40)
+               (remainder 40 (remainder 206 40)))
+    ...)
+}
+
+We evaluate @tt{remainder} @tt{14} times to calculate which branch of the @tt{if}
+statements to take. We then calculate @tt{remainder} @tt{4} more times when
+taking the last (non-recursive) branch, resulting in a total of @tt{18} calls to
+@tt{remainder}.
+
+In order to track this more legibly, I can, instead of substituting fully-expanded
+expressions, use "expressions" counting how many times @tt{remainder} is called
+within them:
+
+@verbatim{
+(gcd <0> <0>)
+(if (= <0> 0)
+    <0>
+    (gcd <0> (remainder <0> <0>)))
+
+(gcd <0> <1>)
+(if (= <1> 0)
+    <0>
+    (gcd <1> (remainder <0> <1>)))
+
+(gcd <1> <2>)
+(if (= <2> 0)
+    <1>)
+(gcd <2> <4>)
+
+(if (= <4> 0)
+    <2>
+    (gcd <4> (remainder <2> <4>)))
+
+(gcd <4> <7>)
+(if (= <7> 0)
+    <4>
+    ...)
+}
+
+Under applicative-order evaluation, @tt{remainder} is always evaluated
+before calling @tt{gcd}. In the end, it is only called @tt{4} times:
+
+@verbatim{
+(gcd 206 40)
+(gcd 40 (remainder 206 40))
+(gcd 40 6)
+(gcd 6 (remainder 40 6))
+(gcd 6 4)
+(gcd 4 (remainder 6 4))
+(gcd 4 2)
+(gcd 2 (remainder 4 2))
+(gcd 2 0)
+2
+}
 
 @section[#:tag "c1e21"]{Exercise 1.21}
 
