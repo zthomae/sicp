@@ -7,4 +7,6 @@
 (define (make-eval)
   (parameterize ([sandbox-output 'string]
                  [sandbox-error-output 'string])
-    (make-evaluator 'r5rs)))
+    (call-with-trusted-sandbox-configuration
+     (lambda ()
+       (make-evaluator '(planet zthomae/sicp))))))

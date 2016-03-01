@@ -10,20 +10,6 @@
 
 @define[ev @make-eval[]]
 
-@; TODO: Get working with a real sicp language
-@examples[#:label #f #:eval ev #:hidden
-(define (square x) (* x x))
-(define (cube x) (* x x x))
-(define true #t)
-(define false #f)
-(define nil '())
-(define (identity x) x)
-(define (inc x) (+ x 1))
-(define (dec x) (- x 1))
-;(define (runtime)
-;  (inexact->exact (truncate (* 1000 (current-inexact-milliseconds)))))
-]
-
 @section[#:tag "c1e1"]{Exercise 1.1}
 
 @examples[#:label #f #:eval ev

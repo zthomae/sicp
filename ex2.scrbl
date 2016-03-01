@@ -10,20 +10,6 @@
 
 @define[ev @make-eval[]]
 
-@; TODO: Get working with a real sicp language
-@examples[#:label #f #:eval ev #:hidden
-(define (square x) (* x x))
-(define (cube x) (* x x x))
-(define true #t)
-(define false #f)
-(define nil '())
-(define (identity x) x)
-(define (inc x) (+ x 1))
-(define (dec x) (- x 1))
-;(define (runtime)
-;  (inexact->exact (truncate (* 1000 (current-inexact-milliseconds)))))
-]
-
 @section[#:tag "c2e1"]{Exercise 2.1}
 
 This new @tt{make-rat} procedure is ultimately a case analysis. There are
