@@ -687,3 +687,47 @@ to create those functions on top of an object like this.
 
 @section[#:tag "c3e24"]{Exercise 3.24}
 
+This exercise is pretty easy given the implementation of @tt{make-table}
+on the previous page. We just need to create a generic @tt{assoc} procedure
+that can be called within our new @tt{make-table} variant.
+
+@examples[#:label #f #:eval ev #:no-prompt
+(define (generic-assoc key records same-key?)
+  (cond ((null? records) false)
+        ((same-key? key (caar records)) (car records))
+        (else (generic-assoc key (cdr records) same-key?))))
+
+(define (make-table same-key?)
+  (let ((assoc (lambda (key records) (generic-assoc key records same-key?)))
+        (local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (cdr record)
+                  false))
+            false)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+            (set-cdr! local-table
+                      (cons (list key-1
+                                  (cons key-2 value))
+                            (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+            ((eq? m 'insert-proc!) insert!)
+            (else (error "Unknown operation -- TABLE" m))))
+    dispatch))
+]
+
+@section[#:tag "c3e25"]{Exercise 3.25}
+
