@@ -694,7 +694,9 @@ and then dividing by the width:
 
 @section[#:tag "c2e17"]{Exercise 2.17}
 
-@bold{TODO: Words}
+To get the last pair of a given list (assuming it is nonempty, as indicated), we can
+recursively call @tt{last-pair} on successive @tt{cdr}s of the list until the @tt{cdr}
+is null:
 
 @examples[#:label #f #:eval ev #:no-prompt
 (define (last-pair l)
@@ -704,12 +706,16 @@ and then dividing by the width:
 
 @section[#:tag "c2e18"]{Exercise 2.18}
 
-@bold{TODO: Words}
+To implement @tt{reverse}, we will use an inner tail-recursive procedure that takes
+the accumulated reversed list and the unreversed portion of the original list as arguments.
 
 @examples[#:label #f #:eval ev #:no-prompt
 (define (reverse l)
-  (if (null? (cdr l)) l
-      (append (reverse (cdr l)) (list (car l)))))
+  (define (inner acc rest)
+    (if (null? rest)
+        acc
+        (inner (cons (car rest) acc) (cdr rest))))
+  (inner '() l))
 ]
 
 @section[#:tag "c2e19"]{Exercise 2.19}
@@ -940,27 +946,28 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
 
 @section[#:tag "c2e29"]{Exercise 2.29}
 
-@bold{TODO: Words}
+First of all, writing the selectors @tt{left-branch} and @tt{right-branch} is trivial,
+as well as @tt{branch-length} and @tt{branch-structure}:
 
 @examples[#:label #f #:eval ev #:no-prompt
-(define (left-branch mobile)
-  (car mobile))
+(define left-branch car)
 ]
 
 @examples[#:label #f #:eval ev #:no-prompt
-(define (right-branch mobile)
-  (cadr mobile))
+(define right-branch cadr)
 ]
 
 @examples[#:label #f #:eval ev #:no-prompt
-(define (branch-length branch)
-  (car branch))
+(define branch-length car)
 ]
 
 @examples[#:label #f #:eval ev #:no-prompt
-(define (branch-structure branch)
-  (cadr branch))
+(define branch-structure cadr)
 ]
+
+Finding the total weight of a branch is just a matter of summing the weights of the
+left and right branches recursively. We can do that using two procedures, @tt{total-weight}
+and @tt{weigh-branch}, both of which call each other:
 
 @examples[#:label #f #:eval ev #:no-prompt
 (define (weigh-branch branch)
@@ -971,6 +978,11 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
 (define (total-weight mobile)
   (+ (weigh-branch (left-branch mobile)) (weigh-branch (right-branch mobile))))
 ]
+
+To determine if a mobile is balanced, we can follow the definition of a balanced mobile
+and define a recursive procedure that tests whether two branches have equal torque (where
+@tt{torque} is computed by an inner procedure) and, if so, recursively checks if the
+mobiles rooted at each branch are balanced:
 
 @examples[#:label #f #:eval ev #:no-prompt
 (define (is-mobile-balanced? mobile)
@@ -989,9 +1001,11 @@ list flat. Avoiding @tt{append}ing @tt{nil} to a list is still done, of course.
          (are-submobiles-balanced? right)))))
 ]
 
-@bold{TODO: Testing}
-
-@bold{TODO: Changing list to cons (just change list? to pair?, I think)}
+Supposing that we changed the representation of mobiles to use @tt{cons} cells instead of
+lists, we would only need to change the selectors @tt{right-branch} and @tt{branch-structure}
+to use @tt{cdr} instead of @tt{cadr}, and also change the @tt{list?} checks to @tt{pair?} checks.
+(We could also use @tt{pair?} checks in this implementation, since lists are pairs, but I believe
+it is better to use the more restrictive selector).
 
 @section[#:tag "c2e30"]{Exercise 2.30}
 
@@ -1111,9 +1125,8 @@ To implement @tt{length}, we give a procedure that adds 1 to its second argument
 @section[#:tag "c2e34"]{Exercise 2.34}
 
 In every step, we add @tt{this-coeff} to the product of the already-computed
-@tt{higher-terms} and @tt{x}.
-
-@bold{TODO: More explanation}
+@tt{higher-terms} and @tt{x}. With an initial term of @tt{0}, this procedure
+readily applies itself to a use of @tt{accumulate}.
 
 @examples[#:label #f #:eval ev #:no-prompt
 (define (horner-eval x coefficient-sequence)
@@ -1352,9 +1365,8 @@ accumulating @tt{+} from @tt{0}, a basic pattern we've seen before.
   (filter (valid-triple? s) (make-ordered-triples n)))
 ]
 
-@bold{TODO: Rename that procedure. Really.}
-
-@bold{TODO: General all-distinct? procedure.}
+Because we only have triples, it's feasible to write a predicate to test if all
+of the elements are distinct manually, as we have done above.
 
 @section[#:tag "c2e42"]{Exercise 2.42}
 
@@ -1420,28 +1432,28 @@ just appends the new position to the end of an existing list:
 ]
 
 @tt{adjoin-position} takes the new column @tt{k} in the given @tt{queens} procedure.
-I don't have a use for it.
 
 @section[#:tag "c2e43"]{Exercise 2.43}
 
-@bold{These are just notes}
+In the original procedure, @tt{queen-cols} is recursively called once for a
+board size of @tt{k - 1}. In Louis' version, it is called @tt{k} times. Because
+it produces the same result every time, Louis' version of @tt{queens} will
+still work. However, these extra calculations will make the procedure much
+slower. When running @tt{(queens 8)}, @tt{(queen-cols 7)} will be called @tt{8}
+times. In each of these calls, @tt{(queen-cols 6)} will be called @tt{7} times,
+&etc.
 
-The essense of what is going wrong here is that @tt{queen-cols} is being called
-with the same arguments many times. Basically, in one @tt{(queen-cols k)} call
-@tt{(queen-cols (- k 1))} gets evaluated @tt{board-size} times. In general,
-@tt{(queen-cols (- k x))} gets evaluated @tt{board-size ^ x} times.
+To estimate the difference in running time, let's make a few simplifications to
+get upper bounds on the amount of time that these procedures can take. Suppose
+that every recursive call to @tt{queen-cols} except the base case takes the
+same time as a call to @tt{(queen-cols 8)}, since none are any worse than this,
+and that we call this time @tt{S}. There are then @tt{8} calls to @tt{queen-cols}
+in the original procedure, leaving a runtime of approximately @tt{8S}.
 
-I think I can simplify by not doing a full big-O analysis. The fast @tt{queens}
-calls @tt{queen-cols} @tt{board-size} times, once per @tt{k} in
-@tt{(enumerate-interval 1 board-size)}. The slow @tt{queens} calls each
-@tt{(queen-cols k)} @tt{board-size ^ (board-size - (board-size - k)) - 1} more
-times.
-
-Suppose that the fast @tt{queens} solves the eight-queens puzzle in time
-@tt{T}. How can I express the amount of time the slow @tt{queens} takes with
-respect to @tt{T}?
-
-@bold{TODO: Answer the question}
+Noting that every non-leaf node in the recursion tree of Louis' procedure has no
+more than @tt{8} children, we can find an upper bound on this by supposing that
+they all have exactly @tt{8}. We then have something on the order of
+@tt{S + 8(S + 8(S + 8(...)))} time, or approximately @tt{(8^8)S}.
 
 @section[#:tag "c2e44"]{Exercise 2.44}
 
