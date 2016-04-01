@@ -1,5 +1,4 @@
-SICP Solutions
---------------
+# SICP Solutions
 
 These are my solutions to the exercises in the
 [Structure and Interpretation of Computer Programs](https://mitpress.mit.edu/sicp/full-text/book/book.html)
@@ -14,3 +13,11 @@ some.
 Since I'm doing these for personal enlightenment, I reserve the right to do
 something other than what the exercise specifically asks for if I think I
 would learn more by doing so.
+
+## Setup
+
+In order to build the solutions, you need the [SICP package](https://github.com/sicp-lang/sicp):
+
+```
+$ raco pkg install sicp
+```

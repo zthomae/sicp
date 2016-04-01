@@ -10,6 +10,11 @@
 
 @define[ev @make-eval[]]
 
+@examples[#:eval ev #:hidden
+(define (square x) (* x x))
+(define (cube x) (* x x x))
+]
+
 @section[#:tag "c1e1"]{Exercise 1.1}
 
 @examples[#:label #f #:eval ev
