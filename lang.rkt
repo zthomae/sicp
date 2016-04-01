@@ -1,5 +1,7 @@
+;; This file is a modified version of one from the neil/sicp package:
+;; http://www.neilvandyke.org/racket/sicp/
+
 #lang r5rs
-;; $Id: main.rkt,v 1.22 2011/05/14 08:18:01 neilpair Exp $
 
 (#%require (only racket/base
                  current-inexact-milliseconds
@@ -9,11 +11,7 @@
                  make-parameter
                  random
                  void?)
-           ;; TODO: Is the Racket "#%module-begin" doing anything we don't
-           ;; want?
-           (rename racket/base racket:module-begin #%module-begin)
-;           (all-except (planet soegaard/sicp:2:=1/sicp) cons-stream)
-)
+           (rename racket/base racket:module-begin #%module-begin))
 
 (define-syntax sicp:error
   (syntax-rules ()
@@ -60,22 +58,6 @@
   (syntax-rules ()
     ((_) #f)))
 
-;; Note: This only works with top-level "define" in PLT.
-;;
-;; (define-syntax sicp-define
-;;   (syntax-rules ()
-;;     ((_ A B0 B1 ...)
-;;      (sicp-define:1 (define A B0 B1 ...) A))))
-;;
-;; (define-syntax sicp-define:1
-;;   (syntax-rules ()
-;;     ((_ DEF (X0 X1 ...))
-;;      (sicp-define:1 DEF  X0))
-;;     ((_ DEF ())
-;;      (%sicp-syntax-error "Invalid define form"))
-;;     ((_ DEF X0)
-;;      (begin DEF (quote X0)))))
-
 (define-syntax check-expect
   (syntax-rules ()
     ((_ VAL EXPECT)
@@ -111,31 +93,10 @@
 (define (%approx-equal? a b)
   (< (abs (- a b)) 1/10000))
 
-;;; @section Print Handler
-
-;; (define %current-print-handler-ate-first-void? (make-parameter #f))
-;; 
-;; (define (%make-print-handler)
-;;   (let ((skip-void? #t))
-;;     (lambda (val)
-;;       (let ((sv? skip-void?))
-;;         (set! skip-void? #f)
-;;         (or (and sv? (void? val))
-;;             (let ((out (current-output-port)))
-;;               (display "[PRINT] " out) ; DEBUG
-;;               (write val out)
-;;               (newline out)
-;;               (flush-output out)))))))
-;; 
-;; (current-print (%make-print-handler))
-
-;;;
-
 (#%provide
  (for-syntax syntax-rules ...)
  (all-from-except r5rs #%module-begin)
  (rename racket:module-begin #%module-begin)
-; (all-from (planet soegaard/sicp:2:=1/sicp))
  (rename sicp:error  error)
  (rename sicp:random random)
  check-expect
