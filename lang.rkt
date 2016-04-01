@@ -13,7 +13,7 @@
            ;; want?
            (rename racket/base racket:module-begin #%module-begin)
 ;           (all-except (planet soegaard/sicp:2:=1/sicp) cons-stream)
-           (only "uninstall.ss" uninstall-sicp))
+)
 
 (define-syntax sicp:error
   (syntax-rules ()
@@ -136,7 +136,6 @@
  (all-from-except r5rs #%module-begin)
  (rename racket:module-begin #%module-begin)
 ; (all-from (planet soegaard/sicp:2:=1/sicp))
- (all-from "uninstall.ss")
  (rename sicp:error  error)
  (rename sicp:random random)
  check-expect
