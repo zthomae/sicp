@@ -2716,7 +2716,7 @@ Despite the naming conventions, I believe this is a reasonable answer.
       '()
       (let ((pair (car pairs)))
         (adjoin-set (make-leaf (car pair)
-                               (cadr pairs))
+                               (cadr pair))
                     (make-leaf-set (cdr pairs))))))
 ]
 To decode the given @tt{sample-message}, using the given Huffman tree,
@@ -2816,7 +2816,7 @@ using our previously decoded message:
 @examples[#:label #f #:eval ev
 (define (encode message tree)
   (if (null? message)
-      '()
+      nil
       (append (encode-symbol (car message) tree)
               (encode (cdr message) tree))))
 (equal? sample-message (encode (decode sample-message sample-tree) sample-tree))
@@ -2863,8 +2863,7 @@ The final procedure is below:
 
 We can set up the tree and the message as such:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval ev #:no-prompt
 (define song-weights
   '((a 2) (boom 1) (get 2) (job 2) (na 16) (sha 3) (yip 9) (wah 1)))
 
@@ -2877,28 +2876,27 @@ We can set up the tree and the message as such:
         sha boom))
 
 (define song-tree (generate-huffman-tree song-weights))
-}
+]
 
 @bold{TODO: Create the weights from the message?}
 
 Encoding the message is then simple, and we can see that it has a length of @tt{84}:
 
-@;examples[#:eval ev
-@codeblock{
+@examples[#:label #f #:eval ev
 (length (encode song song-tree))
-}
+]
 
-If we used a fixed-length code, we would need to use a code of 3 bits, for @tt{2^3 = 8}
-symbols. Since there are
+If we used a fixed-length code, we would need to use a code of 3 bits, for
+@tt{2^3 = 8} symbols. Since there are
 
-@;examples[#:eval ev
-@codeblock{
+@examples[#:label #f #:eval ev
 (length song)
-}
+]
 
-symbols in the song, we would need @tt{3 * 36 = 108} bits using our fixed-length code.
-Just like the first example in the chapter, the encoded length with the Huffman tree is
-@tt{7/9}th the length of the fixed-length encoding.
+symbols in the song, we would need @tt{3 * 36 = 108} bits using our
+fixed-length code.  Just like the first example in the chapter, the encoded
+length with the Huffman tree is @tt{7/9}th the length of the fixed-length
+encoding.
 
 @bold{TODO: More about efficiency?}
 
@@ -2981,10 +2979,10 @@ We could also add a procedure for constant exponentiation, as per @secref{c2e56}
         (deriv (base exp) var))))
 }
 
-If, however, we instead made tables with the operators as the @tt{op}s and @tt{'deriv}
-as the @tt{type}, the opposite of what we do now, we would have to register these
-differently, swapping the second and third arguments to @tt{put} and changing the call
-to @tt{get} in @tt{deriv}.
+If, however, we instead made tables with the operators as the @tt{op}s and
+@tt{'deriv} as the @tt{type}, the opposite of what we do now, we would have to
+register these differently, swapping the second and third arguments to @tt{put}
+and changing the call to @tt{get} in @tt{deriv}.
 
 @bold{TODO: come back later and test this}
 
@@ -3272,7 +3270,6 @@ for two arguments of the same type isn't found. This is clearly wrong.
 We could modify @tt{apply-generic} to not attempt to look up coercions if
 the types are the same. It might look something like this:
 
-@;examples[#:eval ev #:no-prompt
 @codeblock{
 (define (apply-generic op . args)
   (let ((type-tags (map type-tag args)))

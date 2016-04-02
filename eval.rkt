@@ -5,8 +5,10 @@
 (provide make-eval)
 
 (define (make-eval)
-  (parameterize ([sandbox-output 'string]
-                 [sandbox-error-output 'string])
-    (call-with-trusted-sandbox-configuration
-     (lambda ()
-       (make-evaluator 'sicp)))))
+  (define ev (parameterize ([sandbox-output 'string]
+                            [sandbox-error-output 'string])
+               (call-with-trusted-sandbox-configuration
+                (lambda ()
+                  (make-evaluator 'sicp)))))
+  (ev '(#%require (only racket/base error)))
+  ev)
