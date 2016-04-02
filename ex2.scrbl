@@ -1455,40 +1455,19 @@ more than @tt{8} children, we can find an upper bound on this by supposing that
 they all have exactly @tt{8}. We then have something on the order of
 @tt{S + 8(S + 8(S + 8(...)))} time, or approximately @tt{(8^8)S}.
 
+@; Evaluator for painting
+@define[paint-ev @make-eval[]]
+@examples[#:eval paint-ev #:hidden
+(#%require sicp-pict)
+]
+
 @section[#:tag "c2e44"]{Exercise 2.44}
 
-@bold{NOTE: Although I could possibly do so, I am not evaluating these
-procedures on real painters.}  This means that I will need to study how the
-procedures making up the picture language work, and apply them on paper. I
-believe this is how these exercises are best done.
+@tt{up-split} is almost identical to @tt{right-split}. Knowing how @tt{below}'s
+arguments work, we can use it properly to place the smaller split painters
+above the original as specified:
 
-Chief among these right now is @tt{below}, since we need to place one painter
-on top of another to meet the image specification. We can see by reading the
-provided code that @tt{below} can be sketched like this:
-
-@verbatim{
-(define (below low high)
-;; return a painter with `low' placed below `high'
-)
-}
-
-For example, notice how @tt{top-left} is the second argument in the first call to
-@tt{below} and @tt{bottom-right} is the first argument in the second call:
-
-@verbatim{
-(define (corner-split painter n)
-;; ...
-          (beside (below painter top-left)
-                  (below bottom-right corner))
-;; ...
-)
-}
-
-@tt{up-split} is almost identical to @tt{right-split}. Knowing how @tt{below}'s arguments
-work, we can use it properly to place the smaller split painters above the original
-as specified:
-
-@examples[#:label #f #:eval ev #:no-prompt
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (up-split painter n)
   (if (= n 0)
       painter
@@ -1501,7 +1480,7 @@ as specified:
 Writing @tt{up-split}, it should have been apparent that it was almost identical to
 @tt{right-split}. Now we generalize it into a general @tt{split} procedure:
 
-@examples[#:label #f #:eval ev #:no-prompt
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (split macro-op micro-op)
   (define (apply-split painter n)
     (if (= n 0)
@@ -1519,7 +1498,7 @@ calling it after.
 
 Vectors can simply be another pair joined by @tt{cons}:
 
-@examples[#:label #f #:eval ev #:no-prompt
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (make-vect x y) (cons x y))
 
 (define (xcor-vect v) (car v))
@@ -1529,7 +1508,7 @@ Vectors can simply be another pair joined by @tt{cons}:
 
 The operators @tt{add-vect}, @tt{sub-vect}, and @tt{scale-vect} are similarly trivial:
 
-@examples[#:label #f #:eval ev #:no-prompt
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (add-vect v1 v2)
   (make-vect (+ (xcor-vect v1) (xcor-vect v2))
              (+ (ycor-vect v1) (ycor-vect v2))))
@@ -1547,7 +1526,7 @@ The operators @tt{add-vect}, @tt{sub-vect}, and @tt{scale-vect} are similarly tr
 
 If frames are defined using a list:
 
-@examples[#:label #f #:eval ev #:no-prompt
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (origin-frame frame) (car frame))
 
 (define (edge1-frame frame) (cadr frame))
@@ -1558,7 +1537,7 @@ If frames are defined using a list:
 If frames are defined by @tt{cons}ing an origin vector onto a pair of edge
 vectors:
 
-@examples[#:label #f #:eval ev #:no-prompt
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (origin-frame frame) (car frame))
 
 (define (edge1-frame frame) (cadr frame))
@@ -1579,14 +1558,13 @@ list-making procedures like @tt{cons} and @tt{append} before rote practice
 reinforced my understanding of the list model and the procedures working in it.
 However, these exercises are very boring to comment on.
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (make-segment start end) (cons start end))
 
 (define (start-segment segment) (car segment))
 
 (define (end-segment segment) (cdr segment))
-}
+]
 
 @section[#:tag "c2e49"]{Exercise 2.49}
 
@@ -1595,8 +1573,7 @@ These procedures are victims to creeping indentation due to the nested
 
 First, an outline painter:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define outline-painter
   (let ((bottom-left (make-vect 0.0 0.0))
         (bottom-right (make-vect 1.0 0.0))
@@ -1608,12 +1585,11 @@ First, an outline painter:
           (top (make-segment top-left top-right)))
       (segments->painter
        (list bottom left right top)))))
-}
+]
 
 Next, an "X" painter:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define x-painter
   (let ((bottom-left (make-vect 0.0 0.0))
         (bottom-right (make-vect 1.0 0.0))
@@ -1623,7 +1599,7 @@ Next, an "X" painter:
      (list
       (make-segment bottom-left top-right)
       (make-segment top-left bottom-right)))))
-}
+]
 
 I could generalize these two to be applications of a procedure creating
 painters working on the corners of a frame, but I won't.
@@ -1631,8 +1607,7 @@ painters working on the corners of a frame, but I won't.
 A painter for a diamond whose corners are the midpoints of the frame (using
 hardcoded midpoints because we are working on the unit frame):
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define diamond-painter
   (let ((bottom (make-vect 0.5 0.0))
         (left (make-vect 0.0 0.5))
@@ -1644,7 +1619,7 @@ hardcoded midpoints because we are working on the unit frame):
           (right-bottom (make-segment right bottom)))
       (segments->painter
        (list bottom-left left-top top-right right-bottom)))))
-}
+]
 
 Defining @tt{wave} is simply a matter of supplying @tt{segments->painter} with
 a more complex list of segments. I don't think the amount to be learned here is
@@ -1655,32 +1630,27 @@ worth the work it takes to find these edges based on the images in the book.
 The first, @tt{flip-horiz}, is defined similarly to @tt{flip-vert}, with the new origin
 in the bottom-right corner and the edges coming left and up from it:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (flip-horiz painter)
   (transform-painter painter
                      (make-vect 1 0)
                      (make-vect 0 0)
                      (make-vect 1 1)))
-}
+]
 
 The rest are defined in terms of painter transformations we already have:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (rotate180 painter)
   (flip-vert painter))
-}
+]
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (rotate270 painter)
   (flip-horiz (rotate90 painter)))
-}
+]
 
 @section[#:tag "c2e51"]{Exercise 2.51}
-
-We discussed how @tt{below} worked in @secref{c2e44}. Now we implement that.
 
 When defining @tt{below} using calls to @tt{transform-painter}, I have chosen
 to diverge from the style used by the given definition of @tt{beside}. I
@@ -1698,8 +1668,7 @@ nonspecific names @tt{painter1} and @tt{painter2}.
 I believe this procedure is easier to read than the @tt{beside} procedure it is
 supposed to be based on.
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (below painter-bottom painter-top)
   (let ((bottom-left (make-vect 0.0 0.0))
         (botom-right (make-vect 1.0 0.0))
@@ -1718,7 +1687,7 @@ supposed to be based on.
       (lambda (frame)
         (paint-bottom frame)
         (paint-top frame)))))
-}
+]
 
 To define @tt{below} in terms of @tt{beside}, we have to rotate the whole
 painter resulting from @tt{beside} and also rotate the painter given to
@@ -1736,12 +1705,11 @@ upright at the end. This means turning them @tt{90} degrees clockwise (or
 
 The whole procedure is as follows:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (below bottom top)
   (rotate90
    (beside (rotate270 bottom) (rotate270 top))))
-}
+]
 
 @section[#:tag "c2e52"]{Exercise 2.52}
 
@@ -1751,30 +1719,28 @@ segments to it.
 To modify @tt{corner-split}, I will apply a @tt{flip-horiz} to the base case
 and to the bottom-left painter:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (corner-split painter n)
   (if (= n 0)
       (flip-horiz painter)
       (let ((up (up-split painter (- n 1)))
             (right (right-split painter (- n 1))))
-        (let ((top-left (beside up up)
+        (let ((top-left (beside up up))
               (bottom-right (below up right))
               (corner (corner-split painter (- n 1))))
           (beside (below (flip-horiz painter) top-left)
-                  (below bottom-right corner)))))))
-}
+                  (below bottom-right corner))))))
+]
 
 To modify @tt{square-limit}, I will make the patterns face outward by swapping
 the left and right halves in the @tt{square-of-four} call:
 
-@;examples[#:eval ev #:no-prompt
-@codeblock{
+@examples[#:label #f #:eval paint-ev #:no-prompt
 (define (square-limit painter n)
   (let ((combine4 (square-of-four identity flip-horiz
                                   flip-vert rotate180)))
     (combine4 (corner-split painter n))))
-}
+]
 
 @bold{TODO: This exercise could really use images}
 
