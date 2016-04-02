@@ -1475,6 +1475,8 @@ above the original as specified:
         (below painter (beside smaller smaller)))))
 ]
 
+@image["img/up-split.png"]
+
 @section[#:tag "c2e45"]{Exercise 2.45}
 
 Writing @tt{up-split}, it should have been apparent that it was almost identical to
@@ -1571,38 +1573,51 @@ However, these exercises are very boring to comment on.
 These procedures are victims to creeping indentation due to the nested
 @tt{let}s, but we don't have the tools to do better at the moment.
 
-First, an outline painter:
+As a note: The painter considers the upper bound of @tt{1.0} to not be
+inside the image -- that is, points at an X or Y coordinate of @tt{1.0}
+will not be drawn. To get the semantics we want, we define an @tt{upper-bound}
+that can be drawn:
+
+@examples[#:label #f #:eval paint-ev #:no-prompt
+(define upper-bound 0.995)
+]
+
+Since we're reusing the four corner points, we'll define them separately:
+@examples[#:label #f #:eval paint-ev #:no-prompt
+(define bottom-left (make-vect 0.0 0.0))
+(define bottom-right (make-vect upper-bound 0.0))
+(define top-left (make-vect 0.0 upper-bound))
+(define top-right (make-vect upper-bound upper-bound))
+]
+
+Next, an outline painter:
 
 @examples[#:label #f #:eval paint-ev #:no-prompt
 (define outline-painter
-  (let ((bottom-left (make-vect 0.0 0.0))
-        (bottom-right (make-vect 1.0 0.0))
-        (top-left (make-vect 0.0 1.0))
-        (top-right (make-vect 1 1)))
-    (let ((bottom (make-segment bottom-left bottom-right))
-          (left (make-segment bottom-left top-left))
-          (right (make-segment bottom-right top-right))
-          (top (make-segment top-left top-right)))
-      (segments->painter
-       (list bottom left right top)))))
+  (let ((bottom (make-segment bottom-left bottom-right))
+        (left (make-segment bottom-left top-left))
+        (right (make-segment bottom-right top-right))
+        (top (make-segment top-left top-right)))
+    (segments->painter
+      (list bottom left right top))))
 ]
+
+@image["img/outline.png"]
 
 Next, an "X" painter:
 
 @examples[#:label #f #:eval paint-ev #:no-prompt
 (define x-painter
-  (let ((bottom-left (make-vect 0.0 0.0))
-        (bottom-right (make-vect 1.0 0.0))
-        (top-left (make-vect 0.0 1.0))
-        (top-right (make-vect 1.0 1.0)))
-    (segments->painter
-     (list
+  (segments->painter
+    (list
       (make-segment bottom-left top-right)
-      (make-segment top-left bottom-right)))))
+      (make-segment top-left bottom-right))))
 ]
 
-I could generalize these two to be applications of a procedure creating
-painters working on the corners of a frame, but I won't.
+@image["img/x.png"]
+
+These two procedures could be generalized to be applications of a procedure
+creating painters working on the corners of a frame.
 
 A painter for a diamond whose corners are the midpoints of the frame (using
 hardcoded midpoints because we are working on the unit frame):
@@ -1611,8 +1626,8 @@ hardcoded midpoints because we are working on the unit frame):
 (define diamond-painter
   (let ((bottom (make-vect 0.5 0.0))
         (left (make-vect 0.0 0.5))
-        (right (make-vect 1.0 0.5))
-        (top (make-vect 0.5 1.0)))
+        (right (make-vect upper-bound 0.5))
+        (top (make-vect 0.5 upper-bound)))
     (let ((bottom-left (make-segment bottom left))
           (left-top (make-segment left top))
           (top-right (make-segment top right))
@@ -1620,6 +1635,8 @@ hardcoded midpoints because we are working on the unit frame):
       (segments->painter
        (list bottom-left left-top top-right right-bottom)))))
 ]
+
+@image["img/diamond.png"]
 
 Defining @tt{wave} is simply a matter of supplying @tt{segments->painter} with
 a more complex list of segments. I don't think the amount to be learned here is
@@ -1671,9 +1688,9 @@ supposed to be based on.
 @examples[#:label #f #:eval paint-ev #:no-prompt
 (define (below painter-bottom painter-top)
   (let ((bottom-left (make-vect 0.0 0.0))
-        (botom-right (make-vect 1.0 0.0))
+        (bottom-right (make-vect 1.0 0.0))
         (top-left (make-vect 0.0 1.0))
-        (mid-left (scale-vect top-left 0.5)))
+        (mid-left (scale-vect 0.5 top-left)))
     (let ((paint-bottom
            (transform-painter painter-bottom
                               bottom-left
@@ -1742,7 +1759,7 @@ the left and right halves in the @tt{square-of-four} call:
     (combine4 (corner-split painter n))))
 ]
 
-@bold{TODO: This exercise could really use images}
+@image["img/square-limit.png"]
 
 @section[#:tag "c2e53"]{Exercise 2.53}
 
