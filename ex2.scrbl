@@ -2861,12 +2861,38 @@ The final procedure is below:
 
 @section[#:tag "c2e70"]{Exercise 2.70}
 
+The first thing we need to do is generate the weights from the
+text of the song. This can be done simply but inefficiently by
+creating a list of symbol-count pairs that we update as we
+traverse the list of symbols.
+
+@examples[#:label #f #:eval ev #:no-prompt
+(define (partition-pairs ps key)
+  (define (loop front back)
+    (cond ((null? back) (cons front back))
+          ((eq? key (caar back)) (cons front back))
+          (else (loop (cons (car back) front) (cdr back)))))
+  (loop '() ps))
+
+(define (generate-weights symlist)
+  (define (add-symbol weights symbols)
+    (if (null? symbols)
+        weights
+        (let ((partition (partition-pairs weights (car symbols))))
+          (let ((front (car partition))
+                (back (cdr partition)))
+            (if (null? back)
+                (add-symbol (cons (cons (car symbols) 1) front) (cdr symbols))
+                (add-symbol (append front
+                                    (cons (cons (caar back) (+ 1 (cdar back)))
+                                          (cdr back)))
+                            (cdr symbols)))))))
+  (map (lambda (p) (list (car p) (cdr p))) (add-symbol '() symlist)))
+]
+
 We can set up the tree and the message as such:
 
 @examples[#:label #f #:eval ev #:no-prompt
-(define song-weights
-  '((a 2) (boom 1) (get 2) (job 2) (na 16) (sha 3) (yip 9) (wah 1)))
-
 (define song
   '(get a job
         sha na na na na na na na na
@@ -2875,10 +2901,15 @@ We can set up the tree and the message as such:
         wah yip yip yip yip yip yip yip yip yip
         sha boom))
 
-(define song-tree (generate-huffman-tree song-weights))
+(define song-tree (generate-huffman-tree (generate-weights song)))
 ]
 
-@bold{TODO: Create the weights from the message?}
+Using the @tt{pretty-display} function (from Racket), we can see
+the structure of the constructed tree:
+
+@examples[#:label #f #:eval ev
+(pretty-display song-tree)
+]
 
 Encoding the message is then simple, and we can see that it has a length of @tt{84}:
 
