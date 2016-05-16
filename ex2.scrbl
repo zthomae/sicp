@@ -2672,7 +2672,7 @@ Despite the naming conventions, I believe this is a reasonable answer.
       (let ((e (entry set)))
         (let ((entry-key (car e))
               (entry-val (cdr e)))
-          (cond ((= key entry-key) (cdr (entry set)))
+          (cond ((= key entry-key) entry-val)
                 ((< key entry-key) (lookup key (left-branch set)))
                 ((> key entry-key) (lookup key (right-branch set))))))))
 ]
