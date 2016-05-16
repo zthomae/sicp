@@ -778,6 +778,76 @@ functions easier when operating on the same table.
 
 @section[#:tag "c3e26"]{Exercise 3.26}
 
+Suppose at first that we will only allow keys to be numbers,
+like in @secref{c2e66}. Besides slightly changing conventions to
+match the ones we have now, the only new work we have to do is
+adding an @tt{insert!} procedure to modify the binary tree.
+
+The most significant change is that every tree root must also
+contain a "dummy" first entry, so that we have a pointer to a
+tree that we can use @tt{set-cdr!} on. This is accomplished by
+using the @tt{make-table} procedure defined earlier to create
+our empty trees (after all, if a tree is a table, then every
+subtree is also a table). Other than this change, the logic is
+almost identical, and the two procedures are almost identical.
+
+@examples[#:hidden #:eval ev
+(define (entry tree) (car tree))
+(define (left-branch tree) (cadr tree))
+(define (right-branch tree) (caddr tree))
+
+(define (make-tree entry left right)
+  (list entry left right))
+
+(define (make-table)
+  (list '*table*))
+]
+
+@examples[#:label #f #:eval ev #:no-prompt
+(define (lookup table)
+  (lambda (key)
+    (let ((entries (cdr table)))
+      (if (null? entries)
+          false
+          (let ((e (entry entries)))
+            (let ((entry-key (car e))
+                  (entry-val (cdr e)))
+              (cond ((= key entry-key) entry-val)
+                    ((< key entry-key) ((lookup (left-branch entries)) key))
+                    ((> key entry-key) ((lookup (right-branch entries)) key)))))))))
+
+(define (insert! table)
+  (lambda (key value)
+    (let ((entries (cdr table)))
+      (if (null? entries)
+          (set-cdr! table (make-tree (cons key value) (make-table) (make-table)))
+          (let ((e (entry entries)))
+            (let ((entry-key (car e)))
+              (cond ((= key entry-key) (set-cdr! e value))
+                    ((< key entry-key) ((insert! (left-branch entries)) key value))
+                    ((> key entry-key) ((insert! (right-branch entries)) key value)))))))))
+]
+
+An example of this in use:
+
+@examples[#:label #f #:eval ev
+(define t (make-table))
+(define lookup_t (lookup t))
+(define insert!_t (insert! t))
+(insert!_t 4 5)
+(lookup_t 4)
+(insert!_t 3 8)
+(insert!_t 2 1)
+(insert!_t 7 4)
+(lookup_t 3)
+(lookup_t 2)
+(lookup_t 7)
+(pretty-display t)
+]
+
+@bold{TODO: Generic table}
+
+@;{
 In order to store any orderable data type as a key in the
 table, we must also supply an ordering function to these
 operations. There are two options:
@@ -786,3 +856,4 @@ operations. There are two options:
  @item["Make the ordering function an argument to the table functions"]
  @item["Store the ordering function in the table"]
 ]
+}
