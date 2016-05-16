@@ -753,27 +753,26 @@ functions easier when operating on the same table.
 @bold{TODO: Look more carefully at this}
 
 @examples[#:label #f #:eval ev #:no-prompt
-
 (define (lookup table)
-  (lambda keys
+  (lambda (keys)
     (if (null? keys) table
         (let ((record (assoc (car keys) (cdr table))))
           (if record
-              (apply (lookup record) (cdr keys))
+              ((lookup record) (cdr keys))
               false)))))
 ]
 
 @examples[#:label #f #:eval ev #:no-prompt
 (define (insert! table)
-  (lambda args
+  (lambda (args)
     (if (not (null? args))
         (if (null? (cdr args))
             (set-cdr! table (car args))
             (let ((subtable (assoc (car args) (cdr table))))
               (if subtable
-                  (apply (insert! subtable) (cdr args))
+                  ((insert! subtable) (cdr args))
                   (let ((new-subtable (list (car args))))
-                    (apply (insert! new-subtable) (cdr args))
+                    ((insert! new-subtable) (cdr args))
                     (set-cdr! table (cons new-subtable (cdr table))))))))))
 ]
 
