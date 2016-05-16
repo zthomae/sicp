@@ -731,3 +731,48 @@ that can be called within our new @tt{make-table} variant.
 
 @section[#:tag "c3e25"]{Exercise 3.25}
 
+To generalize tables beyond one and two dimensional keys, we
+can imagine that a table entry is either a table or a key.
+When performing a lookup, we should expect to find a value
+only after looking up every one of the keys we were supplied
+with. If a key is not present or if a lookup evaluates to a
+value before exhausting the given keys, a lookup is said to
+have failed. If the list of keys is exhausted before finding
+a value, I believe returning the subtable is the best thing
+to do.
+
+Because I am going to be returning tables in addition to
+values, I believe it is better to define @tt{lookup} and
+@tt{insert} as functions taking tables rather than
+constructing the tables as objects containing these
+methods. However, I am going to construct these methods
+differently than we did previously, by making them take
+advantage of partial application to make the use of these
+functions easier when operating on the same table.
+
+@bold{TODO: Look more carefully at this}
+
+@examples[#:label #f #:eval ev #:no-prompt
+
+(define (lookup table)
+  (lambda keys
+    (if (null? keys) table
+        (let ((record (assoc (car keys) (cdr table))))
+          (if record
+              (apply (lookup record) (cdr keys))
+              false)))))
+]
+
+@examples[#:label #f #:eval ev #:no-prompt
+(define (insert! table)
+  (lambda args
+    (if (not (null? args))
+        (if (null? (cdr args))
+            (set-cdr! table (car args))
+            (let ((subtable (assoc (car args) (cdr table))))
+              (if subtable
+                  (apply (insert! subtable) (cdr args))
+                  (let ((new-subtable (list (car args))))
+                    (apply (insert! new-subtable) (cdr args))
+                    (set-cdr! table (cons new-subtable (cdr table))))))))))
+]
