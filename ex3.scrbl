@@ -776,3 +776,14 @@ functions easier when operating on the same table.
                     (apply (insert! new-subtable) (cdr args))
                     (set-cdr! table (cons new-subtable (cdr table))))))))))
 ]
+
+@section[#:tag "c3e26"]{Exercise 3.26}
+
+In order to store any orderable data type as a key in the
+table, we must also supply an ordering function to these
+operations. There are two options:
+
+@itemlist[
+ @item["Make the ordering function an argument to the table functions"]
+ @item["Store the ordering function in the table"]
+]

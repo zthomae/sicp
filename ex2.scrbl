@@ -2665,7 +2665,17 @@ Despite the naming conventions, I believe this is a reasonable answer.
 
 @section[#:tag "c2e66"]{Exercise 2.66}
 
-@bold{TODO: Will be done after recovering from data loss}
+@examples[#:label #f #:eval ev #:no-prompt
+(define (lookup key set)
+  (if (null? set)
+      false
+      (let ((e (entry set)))
+        (let ((entry-key (car e))
+              (entry-val (cdr e)))
+          (cond ((= key entry-key) (cdr (entry set)))
+                ((< key entry-key) (lookup key (left-branch set)))
+                ((> key entry-key) (lookup key (right-branch set))))))))
+]
 
 @section[#:tag "c2e67"]{Exercise 2.67}
 
