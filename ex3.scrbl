@@ -893,3 +893,25 @@ An implementation of generic tables is as follows:
                         ((lt key entry-key) ((insert! (left-branch entries)) key value))
                         ((gt key entry-key) ((insert! (right-branch entries)) key value)))))))))))
 ]
+
+@section[#:tag "c3e27"]{Exercise 3.27}
+
+@tt{memo-fib} is called recursively exponentially-many
+times, but each of these calls will only do real work if the
+call to @tt{lookup} doesn't return a previously-computed
+result. After it has been computed, it is inserted in the
+table to be found again. Because all @tt{memo-fib} calls
+share the same table, and because new results can be computed
+from old results in constant time, the overall running time
+for @tt{memo-fib} is now linear.
+
+It would @emph{not} have worked to define @tt{memo-fib} as 
+@tt{(memoize (fib)} because the unmemoized @tt{fib}
+function would be used to compute results. Only the direct
+results of calling @tt{memo-fib} would be stored in the
+table, so calling @tt{((memoize fib) 3)} would only store
+the result for @tt{3} in the table, and not any of the
+subproblem results. In other words, the algorithm would no
+longer be able to run in linear time because it would not be
+reusing all previously-computed results as you would expect
+it to.
