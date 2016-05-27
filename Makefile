@@ -3,6 +3,7 @@ solutions: solutions.scrbl ex1.scrbl ex2.scrbl ex3.scrbl eval.rkt
 	raco scribble --htmls --dest . solutions.scrbl
 
 push: solutions
+	git push origin master
 	git subtree push --prefix solutions origin gh-pages
 
 .PHONY: push
