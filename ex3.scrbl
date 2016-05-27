@@ -845,15 +845,51 @@ An example of this in use:
 (pretty-display t)
 ]
 
-@bold{TODO: Generic table}
 
-@;{
 In order to store any orderable data type as a key in the
 table, we must also supply an ordering function to these
-operations. There are two options:
+operations. One way to do this is to make higher-order
+functions that return @tt{lookup} and @tt{insert!} functions
+with the ordering function bound. To make this easier to use,
+we can standardize our comparator function to follow this format:
 
-@itemlist[
- @item["Make the ordering function an argument to the table functions"]
- @item["Store the ordering function in the table"]
-]
+@verbatim{
+cmp(a, b) = -1 if a < b
+          |  0 if a = b
+          |  1 if a > b
 }
+
+An implementation of generic tables is as follows:
+
+@examples[#:label #f #:eval ev #:no-prompt
+(define (make-lookup cmp)
+  (let ((lt (lambda (a b) (= -1 (cmp a b))))
+        (eq (lambda (a b) (= 0 (cmp a b))))
+        (gt (lambda (a b) (= 1 (cmp a b)))))
+    (lambda (table)
+      (lambda (key)
+        (let ((entries (cdr table)))
+          (if (null? entries)
+              false
+              (let ((e (entry entries)))
+                (let ((entry-key (car e))
+                      (entry-val (cdr e)))
+                  (cond ((eq key entry-key) entry-val)
+                        ((lt key entry-key) ((lookup (left-branch entries)) key))
+                        ((gt key entry-key) ((lookup (right-branch entries)) key)))))))))))
+
+(define (make-insert! cmp)
+  (let ((lt (lambda (a b) (= -1 (cmp a b))))
+        (eq (lambda (a b) (= 0 (cmp a b))))
+        (gt (lambda (a b) (= 1 (cmp a b)))))
+    (lambda (table)
+      (lambda (key value)
+        (let ((entries (cdr table)))
+          (if (null? entries)
+              (set-cdr! table (make-tree (cons key value) (make-table) (make-table)))
+              (let ((e (entry entries)))
+                (let ((entry-key (car e)))
+                  (cond ((eq key entry-key) (set-cdr! e value))
+                        ((lt key entry-key) ((insert! (left-branch entries)) key value))
+                        ((gt key entry-key) ((insert! (right-branch entries)) key value)))))))))))
+]
