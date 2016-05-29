@@ -974,11 +974,12 @@ longer be able to run in linear time because it would not be
 reusing all previously-computed results as you would expect
 it to.
 
-@;{
 @section[#:tag "c3e28"]{Exercise 3.28}
 
 @examples[
  #:hidden #:eval ev
+ (define (make-queue) (cons '() '()))
+ 
  (define (make-wire)
    (let ((signal-value 0) (action-procedures '()))
      (define (set-my-signal! new-value)
@@ -1266,6 +1267,10 @@ recursion.
  (define the-agenda (make-agenda))
  ]
 
+This is the interactive session that we are expecting to see,
+with @tt{accept-action-procedure} immediately running the
+procedure after adding it ot the list:
+
 @examples[
  #:label #f #:eval ev
  (define input-1 (make-wire))
@@ -1285,4 +1290,48 @@ recursion.
  (set-signal! input-2 1)
  (propagate)
  ]
-}
+
+If we change the definition to not do this, we get this session:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+   (define (make-wire-bad)
+   (let ((signal-value 0) (action-procedures '()))
+     (define (set-my-signal! new-value)
+       (if (not (= signal-value new-value))
+           (begin (set! signal-value new-value)
+                  (call-each action-procedures))
+           'done))
+     
+     (define (accept-action-procedure! proc)
+       (set! action-procedures (cons proc action-procedures)))
+     
+     (define (dispatch m)
+       (cond ((eq? m 'get-signal) signal-value)
+             ((eq? m 'set-signal!) set-my-signal!)
+             ((eq? m 'add-action!) accept-action-procedure!)
+             (else (error "Unknown operation -- WIRE" m))))
+     
+     dispatch))
+   ]
+
+@examples[
+ #:label #f #:eval ev
+ (define input-1 (make-wire-bad))
+ (define input-2 (make-wire-bad))
+ (define sum (make-wire-bad))
+ (define carry (make-wire-bad))
+ 
+ (probe 'sum sum)
+ 
+ (probe 'carry carry)
+
+ (half-adder input-1 input-2 sum carry)
+
+ (set-signal! input-1 1)
+ (propagate)
+
+ (set-signal! input-2 1)
+ (propagate)
+ ]
+
