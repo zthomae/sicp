@@ -15,12 +15,13 @@ in @tt{make-withdraw} -- we define it to be a function that uses
 @tt{set!} to modify the argument passed into the constructor. The code
 is self-explanatory.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-accumulator initial)
-  (lambda (more)
-    (begin (set! initial (+ initial more))
-           initial)))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-accumulator initial)
+   (lambda (more)
+     (begin (set! initial (+ initial more))
+            initial)))
+ ]
 
 @section[#:tag "c3e2"]{Exercise 3.2}
 
@@ -37,18 +38,19 @@ of any number of arguments, rather than just one. This implementation handles
 messages in the simplest way in that it only checks if the first argument
 is equal to a special message. If so, the other arguments are ignored.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-monitored f)
-  (let ((count 0))
-    (lambda args
-      (cond ((eq? 'how-many-calls? (car args))
-             count)
-            ((eq? 'reset-count (car args))
-             (set! count 0))
-            (else (begin
-                    (set! count (+ count 1))
-                    (apply f args)))))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-monitored f)
+   (let ((count 0))
+     (lambda args
+       (cond ((eq? 'how-many-calls? (car args))
+              count)
+             ((eq? 'reset-count (car args))
+              (set! count 0))
+             (else (begin
+                     (set! count (+ count 1))
+                     (apply f args)))))))
+ ]
 
 @section[#:tag "c3e3"]{Exercise 3.3}
 
@@ -59,56 +61,58 @@ procedure is always expected to return a procedure, we have to
 wrap the sending of the "Incorrect password" message in a dummy
 procedure. I have done this in a rather terse way.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-account balance password)
-  (define (withdraw amount)
-    (if (>= balance amount)
-        (begin (set! balance (- balance amount))
-               balance)
-        "Insufficient funds"))
-  (define (deposit amount)
-    (if (>= amount 0)
-        (begin (set! balance (+ balance amount))
-               balance)
-        "Must deposit a non-negative amount"))
-  (define (dispatch p m)
-    (if (eq? p password)
-        (cond ((eq? m 'withdraw) withdraw)
-                 ((eq? m 'deposit) deposit)
-                 (else (error "Unknown request -- MAKE-ACCOUNT" m)))
-        (lambda args "Incorrect password")))
-  dispatch)
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-account balance password)
+   (define (withdraw amount)
+     (if (>= balance amount)
+         (begin (set! balance (- balance amount))
+                balance)
+         "Insufficient funds"))
+   (define (deposit amount)
+     (if (>= amount 0)
+         (begin (set! balance (+ balance amount))
+                balance)
+         "Must deposit a non-negative amount"))
+   (define (dispatch p m)
+     (if (eq? p password)
+         (cond ((eq? m 'withdraw) withdraw)
+               ((eq? m 'deposit) deposit)
+               (else (error "Unknown request -- MAKE-ACCOUNT" m)))
+         (lambda args "Incorrect password")))
+   dispatch)
+ ]
 
 @section[#:tag "c3e4"]{Exercise 3.4}
 
 I also shouldn't need to mention that this is not a robust way
 to deal with possible attempted account theft.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-account balance password)
-  (define incorrect-count 0)
-  (define (withdraw amount)
-    (if (>= balance amount)
-        (begin (set! balance (- balance amount))
-               balance)
-        "Insufficient funds"))
-  (define (deposit amount)
-    (if (>= amount 0)
-        (begin (set! balance (+ balance amount))
-               balance)
-        "Must deposit a non-negative amount"))
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-account balance password)
+   (define incorrect-count 0)
+   (define (withdraw amount)
+     (if (>= balance amount)
+         (begin (set! balance (- balance amount))
+                balance)
+         "Insufficient funds"))
+   (define (deposit amount)
+     (if (>= amount 0)
+         (begin (set! balance (+ balance amount))
+                balance)
+         "Must deposit a non-negative amount"))
    (define (dispatch p m)
-    (if (eq? p password)
-        (cond ((eq? m 'withdraw) withdraw)
-                 ((eq? m 'deposit) deposit)
-                 (else (error "Unknown request -- MAKE-ACCOUNT" m)))
-        (begin
-          (set! incorrect-count (+ incorrect-count 1))
-          (if (> incorrect-count 7) (call-the-cops))
-          (lambda args "Incorrect password"))))
-  dispatch)
-]
+     (if (eq? p password)
+         (cond ((eq? m 'withdraw) withdraw)
+               ((eq? m 'deposit) deposit)
+               (else (error "Unknown request -- MAKE-ACCOUNT" m)))
+         (begin
+           (set! incorrect-count (+ incorrect-count 1))
+           (if (> incorrect-count 7) (call-the-cops))
+           (lambda args "Incorrect password"))))
+   dispatch)
+ ]
 
 @section[#:tag "c3e5"]{Exercise 3.5}
 
@@ -116,10 +120,11 @@ In the interest of sharing, I thought I'd show you that I made a @tt{rand}
 of my own by using the @tt{random} function (which computes a random number
 from @tt{0} to its given argument) with the biggest value it will accept.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (rand)
-  (random 4294967087))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (rand)
+   (random 4294967087))
+ ]
 
 It's not pretty, but it works, and allows you to verify that the Monte Carlo
 methods actually work. Now, @bold{back to regular programming}.
@@ -134,23 +139,25 @@ In this case, we set up the experiment procedure with the bounds of the
 rectangle we are generating points in and the predicate we want to test.
 @tt{estimate-integral} turns out to be a simple procedure:
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (estimate-integral P trials x1 x2 y1 y2)
-  (define (test-point)
-    (let ((x (random-in-range x1 x2))
-          (y (random-in-range y1 y2)))
-      (P x y)))
-  (monte-carlo trials test-point))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (estimate-integral P trials x1 x2 y1 y2)
+   (define (test-point)
+     (let ((x (random-in-range x1 x2))
+           (y (random-in-range y1 y2)))
+       (P x y)))
+   (monte-carlo trials test-point))
+ ]
 
 We can define the predicate in the book like this:
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (P x y)
-  (>= 9
-      (+ (square (- x 5))
-         (square (- y 7)))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (P x y)
+   (>= 9
+       (+ (square (- x 5))
+          (square (- y 7)))))
+ ]
 
 @section[#:tag "c3e6"]{Exercise 3.6}
 
@@ -160,17 +167,18 @@ initial value (the @tt{random-init} value) is not especially hard. I've
 chosen to have the @tt{'generate} message return the new random number,
 while the @tt{'reset} message returns nothing of value.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (rand m)
-  (let ((x random-init))
-    (cond ((eq? m 'generate)
-           (begin
-             (set! x (rand-update x))
-             x))
-          ((eq? m 'reset)
-           (set! x random-init))
-          (else (error "Invalid message -- RAND" m)))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (rand m)
+   (let ((x random-init))
+     (cond ((eq? m 'generate)
+            (begin
+              (set! x (rand-update x))
+              x))
+           ((eq? m 'reset)
+            (set! x random-init))
+           (else (error "Invalid message -- RAND" m)))))
+ ]
 
 @section[#:tag "c3e7"]{Exercise 3.7}
 
@@ -180,31 +188,33 @@ works with the newly-created joint account). This behaves similarly
 to the password checking we already made, except it returns the unlocked
 main account if the given joint password is correct.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-joint account password new-password)
-  (lambda (p m)
-    (if (eq? p new-password)
-        (account password m)
-        (lambda args "Incorrect password"))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-joint account password new-password)
+   (lambda (p m)
+     (if (eq? p new-password)
+         (account password m)
+         (lambda args "Incorrect password"))))
+ ]
 
 @section[#:tag "c3e8"]{Exercise 3.8}
 
 I feel like I've come up with an ugly solution. I'm going to mark this as
 @bold{TODO} for now.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define f
-  (let ((y 0))
-    (lambda (x)
-      (if (= y 0)
-          (begin
-            (set! y x)
-            0)
-          (begin
-            (set! y x)
-            1)))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define f
+   (let ((y 0))
+     (lambda (x)
+       (if (= y 0)
+           (begin
+             (set! y x)
+             0)
+           (begin
+             (set! y x)
+             1)))))
+ ]
 
 I verified that this worked by swapping the order of the calls. Assuming
 the order of evaluation is fixed, this should demonstrate the different
@@ -228,18 +238,19 @@ model is to fully expand on all syntactic sugar around @tt{lambda}
 expressions. When we do this, the definition for @tt{make-withdraw} is
 as follows:
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define make-withdraw
-  (lambda (initial-amount)
-    ((lambda (balance)
-       (lambda (amount)
-         (if (>= balance amount)
-             (begin
-               (set! balance (- balance amount))
-               balance)
-             "Insufficient funds")))
-     initial-amount)))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define make-withdraw
+   (lambda (initial-amount)
+     ((lambda (balance)
+        (lambda (amount)
+          (if (>= balance amount)
+              (begin
+                (set! balance (- balance amount))
+                balance)
+              "Insufficient funds")))
+      initial-amount)))
+ ]
 
 Here, @tt{make-withdraw} will be a name in the global environment
 referring to the procedure inside.
@@ -268,14 +279,15 @@ that is, @tt{E1}. However, the procedure which is being applied is also
 defined here. So we create a procedure object that takes one parameter, whose
 defining environment is @tt{E2}, and with the body
 
-@examples[#:label #f #:eval ev #:no-prompt
-(lambda (amount)
-  (if (>= balance amount)
-      (begin
-        (set! balance (- balance amount))
-        balance)
-      "Insufficient funds"))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (lambda (amount)
+   (if (>= balance amount)
+       (begin
+         (set! balance (- balance amount))
+         balance)
+       "Insufficient funds"))
+ ]
 
 This procedure object is returned and given the name @tt{W1}.
 
@@ -342,10 +354,11 @@ evaluates to @tt{'(b (c (d ())))}.
 
 Suppose we define the procedure
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-cycle x)
-  (set-cdr! (last-pair x) x))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-cycle x)
+   (set-cdr! (last-pair x) x))
+ ]
 
 Then, whe we try to compute @tt{(last-pair x)}, we get an infinite loop,
 because the end of @tt{x} now points to the front of @tt{x}. In other words,
@@ -356,16 +369,17 @@ we will never come across a pair where the @tt{cdr} is @tt{nil}, so
 
 Consider the procedure below:
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (mystery x)
-  (define (loop x y)
-    (if (null? x)
-        y
-        (let ((temp (cdr x)))
-          (set-cdr! x y)
-          (loop temp x))))
-  (loop x '()))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (mystery x)
+   (define (loop x y)
+     (if (null? x)
+         y
+         (let ((temp (cdr x)))
+           (set-cdr! x y)
+           (loop temp x))))
+   (loop x '()))
+ ]
 
 In general, this procedure will reverse a list (while trashing
 the list being reversed -- more on this later). Consider this brief
@@ -433,15 +447,16 @@ Detecting cycles can be done simply. We can traverse the list and keep a
 list of all the entries we've seen so far, and if we ever run into a node
 that's already in the list of things we've seen, then we know we have a cycle.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (detect-cycle l)
-  (define (update l seen)
-    (cond ((null? l) #f)
-          ((contains seen l) #t)
-          (else
-           (update (cdr l) (cons l seen)))))
-  (update l '()))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (detect-cycle l)
+   (define (update l seen)
+     (cond ((null? l) #f)
+           ((contains seen l) #t)
+           (else
+            (update (cdr l) (cons l seen)))))
+   (update l '()))
+ ]
 
 One thing to notice about this procedure is that the @tt{seen} list contains
 references to entire lists, and not just the @tt{car}s of the lists. This is
@@ -453,13 +468,14 @@ The @tt{contains} procedure is mostly trivial. Notice how it compares
 @tt{(car lst)} to @tt{v} -- this is because every entry in the @tt{seen}
 list is in fact a list, and @tt{(car lst)} gives us one of those lists.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (contains lst v)
-  (cond ((null? lst) #f)
-        ((eq? (car lst) v) #t)
-        (else
-         (contains (cdr lst) v))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (contains lst v)
+   (cond ((null? lst) #f)
+         ((eq? (car lst) v) #t)
+         (else
+          (contains (cdr lst) v))))
+ ]
 
 @section[#:tag "c3e19"]{Exercise 3.19}
 
@@ -470,21 +486,22 @@ by two. At some point, if the list contains a cycle, these two pointers
 will point to the same thing. Alternatively, if a pointer reaches the end
 of the list before this happens, we know we don't have a cycle.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (tortoise-hare l)
-  (define (loop tortoise hare)
-    (cond ((or (null? tortoise)
-               (null? hare))
-           #f)
-          ((eq? tortoise hare) #t)
-          (else
-           (let ((t2 (cdr tortoise))
-                 (h2 (cdr hare)))
-             (if (null? h2)
-                 (loop t2 h2)
-                 (loop t2 (cdr h2)))))))
-  (loop l (cdr l)))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (tortoise-hare l)
+   (define (loop tortoise hare)
+     (cond ((or (null? tortoise)
+                (null? hare))
+            #f)
+           ((eq? tortoise hare) #t)
+           (else
+            (let ((t2 (cdr tortoise))
+                  (h2 (cdr hare)))
+              (if (null? h2)
+                  (loop t2 h2)
+                  (loop t2 (cdr h2)))))))
+   (loop l (cdr l)))
+ ]
 
 @section[#:tag "c3e20"]{Exercise 3.20}
 
@@ -492,6 +509,36 @@ of the list before this happens, we know we don't have a cycle.
 
 @section[#:tag "c3e21"]{Exercise 3.21}
 
+@examples[
+ #:hidden
+ #:eval ev
+ (define (front-ptr queue) (car queue))
+ (define (rear-ptr queue) (cdr queue))
+ (define (set-front-ptr! queue item) (set-car! queue item))
+ (define (set-rear-ptr! queue item) (set-cdr! queue item))
+ (define (empty-queue? queue) (null? (front-ptr queue)))
+ (define (make-queue) (cons '() '()))
+ (define (front-queue queue)
+   (if (empty-queue? queue)
+       (error "FRONT called with an empty queue" queue)
+       (car (front-ptr queue))))
+ (define (insert-queue! queue item)
+   (let ((new-pair (cons item '())))
+     (cond ((empty-queue? queue)
+            (set-front-ptr! queue new-pair)
+            (set-rear-ptr! queue new-pair)
+            queue)
+           (else
+            (set-cdr! (rear-ptr queue) new-pair)
+            (set-rear-ptr! queue new-pair)
+            queue))))
+ (define (delete-queue! queue)
+   (cond ((empty-queue? queue)
+          (error "DELETE! called with an empty queue" queue))
+         (else
+          (set-front-ptr! queue (cdr (front-ptr queue)))
+          queue)))
+ ]
 Ben expects the queue to be printed like a list, with the front
 item of the queue first and the rear item last. However, the queue
 data structure is not a list: It is merely a pair of pointers to
@@ -512,11 +559,12 @@ However, printing the queue as a list is actually easy, since the
 items in the queue are connected to each other in a list structure.
 All you have to do is print the list starting from the front pointer.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (print-queue queue)
-  (display (car queue))
-  (newline))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (print-queue queue)
+   (display (car queue))
+   (newline))
+ ]
 
 It would perhaps be more useful to return the queue, since this might
 be useful for other purposes and the REPL will print the result anyway,
@@ -533,40 +581,41 @@ these are stored as internal definitions that can be accessed directly.
 One thing to note is that all of the calls to @tt{dispatch} return procedures
 -- even if the procedure returned takes no argument.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-queue)
-  (let ((front-ptr '())
-        (rear-ptr '()))
-    (define (empty-queue?)
-      (null? front-ptr))
-    (define (front-queue)
-      (if (empty-queue?)
-          (error "FRONT called with an empty queue")
-          (car front-ptr)))
-    (define (insert-queue! item)
-      (let ((new-pair (cons item '())))
-        (cond ((empty-queue?)
-               (set! front-ptr new-pair)
-               (set! rear-ptr new-pair))
-              (else
-               (set-cdr! rear-ptr new-pair)
-               (set! rear-ptr new-pair)))))
-    (define (delete-queue!)
-      (cond ((empty-queue?)
-             (error "DELETE! called with an empty queue"))
-            (else
-             (set! front-ptr (cdr front-ptr)))))
-    (define (dispatch m)
-      (cond ((eq? m 'empty-queue?)
-             empty-queue?)
-            ((eq? m 'front-queue)
-             front-queue)
-            ((eq? m 'insert-queue!)
-             insert-queue!)
-            ((eq? m 'delete-queue!)
-             delete-queue!)))
-    dispatch))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-queue)
+   (let ((front-ptr '())
+         (rear-ptr '()))
+     (define (empty-queue?)
+       (null? front-ptr))
+     (define (front-queue)
+       (if (empty-queue?)
+           (error "FRONT called with an empty queue")
+           (car front-ptr)))
+     (define (insert-queue! item)
+       (let ((new-pair (cons item '())))
+         (cond ((empty-queue?)
+                (set! front-ptr new-pair)
+                (set! rear-ptr new-pair))
+               (else
+                (set-cdr! rear-ptr new-pair)
+                (set! rear-ptr new-pair)))))
+     (define (delete-queue!)
+       (cond ((empty-queue?)
+              (error "DELETE! called with an empty queue"))
+             (else
+              (set! front-ptr (cdr front-ptr)))))
+     (define (dispatch m)
+       (cond ((eq? m 'empty-queue?)
+              empty-queue?)
+             ((eq? m 'front-queue)
+              front-queue)
+             ((eq? m 'insert-queue!)
+              insert-queue!)
+             ((eq? m 'delete-queue!)
+              delete-queue!)))
+     dispatch))
+ ]
 
 @section[#:tag "c3e23"]{Exercise 3.23}
 
@@ -592,98 +641,100 @@ occur when adding nodes to an empty deque or removing the last node. However,
 there is a symmetry between the operations that occur at the front and rear
 ends of the deque.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-deque)
-  (let ((front-ptr '()))
-    (let ((rear-ptr front-ptr))
-      (define (set-next-ptr from to)
-        (set-car! (cdr from) to))
-      (define (set-prev-ptr from to)
-        (set-car! (cddr from) to))
-      (define (empty-deque?)
-        (null? front-ptr))
-      (define (front-deque)
-        (if (empty-deque?)
-            (error "FRONT-DEQUE called on empty deque")
-            (car front-ptr)))
-      (define (rear-deque)
-        (if (empty-deque?)
-            (error "REAR-DEQUE called on empty deque")
-            (car rear-ptr)))
-      (define (front-insert-deque! item)
-        (let ((new-item (list item front-ptr nil)))
-          (if (empty-deque?)
-              (begin
-                (set! front-ptr new-item)
-                (set! rear-ptr new-item))
-              (begin
-                (set-prev-ptr front-ptr new-item)
-                (set! front-ptr new-item)))))
-      (define (rear-insert-deque! item)
-        (let ((new-item (list item nil rear-ptr)))
-          (if (empty-deque?)
-              (begin
-                (set! front-ptr new-item)
-                (set! rear-ptr new-item))
-              (begin
-                (set-next-ptr rear-ptr new-item)
-                (set! rear-ptr new-item)))))
-      (define (front-delete-deque!)
-        (if (empty-deque?)
-            (error "FRONT-DELETE-DEQUE! called on empty deque")
-            (begin
-              (set! front-ptr (cadr front-ptr))
-              (if (null? front-ptr)
-                  (set! rear-ptr front-ptr)
-                  (set-prev-ptr front-ptr nil)))))
-      (define (rear-delete-deque!)
-        (if (empty-deque?)
-            (error "REAR-DELETE-DEQUE! called on empty deque")
-            (begin
-              (set! rear-ptr (caddr rear-ptr))
-              (if (null? rear-ptr)
-                  (set! front-ptr rear-ptr)
-                  (set-next-ptr rear-ptr nil)))))
-      (define (dispatch m)
-        (cond ((eq? m 'empty-deque?) empty-deque?)
-              ((eq? m 'front-deque) front-deque)
-              ((eq? m 'rear-deque) rear-deque)
-              ((eq? m 'front-insert-deque!) front-insert-deque!)
-              ((eq? m 'rear-insert-deque!) rear-insert-deque!)
-              ((eq? m 'front-delete-deque!) front-delete-deque!)
-              ((eq? m 'rear-delete-deque!) rear-delete-deque!)
-              (else
-               (error "unknown message" m))))
-      dispatch)))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-deque)
+   (let ((front-ptr '()))
+     (let ((rear-ptr front-ptr))
+       (define (set-next-ptr from to)
+         (set-car! (cdr from) to))
+       (define (set-prev-ptr from to)
+         (set-car! (cddr from) to))
+       (define (empty-deque?)
+         (null? front-ptr))
+       (define (front-deque)
+         (if (empty-deque?)
+             (error "FRONT-DEQUE called on empty deque")
+             (car front-ptr)))
+       (define (rear-deque)
+         (if (empty-deque?)
+             (error "REAR-DEQUE called on empty deque")
+             (car rear-ptr)))
+       (define (front-insert-deque! item)
+         (let ((new-item (list item front-ptr nil)))
+           (if (empty-deque?)
+               (begin
+                 (set! front-ptr new-item)
+                 (set! rear-ptr new-item))
+               (begin
+                 (set-prev-ptr front-ptr new-item)
+                 (set! front-ptr new-item)))))
+       (define (rear-insert-deque! item)
+         (let ((new-item (list item nil rear-ptr)))
+           (if (empty-deque?)
+               (begin
+                 (set! front-ptr new-item)
+                 (set! rear-ptr new-item))
+               (begin
+                 (set-next-ptr rear-ptr new-item)
+                 (set! rear-ptr new-item)))))
+       (define (front-delete-deque!)
+         (if (empty-deque?)
+             (error "FRONT-DELETE-DEQUE! called on empty deque")
+             (begin
+               (set! front-ptr (cadr front-ptr))
+               (if (null? front-ptr)
+                   (set! rear-ptr front-ptr)
+                   (set-prev-ptr front-ptr nil)))))
+       (define (rear-delete-deque!)
+         (if (empty-deque?)
+             (error "REAR-DELETE-DEQUE! called on empty deque")
+             (begin
+               (set! rear-ptr (caddr rear-ptr))
+               (if (null? rear-ptr)
+                   (set! front-ptr rear-ptr)
+                   (set-next-ptr rear-ptr nil)))))
+       (define (dispatch m)
+         (cond ((eq? m 'empty-deque?) empty-deque?)
+               ((eq? m 'front-deque) front-deque)
+               ((eq? m 'rear-deque) rear-deque)
+               ((eq? m 'front-insert-deque!) front-insert-deque!)
+               ((eq? m 'rear-insert-deque!) rear-insert-deque!)
+               ((eq? m 'front-delete-deque!) front-delete-deque!)
+               ((eq? m 'rear-delete-deque!) rear-delete-deque!)
+               (else
+                (error "unknown message" m))))
+       dispatch)))
+ ]
 
 At this point, I think it should be mentioned that I dislike using the
 calling conventions for these mutable data objects. I prefer dealing
 with functions that take objects as parameters. However, it isn't difficult
 to create those functions on top of an object like this.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (empty-deque? dq)
-  ((dq 'empty-deque?)))
-
-(define (front-deque dq)
-  ((dq 'front-deque)))
-
-(define (rear-deque dq)
-  ((dq 'rear-deque)))
-
-(define (front-insert-deque! dq item)
-  ((dq 'front-insert-deque!) item))
-
-(define (rear-insert-deque! dq item)
-  ((dq 'rear-insert-deque!) item))
-
-(define (front-delete-deque! dq)
-  ((dq 'front-delete-deque!)))
-
-(define (rear-delete-deque! dq)
-  ((dq 'rear-delete-deque!)))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (empty-deque? dq)
+   ((dq 'empty-deque?)))
+ 
+ (define (front-deque dq)
+   ((dq 'front-deque)))
+ 
+ (define (rear-deque dq)
+   ((dq 'rear-deque)))
+ 
+ (define (front-insert-deque! dq item)
+   ((dq 'front-insert-deque!) item))
+ 
+ (define (rear-insert-deque! dq item)
+   ((dq 'rear-insert-deque!) item))
+ 
+ (define (front-delete-deque! dq)
+   ((dq 'front-delete-deque!)))
+ 
+ (define (rear-delete-deque! dq)
+   ((dq 'rear-delete-deque!)))
+ ]
 
 @section[#:tag "c3e24"]{Exercise 3.24}
 
@@ -691,43 +742,44 @@ This exercise is pretty easy given the implementation of @tt{make-table}
 on the previous page. We just need to create a generic @tt{assoc} procedure
 that can be called within our new @tt{make-table} variant.
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (generic-assoc key records same-key?)
-  (cond ((null? records) false)
-        ((same-key? key (caar records)) (car records))
-        (else (generic-assoc key (cdr records) same-key?))))
-
-(define (make-table same-key?)
-  (let ((assoc (lambda (key records) (generic-assoc key records same-key?)))
-        (local-table (list '*table*)))
-    (define (lookup key-1 key-2)
-      (let ((subtable (assoc key-1 (cdr local-table))))
-        (if subtable
-            (let ((record (assoc key-2 (cdr subtable))))
-              (if record
-                  (cdr record)
-                  false))
-            false)))
-    (define (insert! key-1 key-2 value)
-      (let ((subtable (assoc key-1 (cdr local-table))))
-        (if subtable
-            (let ((record (assoc key-2 (cdr subtable))))
-              (if record
-                  (set-cdr! record value)
-                  (set-cdr! subtable
-                            (cons (cons key-2 value)
-                                  (cdr subtable)))))
-            (set-cdr! local-table
-                      (cons (list key-1
-                                  (cons key-2 value))
-                            (cdr local-table)))))
-      'ok)
-    (define (dispatch m)
-      (cond ((eq? m 'lookup-proc) lookup)
-            ((eq? m 'insert-proc!) insert!)
-            (else (error "Unknown operation -- TABLE" m))))
-    dispatch))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (generic-assoc key records same-key?)
+   (cond ((null? records) false)
+         ((same-key? key (caar records)) (car records))
+         (else (generic-assoc key (cdr records) same-key?))))
+ 
+ (define (make-table same-key?)
+   (let ((assoc (lambda (key records) (generic-assoc key records same-key?)))
+         (local-table (list '*table*)))
+     (define (lookup key-1 key-2)
+       (let ((subtable (assoc key-1 (cdr local-table))))
+         (if subtable
+             (let ((record (assoc key-2 (cdr subtable))))
+               (if record
+                   (cdr record)
+                   false))
+             false)))
+     (define (insert! key-1 key-2 value)
+       (let ((subtable (assoc key-1 (cdr local-table))))
+         (if subtable
+             (let ((record (assoc key-2 (cdr subtable))))
+               (if record
+                   (set-cdr! record value)
+                   (set-cdr! subtable
+                             (cons (cons key-2 value)
+                                   (cdr subtable)))))
+             (set-cdr! local-table
+                       (cons (list key-1
+                                   (cons key-2 value))
+                             (cdr local-table)))))
+       'ok)
+     (define (dispatch m)
+       (cond ((eq? m 'lookup-proc) lookup)
+             ((eq? m 'insert-proc!) insert!)
+             (else (error "Unknown operation -- TABLE" m))))
+     dispatch))
+ ]
 
 @section[#:tag "c3e25"]{Exercise 3.25}
 
@@ -752,29 +804,31 @@ functions easier when operating on the same table.
 
 @bold{TODO: Look more carefully at this}
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (lookup table)
-  (lambda (keys)
-    (if (null? keys) table
-        (let ((record (assoc (car keys) (cdr table))))
-          (if record
-              ((lookup record) (cdr keys))
-              false)))))
-]
+@examples[       
+ #:label #f #:eval ev #:no-prompt
+ (define (lookup table)
+   (lambda (keys)
+     (if (null? keys) table
+         (let ((record (assoc (car keys) (cdr table))))
+           (if record
+               ((lookup record) (cdr keys))
+               false)))))
+ ]
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (insert! table)
-  (lambda (args)
-    (if (not (null? args))
-        (if (null? (cdr args))
-            (set-cdr! table (car args))
-            (let ((subtable (assoc (car args) (cdr table))))
-              (if subtable
-                  ((insert! subtable) (cdr args))
-                  (let ((new-subtable (list (car args))))
-                    ((insert! new-subtable) (cdr args))
-                    (set-cdr! table (cons new-subtable (cdr table))))))))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (insert! table)
+   (lambda (args)
+     (if (not (null? args))
+         (if (null? (cdr args))
+             (set-cdr! table (car args))
+             (let ((subtable (assoc (car args) (cdr table))))
+               (if subtable
+                   ((insert! subtable) (cdr args))
+                   (let ((new-subtable (list (car args))))
+                     ((insert! new-subtable) (cdr args))
+                     (set-cdr! table (cons new-subtable (cdr table))))))))))
+ ]
 
 @section[#:tag "c3e26"]{Exercise 3.26}
 
@@ -791,59 +845,62 @@ our empty trees (after all, if a tree is a table, then every
 subtree is also a table). Other than this change, the logic is
 almost identical, and the two procedures are almost identical.
 
-@examples[#:hidden #:eval ev
-(define (entry tree) (car tree))
-(define (left-branch tree) (cadr tree))
-(define (right-branch tree) (caddr tree))
+@examples[
+ #:hidden #:eval ev
+ (define (entry tree) (car tree))
+ (define (left-branch tree) (cadr tree))
+ (define (right-branch tree) (caddr tree))
+ 
+ (define (make-tree entry left right)
+   (list entry left right))
+ 
+ (define (make-table)
+   (list '*table*))
+ ]
 
-(define (make-tree entry left right)
-  (list entry left right))
-
-(define (make-table)
-  (list '*table*))
-]
-
-@examples[#:label #f #:eval ev #:no-prompt
-(define (lookup table)
-  (lambda (key)
-    (let ((entries (cdr table)))
-      (if (null? entries)
-          false
-          (let ((e (entry entries)))
-            (let ((entry-key (car e))
-                  (entry-val (cdr e)))
-              (cond ((= key entry-key) entry-val)
-                    ((< key entry-key) ((lookup (left-branch entries)) key))
-                    ((> key entry-key) ((lookup (right-branch entries)) key)))))))))
-
-(define (insert! table)
-  (lambda (key value)
-    (let ((entries (cdr table)))
-      (if (null? entries)
-          (set-cdr! table (make-tree (cons key value) (make-table) (make-table)))
-          (let ((e (entry entries)))
-            (let ((entry-key (car e)))
-              (cond ((= key entry-key) (set-cdr! e value))
-                    ((< key entry-key) ((insert! (left-branch entries)) key value))
-                    ((> key entry-key) ((insert! (right-branch entries)) key value)))))))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (lookup table)
+   (lambda (key)
+     (let ((entries (cdr table)))
+       (if (null? entries)
+           false
+           (let ((e (entry entries)))
+             (let ((entry-key (car e))
+                   (entry-val (cdr e)))
+               (cond ((= key entry-key) entry-val)
+                     ((< key entry-key) ((lookup (left-branch entries)) key))
+                     ((> key entry-key) ((lookup (right-branch entries)) key)))))))))
+ 
+ (define (insert! table)
+   (lambda (key value)
+     (let ((entries (cdr table)))
+       (if (null? entries)
+           (set-cdr! table (make-tree (cons key value) (make-table) (make-table)))
+           (let ((e (entry entries)))
+             (let ((entry-key (car e)))
+               (cond ((= key entry-key) (set-cdr! e value))
+                     ((< key entry-key) ((insert! (left-branch entries)) key value))
+                     ((> key entry-key) ((insert! (right-branch entries)) key value)))))))))
+ ]
 
 An example of this in use:
 
-@examples[#:label #f #:eval ev
-(define t (make-table))
-(define lookup_t (lookup t))
-(define insert!_t (insert! t))
-(insert!_t 4 5)
-(lookup_t 4)
-(insert!_t 3 8)
-(insert!_t 2 1)
-(insert!_t 7 4)
-(lookup_t 3)
-(lookup_t 2)
-(lookup_t 7)
-(pretty-display t)
-]
+@examples[
+ #:label #f #:eval ev
+ (define t (make-table))
+ (define lookup_t (lookup t))
+ (define insert!_t (insert! t))
+ (insert!_t 4 5)
+ (lookup_t 4)
+ (insert!_t 3 8)
+ (insert!_t 2 1)
+ (insert!_t 7 4)
+ (lookup_t 3)
+ (lookup_t 2)
+ (lookup_t 7)
+ (pretty-display t)
+ ]
 
 
 In order to store any orderable data type as a key in the
@@ -861,38 +918,39 @@ cmp(a, b) = -1 if a < b
 
 An implementation of generic tables is as follows:
 
-@examples[#:label #f #:eval ev #:no-prompt
-(define (make-lookup cmp)
-  (let ((lt (lambda (a b) (= -1 (cmp a b))))
-        (eq (lambda (a b) (= 0 (cmp a b))))
-        (gt (lambda (a b) (= 1 (cmp a b)))))
-    (lambda (table)
-      (lambda (key)
-        (let ((entries (cdr table)))
-          (if (null? entries)
-              false
-              (let ((e (entry entries)))
-                (let ((entry-key (car e))
-                      (entry-val (cdr e)))
-                  (cond ((eq key entry-key) entry-val)
-                        ((lt key entry-key) ((lookup (left-branch entries)) key))
-                        ((gt key entry-key) ((lookup (right-branch entries)) key)))))))))))
-
-(define (make-insert! cmp)
-  (let ((lt (lambda (a b) (= -1 (cmp a b))))
-        (eq (lambda (a b) (= 0 (cmp a b))))
-        (gt (lambda (a b) (= 1 (cmp a b)))))
-    (lambda (table)
-      (lambda (key value)
-        (let ((entries (cdr table)))
-          (if (null? entries)
-              (set-cdr! table (make-tree (cons key value) (make-table) (make-table)))
-              (let ((e (entry entries)))
-                (let ((entry-key (car e)))
-                  (cond ((eq key entry-key) (set-cdr! e value))
-                        ((lt key entry-key) ((insert! (left-branch entries)) key value))
-                        ((gt key entry-key) ((insert! (right-branch entries)) key value)))))))))))
-]
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-lookup cmp)
+   (let ((lt (lambda (a b) (= -1 (cmp a b))))
+         (eq (lambda (a b) (= 0 (cmp a b))))
+         (gt (lambda (a b) (= 1 (cmp a b)))))
+     (lambda (table)
+       (lambda (key)
+         (let ((entries (cdr table)))
+           (if (null? entries)
+               false
+               (let ((e (entry entries)))
+                 (let ((entry-key (car e))
+                       (entry-val (cdr e)))
+                   (cond ((eq key entry-key) entry-val)
+                         ((lt key entry-key) ((lookup (left-branch entries)) key))
+                         ((gt key entry-key) ((lookup (right-branch entries)) key)))))))))))
+ 
+ (define (make-insert! cmp)
+   (let ((lt (lambda (a b) (= -1 (cmp a b))))
+         (eq (lambda (a b) (= 0 (cmp a b))))
+         (gt (lambda (a b) (= 1 (cmp a b)))))
+     (lambda (table)
+       (lambda (key value)
+         (let ((entries (cdr table)))
+           (if (null? entries)
+               (set-cdr! table (make-tree (cons key value) (make-table) (make-table)))
+               (let ((e (entry entries)))
+                 (let ((entry-key (car e)))
+                   (cond ((eq key entry-key) (set-cdr! e value))
+                         ((lt key entry-key) ((insert! (left-branch entries)) key value))
+                         ((gt key entry-key) ((insert! (right-branch entries)) key value)))))))))))
+ ]
 
 @section[#:tag "c3e27"]{Exercise 3.27}
 
@@ -915,3 +973,316 @@ subproblem results. In other words, the algorithm would no
 longer be able to run in linear time because it would not be
 reusing all previously-computed results as you would expect
 it to.
+
+@;{
+@section[#:tag "c3e28"]{Exercise 3.28}
+
+@examples[
+ #:hidden #:eval ev
+ (define (make-wire)
+   (let ((signal-value 0) (action-procedures '()))
+     (define (set-my-signal! new-value)
+       (if (not (= signal-value new-value))
+           (begin (set! signal-value new-value)
+                  (call-each action-procedures))
+           'done))
+     
+     (define (accept-action-procedure! proc)
+       (set! action-procedures (cons proc action-procedures))
+       (proc))
+     
+     (define (dispatch m)
+       (cond ((eq? m 'get-signal) signal-value)
+             ((eq? m 'set-signal!) set-my-signal!)
+             ((eq? m 'add-action!) accept-action-procedure!)
+             (else (error "Unknown operation -- WIRE" m))))
+     
+     dispatch))
+ 
+ (define (call-each procedures)
+   (if (null? procedures)
+       'done
+       (begin
+         ((car procedures))
+         (call-each (cdr procedures)))))
+ 
+ (define (get-signal wire)
+   (wire 'get-signal))
+ 
+ (define (set-signal! wire new-value)
+   ((wire 'set-signal!) new-value))
+ 
+ (define (add-action! wire action-procedure)
+   ((wire 'add-action!) action-procedure))
+ 
+ (define (after-delay delay action)
+   (add-to-agenda! (+ delay (current-time the-agenda))
+                   action
+                   the-agenda))
+ 
+ (define (propagate)
+   (if (empty-agenda? the-agenda)
+       'done
+       (let ((first-item (first-agenda-item the-agenda)))
+         (first-item)
+         (remove-first-agenda-item! the-agenda)
+         (propagate))))
+ 
+ (define (probe name wire)
+   (add-action! wire
+                (lambda ()
+                  (newline)
+                  (display name)
+                  (display " ")
+                  (display (current-time the-agenda))
+                  (display " New value = ")
+                  (display (get-signal wire)))))
+ 
+ (define (make-time-segment time queue)
+   (cons time queue))
+ 
+ (define (segment-time s) (car s))
+ 
+ (define (segment-queue s) (cdr s))
+ 
+ (define (make-agenda) (list 0))
+ 
+ (define (current-time agenda) (car agenda))
+ 
+ (define (set-current-time! agenda time)
+   (set-car! agenda time))
+ 
+ (define (segments agenda) (cdr agenda))
+ 
+ (define (set-segments! agenda segments)
+   (set-cdr! agenda segments))
+ 
+ (define (first-segment agenda) (car (segments agenda)))
+ 
+ (define (rest-segments agenda) (cdr (segments agenda)))
+ 
+ (define (empty-agenda? agenda)
+   (null? (segments agenda)))
+ 
+ (define (add-to-agenda! time action agenda)
+   (define (belongs-before? segments)
+     (or (null? segments)
+         (< time (segment-time (car segments)))))
+   (define (make-new-time-segment time action)
+     (let ((q (make-queue)))
+       (insert-queue! q action)
+       (make-time-segment time q)))
+   (define (add-to-segments! segments)
+     (if (= (segment-time (car segments)) time)
+         (insert-queue! (segment-queue (car segments))
+                        action)
+         (let ((rest (cdr segments)))
+           (if (belongs-before? rest)
+               (set-cdr!
+                segments
+                (cons (make-new-time-segment time action)
+                      (cdr segments)))
+               (add-to-segments! rest)))))
+   (let ((segments (segments agenda)))
+     (if (belongs-before? segments)
+         (set-segments!
+          agenda
+          (cons (make-new-time-segment time action)
+                segments))
+         (add-to-segments! segments))))
+ 
+ (define (remove-first-agenda-item! agenda)
+   (let ((q (segment-queue (first-segment agenda))))
+     (delete-queue! q)
+     (if (empty-queue? q)
+         (set-segments! agenda (rest-segments agenda)))))
+ 
+ (define (first-agenda-item agenda)
+   (if (empty-agenda? agenda)
+       (error "Agenda is empty -- FIRST-AGENDA-ITEM")
+       (let ((first-seg (first-segment agenda)))
+         (set-current-time! agenda (segment-time first-seg))
+         (front-queue (segment-queue first-seg)))))
+ 
+ (define inverter-delay 2)
+ 
+ (define (inverter input output)
+   (define (invert-input)
+     (let ((new-value (logical-not (get-signal input))))
+       (after-delay inverter-delay
+                    (lambda ()
+                      (set-signal! output new-value)))))
+   (add-action! input invert-input)
+   'ok)
+ 
+ (define (logical-not s)
+   (cond ((= s 0) 1)
+         ((= s 1) 0)
+         (else (error "Invalid signal" s))))
+ 
+ (define and-gate-delay 3)
+ 
+ (define (and-gate a1 a2 output)
+   (define (and-action-procedure)
+     (let ((new-value
+            (logical-and (get-signal a1) (get-signal a2))))
+       (after-delay and-gate-delay
+                    (lambda ()
+                      (set-signal! output new-value)))))
+   (add-action! a1 and-action-procedure)
+   (add-action! a2 and-action-procedure)
+   'ok)
+ 
+ (define (logical-and a b)
+   (cond ((and (= a 0) (= b 0)) 0)
+         ((and (= a 1) (= b 0)) 0)
+         ((and (= a 0) (= b 1)) 0)
+         ((and (= a 1) (= b 1)) 1)
+         (else (error "Invalid signals" a b))))
+ 
+ (define (half-adder a b s c)
+   (let ((d (make-wire)) (e (make-wire)))
+     (or-gate a b d)
+     (and-gate a b c)
+     (inverter c e)
+     (and-gate d e s)
+     'ok))
+ 
+ (define (full-adder a b c-in sum c-out)
+   (let ((s (make-wire))
+         (c1 (make-wire))
+         (c2 (make-wire)))
+     (half-adder b c-in s c1)
+     (half-adder a s sum c2)
+     (or-gate c1 c2 c-out)
+     'ok))
+ ]
+
+Implementing @tt{or-gate} by copying @tt{and-gate} is fairly trivial:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define or-gate-delay 5)
+ 
+ (define (or-gate o1 o2 output)
+   (define (or-action-procedure)
+     (let ((new-value (logical-or (get-signal o1) (get-signal o2))))
+       (after-delay or-gate-delay
+                    (lambda () (set-signal! output new-value)))))
+   (add-action! o1 or-action-procedure)
+   (add-action! o2 or-action-procedure)
+   'ok)
+ 
+ (define (logical-or a b)
+   (cond ((and (= a 0) (= b 0)) 0)
+         ((and (= a 1) (= b 0)) 1)
+         ((and (= a 0) (= b 1)) 1)
+         ((and (= a 1) (= b 1)) 1)
+         (else (error "Invalid signals" a b))))
+ ]
+
+The fact that this is so similar to @tt{and-gate} is a clue
+that a more general function is hiding -- in this case, that
+of the binary operation:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (binary-op op delay)
+   (lambda (x y output)
+     (define (binary-action-procedure)
+       (let ((new-value (op (get-signal x) (get-signal y))))
+         (after-delay delay
+                      (lambda () (set-signal! output new-value)))))
+     (add-action! x binary-action-procedure)
+     (add-action! y binary-action-procedure)
+     'ok))
+ 
+ (define and-gate (binary-op logical-and and-gate-delay))
+ (define or-gate (binary-op logical-or or-gate-delay))
+ ]
+
+@section[#:tag "c3e29"]{Exercise 3.29}
+
+Using De Morgan's law, we know that a logical or can be
+computed by taking the negation of the logical and of two
+negated inputs.
+
+@examples[
+#:label #f #:eval ev #:no-prompt
+ (define (or-compound A B output)
+   (let ((nA (make-wire))
+         (nB (make-wire))
+         (nO (make-wire)))
+     (inverter A nA)
+     (inverter B nB)
+     (and-gate nA nB nO)
+     (inverter nO output)))              
+ ]
+
+The delay of this component is equal to the delay of the one
+inverter that each of the inputs travel through plus the
+delay of the and-gate and plus the delay of the final
+inverter, or @tt{2 * inverter-delay + and-gate-delay}.
+
+@section[#:tag "c3e30"]{Exercise 3.30}
+
+Constructing a ripple-carry adder is essentially about
+zipping corresponding elements in the lists into
+full-adders. However, the condition that the output carry
+signal from one full-adder is used as the input carry signal
+to the next complicates things slightly, as does the
+requirement that the final input wire be set to @tt{0}.
+
+Working around these problems, I use a recursive procedure
+that uses the first and second carry wires as the input and
+output carry signals, respectively. Constructing the
+ripple-carry adder from the left, since there is one more
+carry wire than the others, once the other wires are
+expended, we have the input carry wire that we need to
+set to @tt{0} -- this making for a good base case for our
+recursion.
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (ripple-carry-adder As Bs Ss C)
+   (define Cs (map (lambda (_) (make-wire))))
+   (define (make-adder as bs cs ss)
+     (if (null? as)
+         (set-signal! (car cs) 0)
+         (begin
+           (full-adder (car as)
+                       (car bs)
+                       (cadr cs)
+                       (car ss)
+                       (car cs))
+           (make-adder (cdr as) (cdr bs) (cdr cs) (cdr ss)))))
+   (make-adder As Bs (cons C Cs) Ss))
+ ]
+
+@section[#:tag "c3e31"]{Exercise 3.31}
+
+@examples[
+ #:hidden #:eval ev
+ (define the-agenda (make-agenda))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (define input-1 (make-wire))
+ (define input-2 (make-wire))
+ (define sum (make-wire))
+ (define carry (make-wire))
+ 
+ (probe 'sum sum)
+ 
+ (probe 'carry carry)
+
+ (half-adder input-1 input-2 sum carry)
+
+ (set-signal! input-1 1)
+ (propagate)
+
+ (set-signal! input-2 1)
+ (propagate)
+ ]
+}
