@@ -1317,6 +1317,8 @@ If we change the definition to not do this, we get this session:
 
 @examples[
  #:label #f #:eval ev
+ (define the-agenda (make-agenda))
+ 
  (define input-1 (make-wire-bad))
  (define input-2 (make-wire-bad))
  (define sum (make-wire-bad))
