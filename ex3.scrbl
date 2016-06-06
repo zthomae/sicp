@@ -1337,3 +1337,25 @@ If we change the definition to not do this, we get this session:
  (propagate)
  ]
 
+@bold{TODO: Finish}
+
+@section[#:tag "c3e32"]{Exercise 3.32}
+
+Suppose that we have an and gate whose inputs change from 
+@tt{(0, 1)} to @tt{(1, 0)} in the same time segment. This
+means that two procedures setting the output value of the
+gate are added to the agenda. In the first of these procedures,
+only the first input has changed -- only the second procedure
+gives us an answer consistent with the state of the inputs.
+
+However, under our new supposition that the procedures in a
+time segment are stored in a list and added to and removed
+from the front (i.e. with stack semantics), the second
+procedure will be run first, and the (correct) answer that
+it assigned to the output wire will be overwritten by the
+inconsistent answer from the first procedure.
+
+The only way to guarantee that the state of the circuit
+stays correct after every time segment in the agenda is to
+run procedures in them in the order in which they were
+added.
