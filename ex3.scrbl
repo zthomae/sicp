@@ -1337,7 +1337,9 @@ If we change the definition to not do this, we get this session:
  (propagate)
  ]
 
-@bold{TODO: Finish}
+Because action procedures are not run after being added to
+wires, the initial values of the wires are not propagated,
+meaning that later calculations are not done corrrectly.
 
 @section[#:tag "c3e32"]{Exercise 3.32}
 
@@ -1625,7 +1627,22 @@ The same REPL session as before shows that this works correctly:
 
 @section[#:tag "c3e36"]{Exercise 3.36}
 
-@bold{TODO}
+A crude diagram:
+
+@verbatim{
+global: (
+ a: (
+   [we are here]
+   value: 10,
+   informant: 'user,
+   constraints: '()
+ ),
+ b: (...),
+ inform-about-value: (...),
+ for-each-except: (...),
+ ...
+)
+}
 
 @section[#:tag "c3e37"]{Exercise 3.37}
 
