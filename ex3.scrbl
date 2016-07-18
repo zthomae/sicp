@@ -1710,3 +1710,51 @@ A REPL session shows that this works:
  (forget-value! C 'user)
  (set-value! F 75 'user)
  ]
+
+@section[#:tag "c3e38"]{Exercise 3.38}
+
+If the transactions must run sequentially in
+some order, then we can enumerate all of these
+orderings to find all of the possible values
+of @tt{balance}. Better yet, we can write a
+program to do it for us.
+
+@examples[
+ #:hidden #:eval ev
+ (define (accumulate op initial sequence)
+   (if (null? sequence)
+       initial
+       (op (car sequence)
+           (accumulate op initial (cdr sequence)))))
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (peter balance) (+ balance 10))
+ (define (paul balance) (- balance 20))
+ (define (mary balance) (- balance (/ balance 2)))
+
+ (define permutations
+   (list
+    (list peter paul mary)
+    (list peter mary paul)
+    (list paul peter mary)
+    (list paul mary peter)
+    (list mary peter paul)
+    (list mary paul peter)))
+
+  (define (run-permutation p)
+    (accumulate (lambda (proc val) (apply proc (list val))) 100 p))
+
+  (pretty-display (map run-permutation permutations))
+ ]
+
+Things can become more complicated if the transactions
+don't run atomically. For example, Peter's transaction
+adding $10 could start such that it has calculated the
+new balance but not updated it. If it yielded and allowed
+both of the other transactions to run to completion, it
+would set the final balance to be equal to the $110 it
+would have been at the beginning. This would be great for
+Peter, Paul, and Mary, but the bank would probably fire the
+programmer who allowed it to happen.
