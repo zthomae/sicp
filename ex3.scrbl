@@ -1758,3 +1758,139 @@ would set the final balance to be equal to the $110 it
 would have been at the beginning. This would be great for
 Peter, Paul, and Mary, but the bank would probably fire the
 programmer who allowed it to happen.
+
+@section[#:tag "c3e39"]{Exercise 3.39}
+
+@codeblock{
+(define x 10)
+
+(define s (make-serializer))
+
+(parallel-execute (lambda () (set! x ((s (lambda () (* x x))))))
+                  (s (lambda () (set! x (+ x 1)))))
+}
+
+These possibilities can occur:
+
+@itemlist[
+ @item{@tt{101}: The first procedure runs to completion before the second}
+ @item{@tt{100}: The calculation of @tt{(* x x)} is run first, followed by the
+       incrementing of @tt{x} and then the setting of @tt{x} to @tt{100}}
+ @item{@tt{121}: The second procedure runs to completion before the first}
+ ]
+
+@section[#:tag "c3e40"]{Exercise 3.40}
+
+@codeblock{
+(define x 10)
+
+(parallel-execute (lambda () (set! x (* x x)))
+                  (lambda () (set! x (* x x x))))
+}
+
+The different outcomes will occur because of the different places
+that the value of @tt{x} can be changed, depending on which procedure
+finishes first and at what point it does. The following can happen:
+
+@itemlist[
+ @item{@tt{1000000}: The first procedure finishes first, resulting in
+  @tt{(* 100 100 100)}}
+ @item{@tt{100000}: The first procedure finishes after one read in the second,
+  resulting in @tt{(* 10 100 100)}}
+ @item{@tt{10000}: The first procedure finishes after two reads in the second,
+  resulting in @tt{(* 10 10 100)}}
+ @item{@tt{1000}: The first procedure sets @tt{x} after the second procedure
+  calculates the new value of @tt{x}}
+ @item{@tt{1000000}: The second procedure finishes first, resulting in
+  @tt{(* 1000 1000)} (note that this is the same as the first case)}
+ @item{@tt{10000}: The second procedure finishes after one read in the first,
+  resulting in @tt{(* 10 1000)}}
+ @item{@tt{100}: The second procedure sets @tt{x} after the first procedure
+  calculates the new value of @tt{x}}
+ ]
+
+Now suppose we use serialized procedures as such:
+
+@codeblock{
+(define x 10)
+
+(define s (make-serializer))
+
+(parallel-execute (s (lambda () (set! x (* x x))))
+                  (s (lambda () (set! x (* x x x)))))
+}
+
+In this case, the only possible answer is @tt{1000000}, because the order
+in which we perform the multiplications does not matter as long as they all
+contribute to the answer. It doesn't matter which procedure runs first --
+the answer will be the same.
+
+@section[#:tag "c3e41"]{Exercise 3.41}
+
+Suppose Ben Bitdiddle changes the definition of the bank account
+to protect the viewing of the balance:
+
+@codeblock{
+ (define (make-account balance)
+   (define (withdraw amount)
+     (if (>= balance amount)
+         (begin (set! balance (- balance amount))
+                balance)
+         "Insufficient funds"))
+   (define (deposit amount)
+     (set! balance (+ balance amount))
+     balance)
+   (let ((protected (make-serializer)))
+     (define (dispatch m)
+       (cond ((eq? m 'withdraw) (protected withdraw))
+             ((eq? m 'deposit) (protected deposit))
+             ((eq? m ' balance)
+              ((protected (lambda () balance)))) ; serialized
+             (else (error "Unknown request -- MAKE-ACCOUNT" m))))
+     dispatch))
+}
+
+Since @tt{balance} is only accessed once during the processing of the
+@tt{'balance} request, whether serializing it has any effect depends
+on whether this operation is atomic.
+
+If it is, then although it is possible to get an out of date answer if
+a withdrawal or deposit occurs after the balance has been read but
+before it has been reported to you, it's not clear that there is anything
+wrong with this because the balance was correct at the time and is fully
+consistent with the state of the account at some point in time.
+
+If, however, reading the balance is not an atomic operation, then protecting
+it will be worthwhile -- otherwise, it would be possible to read two
+incomplete balances yielding an inconsitent total.
+
+@section[#:tag "c3e42"]{Exercise 3.42}
+
+Suppose Ben Bitdiddle now wants to serialize the withdraw and deposit
+procedures outside of the definition of the dispatch function:
+
+@codeblock{
+ (define (make-account balance)
+   (define (withdraw amount)
+     (if (>= balance amount)
+         (begin (set! balance (- balance amount))
+                balance)
+         "Insufficient funds"))
+   (define (deposit amount)
+     (set! balance (+ balance amount))
+     balance)
+   (let ((protected (make-serializer)))
+     (let ((protected-withdraw (protected withdraw))
+           (protected-deposit (protected deposit)))
+       (define (dispatch m)
+         (cond ((eq? m 'withdraw) (protected withdraw))
+               ((eq? m 'deposit) (protected deposit))
+               ((eq? m ' balance) balance)
+               (else (error "Unknown request -- MAKE-ACCOUNT" m))))
+       dispatch)))
+}
+
+This is a safe change to make. Performing multiple destructive updates
+at the same time will still not be allowed, giving the same guarantees
+without the performance impact of introducing a new procedure to the
+serialization set every time such an update is made.
