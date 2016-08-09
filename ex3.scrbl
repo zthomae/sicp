@@ -1894,3 +1894,136 @@ This is a safe change to make. Performing multiple destructive updates
 at the same time will still not be allowed, giving the same guarantees
 without the performance impact of introducing a new procedure to the
 serialization set every time such an update is made.
+
+@section[#:tag "c3e43"]{Exercise 3.43}
+
+It should be the case that any number of concurrent exchanges between
+accounts should not violate the condition that each account always has
+a balance that one of the accounts originally had, and that every unique
+balance is represented once. This is essentially intuitively true: if the
+accounts are only allowed to swap values with one another, it should not
+be the case that any account ends up with a new value.
+
+However, if the entire exchange is not serialized, this can happen. The
+difference between accounts @tt{A} and @tt{B} can be calculated before
+another transaction changes the balance in @tt{A}, meaning that the
+withdrawal from @tt{A} will be withdrawing from a balance that is not
+necessarily the same as it was when the difference was calculated. In
+essence:
+
+@verbatim{
+a = 5
+b = 10
+c = 15
+
+exchange(a, b):
+  difference = 5 - 10
+<-- set a to 15
+  a = 15 + 5 = 20
+  b = 10 - 5 = 5
+}
+
+If the entire exchange is serialized, as in the refined example, the second
+exchange cannot interrupt the first, making this situation impossible.
+
+However, note that the sum of the balances is still preserved -- that is,
+@tt{5 + 10 + 15 == 20 + 5 + 5}. This is a simple consequence of the fact
+that the net effect on the total balance of the accounts of an exchange is
+always zero, as long as transactions on the individual accounts are serialized.
+In other words, no new money is being introduced into the system as long as you
+only exchange balances -- exchanging is a zero sum operation. If this were still
+not the case, then any withdrawal or deposit could be interrupted, causing the
+same sorts of problems we saw before.
+
+@section[#:tag "c3e44"]{Exercise 3.44}
+
+Unlike @tt{exchange}, @tt{transfer} makes no calculations based on the states
+of the balances before withdrawing or depositing from them. Even if the balances
+in one or both of the accounts were to change during the execution of the procedure,
+as long as the withdrawals and deposits were serialized, the net impact on both
+accounts will be correct. This means that there is no need for more complex
+serialization with the transfer operation.
+
+@section[#:tag "c3e45"]{Exercise 3.45}
+
+Louis Reasoner changes the definition of @tt{make-account-and-serializer} to automatically
+serialize deposits and withdrawals. Since @tt{serialized-exchange} manually serializes
+the @tt{exchange} procedure with both serializers, and the @tt{exchange} procedure will
+now call serialized functions, a function called during the execution of another function
+will be mutually exclusive -- in other words, the procedure will not be able to terminate.
+This is an example of deadlock.
+
+Note that we don't have this problem when nesting two different serializers.
+
+(This exercise anticipates the section on mutexes which directly follows.)
+
+@section[#:tag "c3e46"]{Exercise 3.46}
+
+The situation in which a non-atomic @tt{test-and-set!} procedure fails is straightforward:
+
+@itemlist[
+ @item{One procedure attempts to open an available mutex}
+ @item{After it determines that the mutex is available, but before it sets it, another procedure
+       checks the value of the mutex and also determines that it is available}
+ @item{Both procedures set the cell and return false, and both can execute at the same time}
+ ]
+
+@section[#:tag "c3e47"]{Exercise 3.47}
+
+An implementation of semaphores in terms of mutexes can proceed something like this:
+
+A semaphore allows @tt{n} concurrently-executing procedures at once. We can imagine checking
+this as equivalent to checking if any of @tt{n} mutexes are unset.
+
+@codeblock{
+(define (make-semaphore n)
+  (define (get-available-mutex ms)
+    (cond ((null? ms) null)
+          ((car ms) ((car ms) 'acquire)
+          (else (get-available-mutex ms)))))
+  (define (make-mutexes times)
+    (if (= 0 times)
+        null
+        (cons (make-mutex) (make-mutexes (- times 1)))))
+  (let ((mutexes (make-mutexes n)))
+    (define (the-semaphore m)
+      (cond
+        ((eq? m 'acquire)
+          (let ((acquired (get-available-mutex mutexes)))
+            (if (null? acquired)
+                (the-semaphore 'acquire)
+                (lambda () (acquired 'release)))))
+        (else (error "UNKNOWN MESSAGE -- " m))))
+    the-semaphore))
+}
+
+As our convention, is a slot in the semaphore is acquired, it returns a no-argument procedure
+that will release itself when called, so that the owner can relinquish control.
+
+We could also implement the same idea using @tt{test-and-set!} calls. Note the essential similarity
+between the two:
+
+@codeblock{
+ (define (make-semaphore n)
+   (define (get-available-cell cells)
+     (if (null? cells)
+         null
+         (let ((result (test-and-set! (car cells))))
+           (if result
+               (get-available-cell (cdr cells))
+               (car cells)))))
+   (define (make-cells times)
+     (if (= 0 times)
+         null
+         (cons  (list false) (make-cells (- times 1)))))
+   (let ((cells (make-cells n)))
+     (define (the-semaphore m)
+       (cond
+         ((eq? m 'acquire)
+           (let ((acquired (get-available-cell cells)))
+             (if (null? acquired)
+                 (the-semaphore 'acquire)
+                 (lambda () (set-car! acquired false)))))
+         (else (error "UNKNOWN MESSAGE -- " m))))
+     the-semaphore))
+}
