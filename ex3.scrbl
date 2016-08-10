@@ -1923,35 +1923,44 @@ exchange(a, b):
   b = 10 - 5 = 5
 }
 
-If the entire exchange is serialized, as in the refined example, the second
-exchange cannot interrupt the first, making this situation impossible.
+If the entire exchange is serialized, as in the refined
+example, the second exchange cannot interrupt the first,
+making this situation impossible.
 
-However, note that the sum of the balances is still preserved -- that is,
-@tt{5 + 10 + 15 == 20 + 5 + 5}. This is a simple consequence of the fact
-that the net effect on the total balance of the accounts of an exchange is
-always zero, as long as transactions on the individual accounts are serialized.
-In other words, no new money is being introduced into the system as long as you
-only exchange balances -- exchanging is a zero sum operation. If this were still
-not the case, then any withdrawal or deposit could be interrupted, causing the
-same sorts of problems we saw before.
+However, note that the sum of the balances is still
+preserved -- that is, @tt{5 + 10 + 15 == 20 + 5 + 5}. This
+is a simple consequence of the fact that the net effect on
+the total balance of the accounts of an exchange is always
+zero, as long as transactions on the individual accounts are
+serialized. In other words, no new money is being introduced
+into the system as long as you only exchange balances --
+exchanging is a zero sum operation. If this were still not
+the case, then any withdrawal or deposit could be
+interrupted, causing the same sorts of problems we saw
+before.
 
 @section[#:tag "c3e44"]{Exercise 3.44}
 
-Unlike @tt{exchange}, @tt{transfer} makes no calculations based on the states
-of the balances before withdrawing or depositing from them. Even if the balances
-in one or both of the accounts were to change during the execution of the procedure,
-as long as the withdrawals and deposits were serialized, the net impact on both
-accounts will be correct. This means that there is no need for more complex
+Unlike @tt{exchange}, @tt{transfer} makes no calculations
+based on the states of the balances before withdrawing or
+depositing from them. Even if the balances in one or both of
+the accounts were to change during the execution of the
+procedure, as long as the withdrawals and deposits were
+serialized, the net impact on both accounts will be correct.
+This means that there is no need for more complex
 serialization with the transfer operation.
 
 @section[#:tag "c3e45"]{Exercise 3.45}
 
-Louis Reasoner changes the definition of @tt{make-account-and-serializer} to automatically
-serialize deposits and withdrawals. Since @tt{serialized-exchange} manually serializes
-the @tt{exchange} procedure with both serializers, and the @tt{exchange} procedure will
-now call serialized functions, a function called during the execution of another function
-will be mutually exclusive -- in other words, the procedure will not be able to terminate.
-This is an example of deadlock.
+Louis Reasoner changes the definition of
+@tt{make-account-and-serializer} to automatically serialize
+deposits and withdrawals. Since @tt{serialized-exchange}
+manually serializes the @tt{exchange} procedure with both
+serializers, and the @tt{exchange} procedure will now call
+serialized functions, a function called during the execution
+of another function will be mutually exclusive -- in other
+words, the procedure will not be able to terminate. This is
+an example of deadlock.
 
 Note that we don't have this problem when nesting two different serializers.
 
@@ -1959,21 +1968,26 @@ Note that we don't have this problem when nesting two different serializers.
 
 @section[#:tag "c3e46"]{Exercise 3.46}
 
-The situation in which a non-atomic @tt{test-and-set!} procedure fails is straightforward:
+The situation in which a non-atomic @tt{test-and-set!}
+procedure fails is straightforward:
 
 @itemlist[
  @item{One procedure attempts to open an available mutex}
- @item{After it determines that the mutex is available, but before it sets it, another procedure
-       checks the value of the mutex and also determines that it is available}
- @item{Both procedures set the cell and return false, and both can execute at the same time}
+ @item{After it determines that the mutex is available, but
+  before it sets it, another procedure checks the value of
+  the mutex and also determines that it is available}
+ @item{Both procedures set the cell and return false, and
+  both can execute at the same time}
  ]
 
 @section[#:tag "c3e47"]{Exercise 3.47}
 
-An implementation of semaphores in terms of mutexes can proceed something like this:
+An implementation of semaphores in terms of mutexes can
+proceed something like this:
 
-A semaphore allows @tt{n} concurrently-executing procedures at once. We can imagine checking
-this as equivalent to checking if any of @tt{n} mutexes are unset.
+A semaphore allows @tt{n} concurrently-executing procedures
+at once. We can imagine checking this as equivalent to
+checking if any of @tt{n} mutexes are unset.
 
 @codeblock{
 (define (make-semaphore n)
@@ -1997,10 +2011,12 @@ this as equivalent to checking if any of @tt{n} mutexes are unset.
     the-semaphore))
 }
 
-As our convention, is a slot in the semaphore is acquired, it returns a no-argument procedure
-that will release itself when called, so that the owner can relinquish control.
+As our convention, is a slot in the semaphore is acquired,
+it returns a no-argument procedure that will release itself
+when called, so that the owner can relinquish control.
 
-We could also implement the same idea using @tt{test-and-set!} calls. Note the essential similarity
+We could also implement the same idea using
+@tt{test-and-set!} calls. Note the essential similarity
 between the two:
 
 @codeblock{
@@ -2027,3 +2043,69 @@ between the two:
          (else (error "UNKNOWN MESSAGE -- " m))))
      the-semaphore))
 }
+
+@section[#:tag "c3e48"]{Exercise 3.48}
+
+Suppose that @tt{serialized-exchange} will attempt to gain
+access to a certain account over another, in this case by
+numbering each account and mandating that we access the
+lower-numbered account first. Now if two procedures attempt
+to exchange between the two same accounts in reverse
+positions, even though the lower-numbered account will be
+withdrawn from in one procedure and deposited into in the
+other, it will attempt to be accessed first regardless. This
+means that only one procedure will be allowed to gain access
+to the operations that need to be protected, and we can no
+longer have the situation outlined in the text, where one
+procedure gains access to account @tt{a1} and the other to
+account @tt{a2} and neither can finish.
+
+To implement this, we need to do the following:
+
+@itemlist[
+ @item{Expose a unique numeric identifier for each account}
+ @item{Change @tt{serialized-exchange} to use the
+  serializer for the lower-numbered account in the outer
+  position}
+ ]
+
+@codeblock{
+ (define global-id 0)
+ (define (get-next-id!)
+   (set! global-id (+ global-id 1))
+   global-id)
+ (define (make-account-and-serializer balance)
+   (define (withdraw amount)
+     (if (>= balance amount)
+         (begin (set! balance (- balance amount))
+                balance)
+         "Insufficient funds"))
+   (define (deposit amount)
+     (set! balance (+ balance amount))
+     balance)
+   (let ((balance-serializer (make-serializer))
+         (id (get-next-id!)))
+     (define (dispatch m)
+       (cond ((eq? m 'withdraw) withdraw)
+             ((eq? m 'deposit) deposit)
+             ((eq? m 'balance) balance)
+             ((eq? m 'serializer) balance-serializer)
+             ((eq? m 'id) id)
+             (else (error "Unknown request -- MAKE-ACCOUNT"
+                          m))))
+     dispatch))
+ (define (serialized-exchange account1 account2)
+   (let ((id1 (account1 'id))
+         (id2 (account2 'id))
+         (serializer1 (account1 'serializer))
+         (serializer2 (account2 'serializer)))
+     (let ((first-serializer (if (< id1 id2) serializer1 serializer2))
+           (second-serializer (if (< id1 id2) serializer2 serializer1)))
+       ((serializer1 (serializer2 exchange))
+        account1
+        account2))))
+}
+
+@section[#:tag "c3e49"]{Exercise 3.49}
+
+@bold{TODO}
