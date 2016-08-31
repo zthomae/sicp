@@ -2108,4 +2108,265 @@ To implement this, we need to do the following:
 
 @section[#:tag "c3e49"]{Exercise 3.49}
 
+Suppose you wanted to write a program to swap the balances
+of your account and the other account in the bank with the
+balance closest to yours. Clearly, once you start examining
+account balances, it would be problematic if your account
+balance would change at any point before the transaction is
+complete -- this could invalidate your search results,
+making the end result of the program incorrect. But if you
+need to lock your account before finding the other account
+to match it, then you can no longer follow the procedure
+above -- the matching account may have a higher or a lower
+number, and if it has a lower one, you've violated the rules
+that were attempting to prevent deadlock.
+
+@section[#:tag "c3e50"]{Exercise 3.50}
+
+This generalized version of @tt{stream-map} allows us to
+pass a procedure @tt{proc} of @tt{n} arguments as well as
+@tt{n} streams, and returns a stream containing @tt{proc}
+applied to each of the @tt{i}th values of the streams.
+It assumes that each stream is at least as long as the
+first, and returns a stream of only as many elements as
+there are elements of this. Note that, because @tt{argstreams}
+is a list of streams, we can use normal list procedures
+on it.
+
+@examples[
+ #:eval ev #:hidden
+ (define (stream-ref s n)
+  (if (= n 0)
+      (stream-car s)
+      (stream-ref (stream-cdr s) (- n 1))))
+
+ (define (stream-map proc s)
+   (if (stream-null? s)
+       the-empty-stream
+       (cons-stream (proc (stream-car s))
+                    (stream-map proc (stream-cdr s)))))
+ 
+ (define (stream-for-each proc s)
+   (if (stream-null? s)
+       'done
+       (begin (proc (stream-car s))
+              (stream-for-each proc (stream-cdr s)))))
+ 
+ (define (display-stream s)
+   (stream-for-each display-line s))
+ 
+ (define (display-line x)
+   (newline)
+   (display x))
+ 
+ (define (stream-car stream) (car stream))
+ (define (stream-cdr stream) (force (cdr stream)))
+ 
+ (define (stream-enumerate-interval low high)
+   (if (> low high)
+       the-empty-stream
+       (cons-stream
+        low
+        (stream-enumerate-interval (+ low 1) high))))
+ 
+ (define (stream-filter pred stream)
+   (cond ((stream-null? stream) the-empty-stream)
+         ((pred (stream-car stream))
+          (cons-stream (stream-car stream)
+                       (stream-filter pred
+                                      (stream-cdr stream))))
+         (else (stream-filter pred (stream-cdr stream)))))
+ 
+ (define (show x)
+   (display-line x)
+   x)
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (stream-map proc . argstreams)
+   (if (stream-null? (car argstreams))
+       the-empty-stream
+       (cons-stream
+        (apply proc (map stream-car argstreams))
+        (apply stream-map
+               (cons proc (map stream-cdr argstreams))))))
+ ]
+
+As an example,
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (stream-map + (stream-enumerate-interval 1 10) (stream-enumerate-interval 1 1000000)))
+ ]
+
+@section[#:tag "c3e51"]{Exercise 3.51}
+
+When we first define @tt{x}, @tt{stream-map} will call the
+@tt{show} procedure on the first element of the stream,
+which will be forced immediately. No other values will be
+forced until the calling of @tt{(stream-ref x 5)}, which
+will only force enough to find the sixth element. We
+will then force two more when we call @tt{(stream-ref x 7)}.
+We can see this in action:
+
+@examples[
+ #:label #f #:eval ev
+ (define x (stream-map show (stream-enumerate-interval 0 10)))
+ (stream-ref x 5)
+ (stream-ref x 7)
+ ]
+
+@section[#:tag "c3e52"]{Exercise 3.52}
+
+@examples[
+ #:label #f #:eval ev
+ (define sum 0)
+ sum
+ ]
+
+Forced so far: None.
+
+@examples[
+ #:label #f #:eval ev
+ (define (accum x)
+   (set! sum (+ x sum))
+   sum)
+ sum
+ ]
+
+Forced so far: None.
+
+@examples[
+ #:label #f #:eval ev
+ (define seq (stream-map accum (stream-enumerate-interval 1 20)))
+ sum
+ ]
+
+Forced so far: @tt{1}.
+
+@examples[
+ #:label #f #:eval ev
+ (define y (stream-filter even? seq))
+ sum
+ ]
+
+Forced so far: @tt{1, 2, 3}.
+
+@examples[
+ #:label #f #:eval ev
+ (define z (stream-filter (lambda (x) (= (remainder x 5) 0))
+                          seq))
+ sum
+ ]
+
+Forced so far: @tt{1, 2, 3, 4}.
+
+@examples[
+ #:label #f #:eval ev
+ (stream-ref y 7)
+ sum
+ ]
+
+Forced so far: @tt{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}.
+@examples[
+ #:label #f #:eval ev
+ (display-stream z)
+ sum
+ ]
+
+Forced so far: @tt{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20}.
+
+@section[#:tag "c3e53"]{Exercise 3.53}
+
+The stream defined by
+
+@codeblock{
+ (define s (cons-stream 1 (add-streams s s)))
+}
+
+is actually a definition of the powers of two. A proof by induction:
+
+@itemlist[
+ @item{The first element is @tt{1}, or @tt{2^0}}
+ @item{Presume that the @tt{k}th element of @tt{s} is
+  @tt{2^k}. The next element is @tt{2^k + 2^k}, which is
+  equivalent to @tt{2*(2^k)} and to @tt{2^(k+1)}.}
+ ]
+
+@section[#:tag "c3e54"]{Exercise 3.54}
+
+@examples[
+ #:eval ev #:hidden
+ (define (integers-starting-from n)
+   (cons-stream n (integers-starting-from (+ n 1))))
+ 
+ (define integers (integers-starting-from 1))
+ 
+ (define (divisible? x y) (= (remainder x y) 0))
+ 
+ (define no-sevens
+   (stream-filter (lambda (x) (not (divisible? x 7)))
+                  integers))
+ 
+ (define (fibgen a b)
+   (cons-stream a (fibgen b (+ a b))))
+ 
+ (define fibs (fibgen 0 1))
+ 
+ (define (sieve stream)
+   (cons-stream
+    (stream-car stream)
+    (sieve (stream-filter
+            (lambda (x)
+              (not (divisible? x (stream-car stream)))))
+           (stream-cdr stream))))
+ 
+ (define ones (cons-stream 1 ones))
+ 
+ (define (add-streams s1 s2)
+   (stream-map + s1 s2))
+ 
+ (define integers-implicitly (cons-stream 1 (add-streams ones integers)))
+ 
+ (define fibs-implicitly
+   (cons-stream 0
+                (cons-stream 1
+                             (add-streams (stream-cdr fibs)
+                                          fibs))))
+ 
+ (define (scale-stream stream factor)
+   (stream-map (lambda (x) (* x factor)) stream))
+ 
+ (define double (cons-stream 1 (scale-stream double 2)))
+ 
+ (define (square x) (* x x))
+ 
+ (define primes
+   (cons-stream
+    2
+    (stream-filter prime? (integers-starting-from 3))))
+ 
+ (define (prime? n)
+   (define (iter ps)
+     (cond ((> (square (stream-car ps))  n) true)
+           ((divisible? n (stream-car ps)) false)
+           (else (iter (stream-cdr ps)))))
+   (iter primes))
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (mul-streams s1 s2) (stream-map * s1 s2))
+ (define factorials (cons-stream 1 (mul-streams factorials (integers-starting-from 2))))
+ ]
+
+To show that it works,
+@examples[
+ #:label #f #:eval ev
+ (= (* 1 2 3 4 5 6 7 8 9 10 11) (stream-ref factorials 10))
+ ]
+
+@section[#:tag "c3e55"]{Exercise 3.55}
+
 @bold{TODO}
