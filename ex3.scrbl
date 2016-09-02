@@ -2369,4 +2369,103 @@ To show that it works,
 
 @section[#:tag "c3e55"]{Exercise 3.55}
 
+The definition of @tt{partial-sums} is almost identical to that of @tt{factorial}:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (partial-sums s)
+   (if (stream-null? s)
+       the-empty-stream
+       (cons-stream (stream-car s) (add-streams (partial-sums s) (stream-cdr s)))))
+ ]
+
+@section[#:tag "c3e56"]{Exercise 3.56}
+
+@examples[
+ #:eval ev #:hidden
+ (define (merge s1 s2)
+   (cond ((stream-null? s1) s2)
+         ((stream-null? s2) s1)
+         (else
+          (let ((s1car (stream-car s1))
+                (s2car (stream-car s2)))
+            (cond ((< s1car s2car)
+                   (cons-stream s1car (merge (stream-cdr s1) s2)))
+                  ((> s1car s2car)
+                   (cons-stream s2car (merge s1 (stream-cdr s2))))
+                  (else
+                   (cons-stream s1car
+                                (merge (stream-cdr s1)
+                                       (stream-cdr s2)))))))))
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define S (cons-stream 1 (merge (scale-stream S 2) (merge (scale-stream S 3) (scale-stream S 5)))))
+ ]
+
+@section[#:tag "c3e57"]{Exercise 3.57}
+
+When computing @tt{fibs} using the definition presented
+earlier, one addition is performed for each value of the
+stream besides the first two. This is because values of the
+stream aren't calculated multiple times -- in other words,
+because the @tt{delay} special form memoizes values. If
+this were not the case, then the situation would be much
+different:
+
+@itemlist[
+ @item{@tt{(stream-ref fibs 2)} would need to perform one
+  addition}
+ @item{@tt{(stream-ref fibs 3)} would need to perform two
+  additions: One for the last value in @tt{fibs} and one
+  more}
+ @item{@tt{(stream-ref fibs 4)} would need to perform four
+  additions: Two for the last value, one for the value
+  before that, and one more}
+ @item{@tt{(stream-ref fibs 5)} would need to perform seven
+  additions: Four for the last value, two for the value
+  before that, and one more}
+ @item{@tt{(stream-ref fibs 6)} would need to perform
+  twelve additions: Seven for the last value, four for the
+  value before that, and one more}
+ ]
+
+The growth in the number of additions is @tt{O(2^n)}. (This
+is not a tight bound, but the growth of the sequence is
+clearly exponential.)
+
+@section[#:tag "c3e58"]{Exercise 3.58}
+
+The procedure @tt{expand} implements long division,
+returning a stream of digits  in the result (after the
+decimal -- it is assumed that the numerator is smaller than
+the denominator). It also lets the user specify the base,
+or @tt{radix}, of the result.
+
+@section[#:tag "c3e59"]{Exercise 3.59}
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (integrate-series s)
+   (define (integrate-inner strim index)
+     (if (stream-null? strim)
+         the-empty-stream
+         (cons-stream
+          (/ (stream-car strim) index)
+          (integrate-inner (stream-cdr strim) (+ index 1)))))
+  (integrate-inner s 1))
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define cosine-series
+   (cons-stream 1 (integrate-series (scale-stream -1 sine-series))))
+
+ (define sine-series
+   (cons-stream 0 (integrate-series cosine-series)))
+ ]
+
+@section[#:tag "c3e60"]{Exercise 3.60}
+
 @bold{TODO}
