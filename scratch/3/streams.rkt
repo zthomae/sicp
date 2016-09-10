@@ -1,5 +1,7 @@
 #lang sicp
 
+(#%require (only racket/base error))
+
 ;; force and delay are already provided
 
 (define (stream-ref s n)
@@ -166,3 +168,14 @@
                    (take-stream (stream-cdr s) (- n 1)))))
 
 (define sine-cosine-identity (add-streams (mul-series sine-series sine-series) (mul-series cosine-series cosine-series)))
+
+(define (invert-unit-series s)
+  (cons-stream (stream-car s)
+               (scale-stream (mul-series (stream-cdr s) (invert-unit-series s)) -1)))
+
+(define (div-series s1 s2)
+  (if (= (stream-car s2) 0)
+      (error "Cannot divide by 0")
+      (mul-series s1 (invert-unit-series s2))))
+
+(define tangent-series (div-series sine-series cosine-series))

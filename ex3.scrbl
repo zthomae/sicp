@@ -2519,4 +2519,46 @@ constant @tt{1}. And indeed, this is the case:
 
 @section[#:tag "c3e61"]{Exercise 3.61}
 
-@bold{TODO}
+To find the inverse @tt{X} of the unit power series @tt{S}, we can simply translate the
+equality @tt{X = S@subscript{0} - S@subscript{R}*X} (where @tt{S@subscript{0}} is the constant
+term of @tt{S} and @tt{S@subscript{R}} is the coefficients of @tt{S} after the constant) into a procedure:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (invert-unit-series s)
+   (cons-stream (stream-car s)
+                (scale-stream (mul-series (stream-cdr s) (invert-unit-series s)) -1)))
+ ]
+
+If we take the inverse of a power series (say, the series representing @tt{e@superscript{x}})
+and multiply it by the original series, we should get a constant result of @tt{1}. We can
+verify that this is the case:
+
+@examples[
+ #:label #f #:eval ev
+ (define exp-series
+   (cons-stream 1 (integrate-series exp-series)))
+ (display-stream (take-stream (mul-series exp-series (invert-unit-series exp-series)) 5))
+ ]
+
+@section[#:tag "c3e62"]{Exercise 3.62}
+
+Dividing a series @tt{S@subscript{1}} by series @tt{S@subscript{2}} is equivalent to multiplying
+@tt{S@subscript{1}} by the inverse of @tt{S@subscript{2}}. This can be expressed succinctly with
+the definitions @tt{mul-series} and @tt{invert-unit-series}:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (div-series s1 s2)
+   (if (= (stream-car s2) 0)
+       (error "Cannot divide by 0")
+       (mul-series s1 (invert-unit-series s2))))
+ ]
+
+We can use @tt{div-series} to define the series for @tt{tan}, which is equivalent to the series
+for @tt{cosine} divided by the series for @tt{sine}:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define tangent-series (div-series sine-series cosine-series))
+ ]
