@@ -179,3 +179,84 @@
       (mul-series s1 (invert-unit-series s2))))
 
 (define tangent-series (div-series sine-series cosine-series))
+
+(define (average x y )
+  (/ (+ x y) 2))
+
+(define (sqrt-improve guess x)
+  (average guess (/ x guess)))
+
+(define (sqrt-stream x)
+  (define guesses
+    (cons-stream 1.0
+                 (stream-map (lambda (guess)
+                               (sqrt-improve guess x))
+                             guesses)))
+  guesses)
+
+(define (pi-summands n)
+  (cons-stream (/ 1.0 n)
+               (stream-map - (pi-summands (+ n 2)))))
+
+(define pi-stream
+  (scale-stream (partial-sums (pi-summands 1)) 4))
+
+(define (euler-transform s)
+  (let ((s0 (stream-ref s 0))
+        (s1 (stream-ref s 1))
+        (s2 (stream-ref s 2)))
+    (cons-stream (- s2 (/ (square (- s2 s1))
+                          (+ s0 (* -2 s1) s2)))
+                 (euler-transform (stream-cdr s)))))
+
+(define (make-tableau transform s)
+  (cons-stream s
+               (make-tableau transform
+                             (transform s))))
+
+(define (accelerated-sequence transform s)
+  (stream-map stream-car
+              (make-tableau transform s)))
+
+(define (stream-limit s tolerance)
+  (define (limit-inner last rest)
+    (let ((r (stream-car rest)))
+      (if (< (abs (- last r)) tolerance)
+          r
+          (limit-inner r (stream-cdr rest)))))
+  (limit-inner (stream-car s) (stream-cdr s)))
+
+(define (sqrt x tolerance)
+  (stream-limit (sqrt-stream x) tolerance))
+
+(define (ln-summands n)
+  (cons-stream (/ 1.0 n)
+               (stream-map - (ln-summands (+ n 1)))))
+
+(define ln-stream (partial-sums (ln-summands 1)))
+
+(define ln-stream++ (euler-transform ln-stream))
+
+(define ln-stream# (accelerated-sequence euler-transform ln-stream))
+
+(define (stream-values-until-precise s correct tolerance)
+  (define (count i last rest)
+    (let ((r (stream-car rest)))
+      (if (< (abs (- correct (average last r))) tolerance)
+          i
+          (count (+ i 1) r (stream-cdr rest)))))
+  (count 2 (stream-car s) (stream-cdr s)))
+
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
+
+(define (pairs s t)
+  (cons-stream
+   (list (stream-car s) (stream-car t))
+   (interleave
+    (stream-map (lambda (x) (list (stream-car s) x))
+                (stream-cdr t))
+    (pairs (stream-cdr s) (stream-cdr t)))))

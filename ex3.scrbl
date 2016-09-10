@@ -2562,3 +2562,134 @@ for @tt{cosine} divided by the series for @tt{sine}:
  #:label #f #:eval ev #:no-prompt
  (define tangent-series (div-series sine-series cosine-series))
  ]
+
+@section[#:tag "c3e63"]{Exercise 3.63}
+
+Every time @tt{(sqrt-stream x)} is called, a new stream is
+created. This means that, if we instead define it to recursively
+call itself instead of defining a local value @tt{guesses},
+it cannot take advantage of the fact that values have already
+been computed. Instead, an exponential number of redundant
+computations will be performed. This is similar to what would
+happen if @tt{delay} did not use memoization.
+
+@section[#:tag "c3e64"]{Exercise 3.64}
+
+To define @tt{stream-limit}, all we need to do is examine the
+two most recent values of the stream that we have seen and compare
+their difference to our tolerance. By now, writing this sort of
+procedure is not difficult.
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (stream-limit s tolerance)
+   (define (limit-inner last rest)
+     (let ((r (stream-car rest)))
+       (if (< (abs (- last r)) tolerance)
+           r
+           (limit-inner r (stream-cdr rest)))))
+   (limit-inner (stream-car s) (stream-cdr s)))
+]
+
+@section[#:tag "c3e65"]{Exercise 3.65}
+
+We can define the terms of the series equivalent
+to the natural logarithm of @tt{2} as follows:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (ln-summands n)
+   (cons-stream (/ 1.0 n)
+                (stream-map - (ln-summands (+ n 1)))))
+ ]
+
+We can then define an initial, non-accelerated version
+of the series converting on the value @tt{ln 2} as follows:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define ln-stream (partial-sums (ln-summands 1)))
+ ]
+
+Using Euler acceleration with @tt{euler-transform}, we
+can define an accelerated version of this stream as follows:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (euler-transform s)
+   (let ((s0 (stream-ref s 0))
+         (s1 (stream-ref s 1))
+         (s2 (stream-ref s 2)))
+     (cons-stream (- s2 (/ (square (- s2 s1))
+                           (+ s0 (* -2 s1) s2)))
+                  (euler-transform (stream-cdr s)))))
+ 
+ (define ln-stream++ (euler-transform ln-stream))
+ ]
+
+And using tableau acceleration, we can define a "super"-accelerated
+stream:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (make-tableau transform s)
+   (cons-stream s
+                (make-tableau transform
+                              (transform s))))
+
+ (define (accelerated-sequence transform s)
+   (stream-map stream-car
+               (make-tableau transform s)))
+ 
+ (define ln-stream# (accelerated-sequence euler-transform ln-stream))
+ ]
+
+If we want to test how quickly these streams converge on the correct
+value of @tt{ln 2}, we can write a simple procedure, analogous to
+@tt{stream-limit}, that will count the number of stream values that
+need to be processed until two consecutive values are within a certain
+tolerance of the correct value.
+
+@examples[
+ #:eval ev #:hidden
+ (define (average x y )
+   (/ (+ x y) 2))
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (stream-values-until-precise s correct tolerance)
+   (define (count i last rest)
+     (let ((r (stream-car rest)))
+       (if (< (abs (- correct (average last r))) tolerance)
+           i
+           (count (+ i 1) r (stream-cdr rest)))))
+   (count 2 (stream-car s) (stream-cdr s)))
+ ]
+
+The initial value passed to @tt{count} is @tt{2} because, in the case
+that the first two values of the stream are within tolerance bounds, we
+would say that @tt{2} stream values have been consumed before reaching
+this precision. In other words, the minimal number of stream values that
+need to be examined before the last two are within tolerance is, of course,
+@tt{2}. (It is merely a convention that the value @tt{i} denotes the number
+of values that will have been processed after that iteration of @tt{count}).
+
+Noting that scheme already defines a fuction @tt{log} for
+finding the natural logarithm, we can then ask how many
+values it takes to reach the correct value within a small
+tolerance (disclosure: which is kept somewhat large to keep
+the page generation time low) as follows:
+
+@examples[
+ #:label #f #:eval ev
+ (define correct (log 2))
+ (define tolerance 0.0000001)
+ (stream-values-until-precise ln-stream correct tolerance)
+ (stream-values-until-precise ln-stream++ correct tolerance)
+ (stream-values-until-precise ln-stream# correct tolerance)
+ ]
+
+@section[#:tag "c3e66"]{Exercise 3.66}
+
+@bold{TODO}
