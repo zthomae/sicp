@@ -2327,13 +2327,13 @@ is actually a definition of the powers of two. A proof by induction:
  (define (add-streams s1 s2)
    (stream-map + s1 s2))
  
- (define integers-implicitly (cons-stream 1 (add-streams ones integers)))
+ (define integers-implicitly (cons-stream 1 (add-streams ones integers-implicitly)))
  
  (define fibs-implicitly
    (cons-stream 0
                 (cons-stream 1
-                             (add-streams (stream-cdr fibs)
-                                          fibs))))
+                             (add-streams (stream-cdr fibs-implicitly)
+                                          fibs-implicitly))))
  
  (define (scale-stream stream factor)
    (stream-map (lambda (x) (* x factor)) stream))
@@ -2460,12 +2460,63 @@ or @tt{radix}, of the result.
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define cosine-series
-   (cons-stream 1 (integrate-series (scale-stream -1 sine-series))))
+   (cons-stream 1 (integrate-series (scale-stream sine-series -1))))
 
  (define sine-series
    (cons-stream 0 (integrate-series cosine-series)))
  ]
 
 @section[#:tag "c3e60"]{Exercise 3.60}
+
+In order to multiply two series together, we need to distribute the
+multiplication over addition. In other words, when multiplying
+the coefficients @tt{a@subscript{0}, a@subscript{1}, ...} and
+@tt{b@subscript{0}, b@subscript{1}, ...}, we need to multiply
+@tt{a@subscript{0}} by every @tt{b@subscript{i}}.
+
+The first element of this stream will naturally be
+@tt{a@subscript{0} * b@subscript{0}}. The rest of the coefficients
+can be found by summing two other series: One being the rest of
+the coefficients @tt{b@subscript{i}} multiplied by @tt{a@subscript{0}},
+and the other being the multiplication of the streams of coefficients
+@tt{a@subscript{1}, ...} and every @tt{b@subscript{i}}. This can be
+defined as follows:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (mul-series s1 s2)
+   (cons-stream (* (stream-car s1)
+                   (stream-car s2))
+                (add-streams (scale-stream (stream-cdr s2) 
+                                           (stream-car s1))
+                             (mul-series (stream-cdr s1) 
+                                         s2))))
+ ]
+
+We can use this to verify the identity
+@tt{sin@superscript{2}x + cos@superscript{2}x = 1}:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (take-stream s n)
+   (if (<= n 0)
+       the-empty-stream
+       (cons-stream (stream-car s)
+                    (take-stream (stream-cdr s) (- n 1)))))
+ 
+ (define sine-cosine-identity
+   (add-streams (mul-series sine-series sine-series)
+                (mul-series cosine-series cosine-series)))
+ ]
+
+The expected coefficients should all be zero, with a leading
+constant @tt{1}. And indeed, this is the case:
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (take-stream sine-cosine-identity 5))
+ ]
+
+@section[#:tag "c3e61"]{Exercise 3.61}
 
 @bold{TODO}

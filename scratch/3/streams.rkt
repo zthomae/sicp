@@ -79,7 +79,7 @@
 (define (add-streams s1 s2)
   (stream-map + s1 s2))
 
-(define integers-implicitly (cons-stream 1 (add-streams ones integers)))
+(define integers-implicitly (cons-stream 1 (add-streams ones integers-implicitly)))
 
 (define fibs-implicitly
   (cons-stream 0
@@ -146,7 +146,23 @@
   (cons-stream 1 (integrate-series exp-series)))
 
 (define cosine-series
-  (cons-stream 1 (integrate-series (scale-stream -1 sine-series))))
+  (cons-stream 1 (integrate-series (scale-stream sine-series -1))))
 
 (define sine-series
   (cons-stream 0 (integrate-series cosine-series)))
+
+(define (mul-series s1 s2)
+  (cons-stream (* (stream-car s1)
+                  (stream-car s2))
+               (add-streams (scale-stream (stream-cdr s2) 
+                                          (stream-car s1))
+                            (mul-series (stream-cdr s1) 
+                                        s2))))
+
+(define (take-stream s n)
+  (if (<= n 0)
+      the-empty-stream
+      (cons-stream (stream-car s)
+                   (take-stream (stream-cdr s) (- n 1)))))
+
+(define sine-cosine-identity (add-streams (mul-series sine-series sine-series) (mul-series cosine-series cosine-series)))
