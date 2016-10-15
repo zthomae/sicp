@@ -167,6 +167,11 @@
       (cons-stream (stream-car s)
                    (take-stream (stream-cdr s) (- n 1)))))
 
+(define (drop-stream s n)
+  (if (<= n 0)
+      s
+      (drop-stream (stream-cdr s) (- n 1))))
+
 (define sine-cosine-identity (add-streams (mul-series sine-series sine-series) (mul-series cosine-series cosine-series)))
 
 (define (invert-unit-series s)
@@ -260,3 +265,36 @@
     (stream-map (lambda (x) (list (stream-car s) x))
                 (stream-cdr t))
     (pairs (stream-cdr s) (stream-cdr t)))))
+
+;(define (stream-accumulate proc init s)
+;  (define (foldr t)
+;    (if (stream-null? t)
+;        init
+;        (proc (stream-car t) (lambda () (foldr (stream-cdr t))))))
+;  (foldr s))
+;
+;(define (stream-flatmap proc s)
+;  (stream-accumulate
+;   (lambda (first rest) (interleave first (rest)))
+;   the-empty-stream
+;   (stream-map proc s)))
+;
+;(define (triples s t u)
+;  (cons-stream
+;   (list (stream-car s) (stream-car t) (stream-car u))
+;   (interleave
+;    (stream-flatmap (lambda (x rest)
+;                      (interleave
+;                       (stream-map (lambda (pair) (cons x pair)) (pairs t u))
+;                       (rest)))
+;                      s)
+;    (triples (stream-cdr s) (stream-cdr t) (stream-cdr u)))))
+
+;(define pythagorean-triples
+;  (stream-filter
+;   (lambda (triple)
+;     (let ((i (car triple))
+;           (j (cadr triple))
+;           (k (caddr triple)))
+;       (= (+ (square i) (square j)) (square k))))
+;   (triples integers integers integers)))

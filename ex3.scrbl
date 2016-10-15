@@ -2543,9 +2543,11 @@ verify that this is the case:
 
 @section[#:tag "c3e62"]{Exercise 3.62}
 
-Dividing a series @tt{S@subscript{1}} by series @tt{S@subscript{2}} is equivalent to multiplying
-@tt{S@subscript{1}} by the inverse of @tt{S@subscript{2}}. This can be expressed succinctly with
-the definitions @tt{mul-series} and @tt{invert-unit-series}:
+Dividing a series @tt{S@subscript{1}} by series @tt{S
+ @subscript{2}} is equivalent to multiplying
+@tt{S@subscript{1}} by the inverse of @tt{S@subscript{2}}.
+This can be expressed succinctly with the definitions
+@tt{mul-series} and @tt{invert-unit-series}:
 
 @examples[
  #:label #f #:eval ev #:no-prompt
@@ -2555,8 +2557,9 @@ the definitions @tt{mul-series} and @tt{invert-unit-series}:
        (mul-series s1 (invert-unit-series s2))))
  ]
 
-We can use @tt{div-series} to define the series for @tt{tan}, which is equivalent to the series
-for @tt{cosine} divided by the series for @tt{sine}:
+We can use @tt{div-series} to define the series for 
+@tt{tan}, which is equivalent to the series for @tt{cosine}
+divided by the series for @tt{sine}:
 
 @examples[
  #:label #f #:eval ev #:no-prompt
@@ -2644,11 +2647,12 @@ stream:
  (define ln-stream# (accelerated-sequence euler-transform ln-stream))
  ]
 
-If we want to test how quickly these streams converge on the correct
-value of @tt{ln 2}, we can write a simple procedure, analogous to
-@tt{stream-limit}, that will count the number of stream values that
-need to be processed until two consecutive values are within a certain
-tolerance of the correct value.
+If we want to test how quickly these streams converge on the
+correct value of @tt{ln 2}, we can write a simple procedure,
+analogous to @tt{stream-limit}, that will count the number
+of stream values that need to be processed until two
+consecutive values are within a certain tolerance of the
+correct value.
 
 @examples[
  #:eval ev #:hidden
@@ -2667,13 +2671,15 @@ tolerance of the correct value.
    (count 2 (stream-car s) (stream-cdr s)))
  ]
 
-The initial value passed to @tt{count} is @tt{2} because, in the case
-that the first two values of the stream are within tolerance bounds, we
-would say that @tt{2} stream values have been consumed before reaching
-this precision. In other words, the minimal number of stream values that
-need to be examined before the last two are within tolerance is, of course,
-@tt{2}. (It is merely a convention that the value @tt{i} denotes the number
-of values that will have been processed after that iteration of @tt{count}).
+The initial value passed to @tt{count} is @tt{2} because, in
+the case that the first two values of the stream are within
+tolerance bounds, we would say that @tt{2} stream values
+have been consumed before reaching this precision. In other
+words, the minimal number of stream values that need to be
+examined before the last two are within tolerance is, of
+course, @tt{2}. (It is merely a convention that the value 
+@tt{i} denotes the number of values that will have been
+processed after that iteration of @tt{count}).
 
 Noting that scheme already defines a fuction @tt{log} for
 finding the natural logarithm, we can then ask how many
@@ -2691,5 +2697,79 @@ the page generation time low) as follows:
  ]
 
 @section[#:tag "c3e66"]{Exercise 3.66}
+
+The definition of @tt{pairs} uses nested interleaving to
+create pairs @tt{(i, j)} of increasing @tt{i}. When @tt{i}
+is the highest seen thus far in the stream, the next pair
+with this value of @tt{i} will be @tt{2@superscript{i-1}}
+values ahead; otherwise, it will be @tt{2@superscript{i}}
+ahead.
+
+@examples[
+ #:eval ev #:hidden
+ (define (interleave s1 s2)
+   (if (stream-null? s1)
+       s2
+       (cons-stream (stream-car s1)
+                    (interleave s2 (stream-cdr s1)))))
+ (define (pairs s t)
+   (cons-stream
+    (list (stream-car s) (stream-car t))
+    (interleave
+     (stream-map (lambda (x) (list (stream-car s) x))
+                 (stream-cdr t))
+     (pairs (stream-cdr s) (stream-cdr t)))))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (define integer-pairs (pairs integers integers))
+ (display-stream (take-stream integer-pairs 25))
+ ]
+
+@section[#:tag "c3e67"]{Exercise 3.67}
+
+@bold{TODO}
+
+@section[#:tag "c3e68"]{Exercise 3.68}
+
+Consider the following incorrect implementation of
+@tt{pairs}:
+
+@codeblock{
+(define (pairs s t)
+  (interleave
+   (stream-map (lambda (x) (list (stream-car s) x))
+               t)
+   (pairs (stream-cdr s) (stream-cdr t))))
+}
+
+For reference, this is the definiton of @tt{interleave}:
+
+@verbatim{
+(define (interleave s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (interleave s2 (stream-cdr s1)))))
+}
+
+Now observe that @tt{stream-cdr} will force the first
+element of the stream:
+
+@verbatim{
+(define (stream-cdr stream) (force (cdr stream)))
+}
+
+The second stream passed to @tt{interleave} will be forced.
+Since @tt{pairs} unconditionally evaluates this with another
+recursive call to @tt{pairs} as its second argument, the
+expression @tt{(pairs integers integers)} will never
+terminate. This does not occur in the correct implementation
+of @tt{pairs} because the call to @tt{interleave} is not
+forced unconditionally, as it is inside a call to
+@tt{cons-stream}.
+
+@section[#:tag "c3e69"]{Exercise 3.69+}
 
 @bold{TODO}
