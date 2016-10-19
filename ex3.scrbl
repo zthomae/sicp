@@ -2729,7 +2729,49 @@ ahead.
 
 @section[#:tag "c3e67"]{Exercise 3.67}
 
-@bold{TODO}
+To get all of the pairs of integers @tt{(i, j)} including
+those where @tt{i > j}, you can consider the pairs meeting
+the new condition as a new stream to mix in. This stream
+can be constructed in the same way as the pairs were
+constructed in the original definition of @tt{pairs}, but
+with the pair elements switched.
+
+The only complication is that we need to be careful not
+to include the pairs @tt{(i, j)} where @tt{i = j} twice.
+This can be done by applying a simple filter to one of
+the pair streams.
+
+I have also added a base case to handle empty streams,
+as the @tt{pairs} and @tt{all-pairs} procedures don't
+need to be called on empty streams. If we ever reach a
+case where one of the two streams passed in is empty,
+then there are no more elements in the stream we are
+creating.
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (all-pairs s t)
+   (if (or (stream-null? s) (stream-null? t))
+       the-empty-stream
+       (let ((car-s (stream-car s))
+             (car-t (stream-car t))
+             (cdr-s (stream-cdr s))
+             (cdr-t (stream-cdr t)))
+         (cons-stream
+          (list car-s car-t)
+          (interleave
+           (stream-map (lambda (x) (list car-s x))
+                       (stream-filter (lambda (y) (not (= y car-s))) cdr-t))
+           (interleave
+            (stream-map (lambda (x) (list x car-s))
+                        cdr-t)
+            (pairs cdr-s cdr-t)))))))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (take-stream (all-pairs integers integers) 20))
+ ]
 
 @section[#:tag "c3e68"]{Exercise 3.68}
 
@@ -2762,14 +2804,73 @@ element of the stream:
 }
 
 The second stream passed to @tt{interleave} will be forced.
-Since @tt{pairs} unconditionally evaluates this with another
-recursive call to @tt{pairs} as its second argument, the
-expression @tt{(pairs integers integers)} will never
+Since @tt{pairs} unconditionally evaluates this with
+another recursive call to @tt{pairs} as its second argument,
+the expression @tt{(pairs integers integers)} will never
 terminate. This does not occur in the correct implementation
 of @tt{pairs} because the call to @tt{interleave} is not
 forced unconditionally, as it is inside a call to
 @tt{cons-stream}.
 
-@section[#:tag "c3e69"]{Exercise 3.69+}
+@section[#:tag "c3e69"]{Exercise 3.69}
 
-@bold{TODO}
+We can define @tt{triples} similarly to how we defined
+@tt{pairs}, constructing a new triplet by @tt{cons}ing an
+element @tt{i} onto a pair @tt{(j, k)} as long as
+@tt{i <= j}.
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (triples s t u)
+   (if (or (stream-null? s) (stream-null? t) (stream-null? u))
+       the-empty-stream
+       (cons-stream
+        (list (stream-car s) (stream-car t) (stream-car u))
+        (interleave
+         (stream-map (lambda (p) (cons (stream-car s) p))
+                     (pairs (stream-cdr t) (stream-cdr u)))
+         (triples (stream-cdr s) (stream-cdr t) (stream-cdr u))))))
+ ]
+
+We can then find all Pythagorean triples as follows:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define pythagorean-triples
+   (stream-filter
+    (lambda (triple)
+      (let ((i (car triple))
+            (j (cadr triple))
+            (k (caddr triple)))
+        (= (+ (square i) (square j)) (square k))))
+    (triples integers integers integers)))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (take-stream pythagorean-triples 5))
+ ]
+
+However, this might not be exactly what we want, as allows
+non-primitive triples as well (for examples, @tt{(6, 8, 10}}
+as well as @tt{(3, 4, 5)}. We can use another stream filter
+to account for this as well.
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define primitive-pythagorean-triples
+   (stream-filter
+    (lambda (triple)
+      (let ((i (car triple))
+            (j (cadr triple))
+            (k (caddr triple)))
+        (= 1 (gcd i (gcd j k)))))
+    pythagorean-triples))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (take-stream primitive-pythagorean-triples 2))
+ ]
+
+@section[#:tag "c3e70"]{Exercise 3.70}

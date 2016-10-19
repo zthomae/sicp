@@ -259,42 +259,56 @@
                    (interleave s2 (stream-cdr s1)))))
 
 (define (pairs s t)
-  (cons-stream
-   (list (stream-car s) (stream-car t))
-   (interleave
-    (stream-map (lambda (x) (list (stream-car s) x))
-                (stream-cdr t))
-    (pairs (stream-cdr s) (stream-cdr t)))))
+  (if (or (stream-null? s) (stream-null? t))
+      the-empty-stream
+      (cons-stream
+       (list (stream-car s) (stream-car t))
+       (interleave
+        (stream-map (lambda (x) (list (stream-car s) x))
+                    (stream-cdr t))
+        (pairs (stream-cdr s) (stream-cdr t))))))
 
-;(define (stream-accumulate proc init s)
-;  (define (foldr t)
-;    (if (stream-null? t)
-;        init
-;        (proc (stream-car t) (lambda () (foldr (stream-cdr t))))))
-;  (foldr s))
-;
-;(define (stream-flatmap proc s)
-;  (stream-accumulate
-;   (lambda (first rest) (interleave first (rest)))
-;   the-empty-stream
-;   (stream-map proc s)))
-;
-;(define (triples s t u)
-;  (cons-stream
-;   (list (stream-car s) (stream-car t) (stream-car u))
-;   (interleave
-;    (stream-flatmap (lambda (x rest)
-;                      (interleave
-;                       (stream-map (lambda (pair) (cons x pair)) (pairs t u))
-;                       (rest)))
-;                      s)
-;    (triples (stream-cdr s) (stream-cdr t) (stream-cdr u)))))
+(define (all-pairs s t)
+  (if (or (stream-null? s) (stream-null? t))
+      the-empty-stream
+      (let ((car-s (stream-car s))
+            (car-t (stream-car t))
+            (cdr-s (stream-cdr s))
+            (cdr-t (stream-cdr t)))
+        (cons-stream
+         (list car-s car-t)
+         (interleave
+          (stream-map (lambda (x) (list car-s x))
+                      (stream-filter (lambda (y) (not (= y car-s))) cdr-t))
+          (interleave
+           (stream-map (lambda (x) (list x car-s))
+                       cdr-t)
+           (pairs cdr-s cdr-t)))))))
 
-;(define pythagorean-triples
-;  (stream-filter
-;   (lambda (triple)
-;     (let ((i (car triple))
-;           (j (cadr triple))
-;           (k (caddr triple)))
-;       (= (+ (square i) (square j)) (square k))))
-;   (triples integers integers integers)))
+(define (triples s t u)
+  (if (or (stream-null? s) (stream-null? t) (stream-null? u))
+      the-empty-stream
+      (cons-stream
+       (list (stream-car s) (stream-car t) (stream-car u))
+       (interleave
+        (stream-map (lambda (p) (cons (stream-car s) p))
+                    (pairs (stream-cdr t) (stream-cdr u)))
+        (triples (stream-cdr s) (stream-cdr t) (stream-cdr u))))))
+
+(define pythagorean-triples
+  (stream-filter
+   (lambda (triple)
+     (let ((i (car triple))
+           (j (cadr triple))
+           (k (caddr triple)))
+       (= (+ (square i) (square j)) (square k))))
+   (triples integers integers integers)))
+
+(define primitive-pythagorean-triples
+  (stream-filter
+   (lambda (triple)
+     (let ((i (car triple))
+           (j (cadr triple))
+           (k (caddr triple)))
+       (= 1 (gcd i (gcd j k)))))
+   pythagorean-triples))
