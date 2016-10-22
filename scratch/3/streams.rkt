@@ -312,3 +312,87 @@
            (k (caddr triple)))
        (= 1 (gcd i (gcd j k)))))
    pythagorean-triples))
+
+(define (merge-weighted weight s t)
+  (cond ((stream-null? s) t)
+        ((stream-null? t) s)
+        (else
+         (let* ((a (stream-car s))
+                (b (stream-car t))
+                (wa (weight a))
+                (wb (weight b)))
+           (if (< wa wb)
+               (cons-stream a (merge-weighted weight (stream-cdr s) t))
+               (cons-stream b (merge-weighted weight s (stream-cdr t))))))))
+
+(define (weighted-pairs weight s t)
+  (if (or (stream-null? s) (stream-null? t))
+      the-empty-stream
+      (cons-stream
+       (list (stream-car s) (stream-car t))
+       (merge-weighted weight
+                       (stream-map (lambda (x) (list (stream-car s) x))
+                                   (stream-cdr t))
+                       (weighted-pairs weight (stream-cdr s) (stream-cdr t))))))
+
+(define (weight-integer-pair p)
+  (+ (car p) (cadr p)))
+
+(define (cube x) (* x x x))
+
+(define (weight-cubed p)
+  (+ (cube (car p)) (cube (cadr p))))
+
+(define (drop-while f s)
+  (cond ((stream-null? s) the-empty-stream)
+        ((f (stream-car s)) (drop-while f (stream-cdr s)))
+        (else s)))
+
+(define (find-consecutive s)
+  (if (stream-null? s)
+      the-empty-stream
+      (let ((first (stream-car s))
+            (rest (stream-cdr s)))
+        (if (stream-null? rest)
+            the-empty-stream
+            (let ((second (stream-car rest)))
+              (if (= first second)
+                  (cons-stream first
+                               (find-consecutive (drop-while (lambda (x) (= x first))
+                                                             (stream-cdr rest))))
+                  (find-consecutive rest)))))))
+
+(define ramanujan-pairs
+  (find-consecutive (stream-map weight-cubed (weighted-pairs weight-cubed integers integers))))
+
+(define (find-three-consecutive-by f g s)
+  (if (stream-null? s)
+      the-empty-stream
+      (let ((first (stream-car s))
+            (rest (stream-cdr s)))
+        (if (stream-null? rest)
+            the-empty-stream
+            (let ((second (stream-car rest))
+                  (rrest (stream-cdr rest)))
+              (if (stream-null? rrest)
+                  the-empty-stream
+                  (let ((third (stream-car rrest)))
+                    (if (= (f first) (f second) (f third))
+                        (cons-stream (cons (f first) (map g (list first second third)))
+                                     (find-three-consecutive-by
+                                      f
+                                      g
+                                      (drop-while (lambda (x) (= (f x) (f first)))
+                                                  (stream-cdr rrest))))
+                        (find-three-consecutive-by f g rest)))))))))
+
+(define (weight-squared p)
+  (+ (square (car p)) (square (cadr p))))
+
+(define squares-three-ways
+  (find-three-consecutive-by
+   car
+   cadr
+   (stream-map (lambda (p) (list (weight-squared p) p))
+               (weighted-pairs weight-squared integers integers))))
+               

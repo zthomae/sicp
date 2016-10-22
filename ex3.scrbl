@@ -2874,3 +2874,156 @@ to account for this as well.
  ]
 
 @section[#:tag "c3e70"]{Exercise 3.70}
+
+@tt{merge-weighted} can be defined as follows (note that, unlike
+@tt{merge}, this does not deduplicate results):
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (merge-weighted weight s t)
+   (cond ((stream-null? s) t)
+         ((stream-null? t) s)
+         (else
+          (let* ((a (stream-car s))
+                 (b (stream-car t))
+                 (wa (weight a))
+                 (wb (weight b)))
+            (if (< wa wb)
+                (cons-stream a (merge-weighted weight (stream-cdr s) t))
+                (cons-stream b (merge-weighted weight s (stream-cdr t))))))))
+ ]
+
+We can then weight pairs from two streams like this:
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (weighted-pairs weight s t)
+   (if (or (stream-null? s) (stream-null? t))
+       the-empty-stream
+       (cons-stream
+        (list (stream-car s) (stream-car t))
+        (merge-weighted weight
+                        (stream-map (lambda (x) (list (stream-car s) x))
+                                    (stream-cdr t))
+                        (weighted-pairs weight (stream-cdr s) (stream-cdr t))))))
+ ]
+
+For examples, the pairs of integers weighted by the sums of
+their elements:
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream
+  (take-stream (weighted-pairs (lambda (p) (+ (car p) (cadr p)))
+                               integers
+                               integers)
+               20))
+ ]
+
+And the pairs of integers that are not divisible by @tt{2},
+@tt{3}, or @tt{5} ordered by the sum @tt{2i + 3j + 5ij}
+
+@examples[
+ #:label #f #:eval ev
+ (define filtered-integers
+   (stream-filter (lambda (x) (not (or (divisible? x 2)
+                                       (divisible? x 3)
+                                       (divisible? x 5))))
+                  integers))
+ (define (weight p)
+   (let ((i (car p))
+         (j (cadr p)))
+     (+ (* 2 i) (* 3 j) (* 5 (+ i j)))))
+ (display-stream
+  (take-stream (weighted-pairs weight
+                               filtered-integers
+                               filtered-integers)
+               20))
+ ]
+
+@section[#:tag "c3e71"]{Exercise 3.71}
+
+In order to find integers that can be written as the sum
+of two cubes in two different ways as generally as possible,
+we can write a @tt{find-consecutive} procedure that takes
+a stream and returns a stream of the values in the stream
+that appear consecutively. (In this case, I will take
+consecutively to mean two or more times in a row).
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (weight-cubed p)
+   (let ((cube (lambda (x) (* x x x))))
+     (+ (cube (car p)) (cube (cadr p)))))
+ 
+ (define (drop-while f s)
+   (cond ((stream-null? s) the-empty-stream)
+         ((f (stream-car s)) (drop-while f (stream-cdr s)))
+         (else s)))
+ 
+ (define (find-consecutive s)
+   (if (stream-null? s)
+       the-empty-stream
+       (let ((first (stream-car s))
+             (rest (stream-cdr s)))
+         (if (stream-null? rest)
+             the-empty-stream
+             (let ((second (stream-car rest)))
+               (if (= first second)
+                   (cons-stream first
+                                (find-consecutive (drop-while (lambda (x) (= x first))
+                                                              (stream-cdr rest))))
+                   (find-consecutive rest)))))))
+ 
+ (define ramanujan-pairs
+   (find-consecutive (stream-map weight-cubed
+                                 (weighted-pairs weight-cubed integers integers))))
+ ]
+
+We can then see the one number provided and the five after it:
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (take-stream ramanujan-pairs 6))
+ ]
+
+@section[#:tag "c3e72"]{Exercise 3.72}
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (find-three-consecutive-by f g s)
+   (if (stream-null? s)
+       the-empty-stream
+       (let ((first (stream-car s))
+             (rest (stream-cdr s)))
+         (if (stream-null? rest)
+             the-empty-stream
+             (let ((second (stream-car rest))
+                   (rrest (stream-cdr rest)))
+               (if (stream-null? rrest)
+                   the-empty-stream
+                   (let ((third (stream-car rrest)))
+                     (if (= (f first) (f second) (f third))
+                         (cons-stream (cons (f first) (map g (list first second third)))
+                                      (find-three-consecutive-by
+                                       f
+                                       g
+                                       (drop-while (lambda (x) (= (f x) (f first)))
+                                                   (stream-cdr rrest))))
+                         (find-three-consecutive-by f g rest)))))))))
+ 
+ (define (weight-squared p)
+   (+ (square (car p)) (square (cadr p))))
+ 
+ (define squares-three-ways
+   (find-three-consecutive-by
+    car
+    cadr
+    (stream-map (lambda (p) (list (weight-squared p) p))
+                (weighted-pairs weight-squared integers integers))))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (display-stream (take-stream squares-three-ways 10))
+ ]
