@@ -395,4 +395,43 @@
    cadr
    (stream-map (lambda (p) (list (weight-squared p) p))
                (weighted-pairs weight-squared integers integers))))
-               
+
+(define (integral integrand initial-value dt)
+  (define int
+    (cons-stream initial-value
+                 (add-streams (scale-stream integrand dt)
+                              int)))
+  int)
+
+(define (RC r c dt)
+  (lambda (inputs v0)
+    (add-streams (scale-stream inputs r)
+                 (integral (scale-stream inputs (/ 1 c)) v0 dt))))
+
+(define (smooth stream)
+  (if (stream-null? stream)
+      the-empty-stream
+      (let ((first (stream-car stream))
+            (rest (stream-cdr stream)))
+        (if (stream-null? rest)
+            the-empty-stream
+            (let ((second (stream-car rest)))
+              (cons-stream (/ (+ first second) 2)
+                           (smooth rest)))))))
+
+(define (integral2 delayed-integrand initial-value dt)
+  (cons-stream initial-value
+               (let ((integrand (force delayed-integrand)))
+                 (if (stream-null? integrand)
+                     the-empty-stream
+                     (integral2 (delay (stream-cdr integrand))
+                                (+ (* dt (stream-car integrand))
+                                   initial-value)
+                                dt)))))
+
+(define (solve-2nd a b dt y0 dy0)
+  (define dy (integral ddy dy0 dt))
+  (define y (integral dy y0 dt))
+  (define ddy (add-streams (scale-stream dy a)
+                           (scale-stream y b)))
+  y)

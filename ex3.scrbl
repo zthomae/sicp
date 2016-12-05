@@ -3027,3 +3027,145 @@ We can then see the one number provided and the five after it:
  #:label #f #:eval ev
  (display-stream (take-stream squares-three-ways 10))
  ]
+
+@section[#:tag "c3e73"]{Exercise 3.73}
+
+The RC circuit can be modeled using the @tt{integral}
+procedure defined earlier. Unlike there, we don't need to
+name the procedure we are returning because we don't need to
+call it (that is, because the output of the circuit is not
+used as an input).
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (RC r c dt)
+   (lambda (inputs v0)
+     (add-streams (scale-stream inputs r)
+                  (integral (scale-stream inputs (/ 1 c)) v0 dt))))
+ ]
+
+@section[#:tag "c3e74"]{Exercise 3.74}
+
+To detect zero crossings, we can use the generalized form of
+@tt{stream-map} to map the @tt{sign-change-detector}
+procedure over each stream element as well as the previous
+stream element. It is unclear whether a stream starting out
+with a negative value starts out with a zero crossing (since
+@tt{0} is considered positive), but I make the assumption
+that this is the case. (If one were to disagree, then the
+first stream element could be duplicated, to force the first
+value in the new stream to be @tt{0}).
+
+First, a definition of @tt{sign-change-detector}, just
+for fun:
+
+@examples[
+ #:eval ev #:hidden
+ (define sense-data the-empty-stream)
+ ]
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (sign-change-detector previous-value current-value)
+   (cond ((and (< previous-value 0) (>= current-value 0)) 1)
+         ((and (>= previous-value 0) (< current-value 0)) -1)
+         (else 0)))
+]
+
+Now, the definition of @tt{zero-crossings}:
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define zero-crossings
+   (stream-map sign-change-detector
+               sense-data
+               (cons-stream 0 sense-data)))
+ ]
+
+@section[#:tag "c3e75"]{Exercise 3.75}
+
+If the signal that @tt{sign-change-detector} should be run on
+is meant to contain the values derived from averaging the two
+previous values of the input stream, then we must keep track of
+the last actual value and the last computed average both -- the
+last value in order to compute the next average, and the last
+average in order to compute whether there was a zero crossing.
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (make-zero-crossings input-stream last-value last-average)
+   (let ((avpt (/ (+ (stream-car input-stream) last-value) 2)))
+     (cons-stream (sign-change-detector avpt last-average)
+                  (make-zero-crossings (stream-cdr input-stream)
+                                       (stream-car input-stream)
+                                       avpt))))
+ ]
+
+@section[#:tag "c3e76"]{Exercise 3.76}
+
+The @tt{smooth} procedure is simple to write by now:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (smooth stream)
+   (if (stream-null? stream)
+       the-empty-stream
+       (let ((first (stream-car stream))
+             (rest (stream-cdr stream)))
+         (if (stream-null? rest)
+             the-empty-stream
+             (let ((second (stream-car rest)))
+               (cons-stream (/ (+ first second) 2)
+                            (smooth rest)))))))
+]
+
+Now the definition of @tt{make-zero-crossings} is as elegant
+as it was before:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (make-zero-crossings input-stream)
+   (let ((smoothed (smooth input-stream)))
+     (stream-map sign-change-detector
+                 smoothed
+                 (cons-stream 0 smoothed))))
+ ]
+
+@section[#:tag "c3e77"]{Exercise 3.77}
+
+Like in the example in the text, making the first parameter
+delayed is a simple transformation:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (integral2 delayed-integrand initial-value dt)
+   (cons-stream initial-value
+                (let ((integrand (force delayed-integrand)))
+                  (if (stream-null? integrand)
+                      the-empty-stream
+                      (integral2 (delay (stream-cdr integrand))
+                                 (+ (* dt (stream-car integrand))
+                                    initial-value)
+                                 dt)))))
+ ]
+
+@section[#:tag "c3e78"]{Exercise 3.78}
+
+@bold{TODO: Test this}
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (solve-2nd a b dt y0 dy0)
+   (define dy (integral ddy dy0 dt))
+   (define y (integral dy y0 dt))
+   (define ddy (add-streams (scale-stream dy a)
+                            (scale-stream y b)))
+   y)
+ ]
+
+@section[#:tag "c3e79"]{Exercise 3.79}
+
+@bold{TODO}
+
+@section[#:tag "c3e80"]{Exercise 3.80}
+
+@bold{TODO}
