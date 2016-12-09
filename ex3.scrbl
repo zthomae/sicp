@@ -3204,20 +3204,19 @@ it will have one fewer element.)
 
 @examples[
  #:eval ev #:label #f #:no-prompt
- (define (monte-carlo-stream results)
-   (define (iter rs trials-passed trials)
-     (if (stream-null? rs) the-empty-stream
-         (cons-stream (if (= trials 0) 0 (/ trials-passed trials))
-                      (iter (stream-cdr rs)
-                            (if (car rs)
-                                (+ trials-passed 1)
-                                trials-passed)
-                            (+ trials 1)))))
-   (iter results 0 0))
+ (define (monte-carlo-stream experiment-stream passed failed)
+   (define (next passed failed)
+     (cons-stream
+      (/ passed (+ passed failed))
+      (monte-carlo-stream
+       (stream-cdr experiment-stream) passed failed)))
+   (if (stream-car experiment-stream)
+       (next (+ passed 1) failed)
+       (next passed (+ failed 1))))
  
  (define (stream-with f) (cons-stream (f) (stream-with f)))
 
  (define (estimate-integral-stream P x1 x2 y1 y2)
    (define (test-point) (P (+ x1 (random (- x2 x1))) (+ y1 (random (- y2 y1)))))
-   (monte-carlo-stream (stream-with test-point)))
+   (monte-carlo-stream (stream-with test-point) 0 0))
  ]
