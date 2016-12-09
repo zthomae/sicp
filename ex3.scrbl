@@ -168,16 +168,25 @@ chosen to have the @tt{'generate} message return the new random number,
 while the @tt{'reset} message returns nothing of value.
 
 @examples[
+ #:eval ev #:hidden
+ (define (rand-update x) x)
+ (define random-init 0)
+ ]
+
+@examples[
  #:label #f #:eval ev #:no-prompt
- (define (rand m)
+ (define rand
    (let ((x random-init))
-     (cond ((eq? m 'generate)
-            (begin
-              (set! x (rand-update x))
-              x))
-           ((eq? m 'reset)
-            (set! x random-init))
-           (else (error "Invalid message -- RAND" m)))))
+     (lambda (m)
+       (cond ((eq? m 'generate)
+              (begin
+                (set! x (rand-update x))
+                x))
+             ((eq? m 'reset)
+              (lambda (new-value)
+                (set! x new-value)
+                x))
+             (else (error "Invalid message -- RAND" m))))))
  ]
 
 @section[#:tag "c3e7"]{Exercise 3.7}
@@ -3169,3 +3178,46 @@ delayed is a simple transformation:
 @section[#:tag "c3e80"]{Exercise 3.80}
 
 @bold{TODO}
+
+@section[#:tag "c3e81"]{Exercise 3.81}
+
+Once we've defined a procedure that takes the current message and the last
+random value generated, we can trivially define a random-number generating
+stream by using @tt{stream-map} on the stream of messages as well as the
+stream itself. (Note that the message is used as the first argument to this
+procedure -- because the definition of @tt{stream-map} I'm using only checks
+if the first stream is out of arguments, we need to use this stream because
+it will have one fewer element.)
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (rand-gen msgs)
+   (define (next-value msg last)
+     (cond ((eq? msg 'generate) (rand-update last))
+           ((and (pair? msg) (eq? (car msg) 'reset)) (cdr msg))
+           (else (error "Invalid message -- RAND-GEN" msg))))
+   (define s (cons-stream random-init (stream-map next-value msgs s)))
+   s)
+ ]
+
+@section[#:tag "c3e82"]{Exercise 3.82}
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (monte-carlo-stream results)
+   (define (iter rs trials-passed trials)
+     (if (stream-null? rs) the-empty-stream
+         (cons-stream (if (= trials 0) 0 (/ trials-passed trials))
+                      (iter (stream-cdr rs)
+                            (if (car rs)
+                                (+ trials-passed 1)
+                                trials-passed)
+                            (+ trials 1)))))
+   (iter results 0 0))
+ 
+ (define (stream-with f) (cons-stream (f) (stream-with f)))
+
+ (define (estimate-integral-stream P x1 x2 y1 y2)
+   (define (test-point) (P (+ x1 (random (- x2 x1))) (+ y1 (random (- y2 y1)))))
+   (monte-carlo-stream (stream-with test-point)))
+ ]

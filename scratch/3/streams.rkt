@@ -1,6 +1,7 @@
 #lang sicp
 
 (#%require (only racket/base error))
+(#%require (only racket/base random))
 
 ;; force and delay are already provided
 
@@ -435,3 +436,50 @@
   (define ddy (add-streams (scale-stream dy a)
                            (scale-stream y b)))
   y)
+
+(define random-init 0)
+(define (rand-update x) (+ x 1))
+
+(define rand
+  (let ((x random-init))
+    (lambda (m)
+      (cond ((eq? m 'generate)
+             (begin
+               (set! x (rand-update x))
+               x))
+            ((eq? m 'reset)
+             (lambda (new-value)
+               (set! x new-value)
+               x))
+            (else (error "Invalid message -- RAND" m))))))
+
+(define (rand-gen msgs)
+  (define (next-value msg last)
+    (cond ((eq? msg 'generate) (rand-update last))
+          ((and (pair? msg) (eq? (car msg) 'reset)) (cdr msg))
+          (else (error "Invalid message -- RAND-GEN" msg))))
+  (define s (cons-stream random-init (stream-map next-value msgs s)))
+  s)
+
+(define (monte-carlo trials experiment)
+  (define (iter trials-remaining trials-passed)
+    (cond ((= trials-remaining 0)
+           (/ trials-passed trials))
+          ((experiment)
+           (iter (- trials-remaining 1) (+ trials-passed 1)))
+          (else
+           (iter (- trials-remaining 1) trials-passed))))
+  (iter trials 0))
+
+(define (monte-carlo-stream results)
+  (define (iter rs trials-passed trials)
+    (if (stream-null? rs) the-empty-stream
+        (cons-stream (if (= trials 0) 0 (/ trials-passed trials))
+                     (iter (stream-cdr rs) (if (car rs) (+ trials-passed 1) trials-passed) (+ trials 1)))))
+  (iter results 0 0))
+
+(define (stream-with f) (cons-stream (f) (stream-with f)))
+
+(define (estimate-integral-stream P x1 x2 y1 y2)
+  (define (test-point) (P (+ x1 (random (- x2 x1))) (+ y1 (random (- y2 y1)))))
+  (monte-carlo-stream (stream-with test-point)))

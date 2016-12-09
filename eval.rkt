@@ -12,4 +12,5 @@
                   (make-evaluator 'sicp)))))
   (ev '(#%require (only racket/base error)))
   (ev '(#%require (only racket/pretty pretty-display)))
+  (ev '(#%require (only racket/base random)))
   ev)
