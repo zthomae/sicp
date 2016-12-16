@@ -173,3 +173,12 @@
             (make-if (cond-predicate first)
                      (sequence->exp (cond-actions first))
                      (expand-clauses rest))))))
+
+
+(define (eval- exp env)
+  (if (self-evaluating? exp)
+      (real-exp exp)
+      ((get 'eval (exp-type exp)) (real-exp exp) env)))
+
+(define exp-type car)
+(define real-exp cdr)

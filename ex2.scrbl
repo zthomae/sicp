@@ -3122,7 +3122,7 @@ encoding.
 
 @bold{TODO}
 
-@section[#:tag "c2e73"]{Section 2.73}
+@section[#:tag "c2e73"]{Exercise 2.73}
 
 We are asked to consider rewriting a procedure for symbolic differentiation,
 originally written like this:
@@ -3168,31 +3168,31 @@ For example, we could add the entries for taking derivatives of additions or
 multiplications like this:
 
 @codeblock{
- (put 'deriv '(+)
- (lambda (exp var)
- (make-sum (deriv (addend exp) var)
- (deriv (augend exp) var))))
+(put 'deriv '(+)
+     (lambda (exp var)
+       (make-sum (deriv (addend exp) var)
+                 (deriv (augend exp) var))))
  
- (put 'deriv '(*)
- (lambda (exp var)
- (make-sum
- (make-product (multiplier exp)
- (deriv (multiplicand exp) var))
- (make-product (deriv (multiplier exp) var)
- (multiplicand exp)))))
+(put 'deriv '(*)
+     (lambda (exp var)
+       (make-sum
+        (make-product (multiplier exp)
+                      (deriv (multiplicand exp) var))
+        (make-product (deriv (multiplier exp) var)
+                      (multiplicand exp)))))
 }
 
 We could also add a procedure for constant exponentiation, as per @secref{c2e56}:
 
 @codeblock{
- (put 'deriv '(^)
- (lambda (exp var)
- (make-product
- (make-product
- (exponent exp)
- (make-exponentiation (base exp)
- (- (exponent exp) 1)))
- (deriv (base exp) var))))
+(put 'deriv '(^)
+     (lambda (exp var)
+       (make-product
+        (make-product
+         (exponent exp)
+         (make-exponentiation (base exp)
+                              (- (exponent exp) 1)))
+        (deriv (base exp) var))))
 }
 
 If, however, we instead made tables with the operators as the @tt{op}s and
@@ -3220,7 +3220,7 @@ with @tt{get-record}.
 
 @codeblock{
  (define (get-salary division employee-record)
- ((get 'salary division) employee-record))
+   ((get 'salary division) employee-record))
 }
 
 We assume that the lookup procedures return @tt{nil} if a record can't
@@ -3229,9 +3229,9 @@ record if one exists.
 
 @codeblock{
  (define (find-employee-record divisions name)
- (flatmap
- (lambda (d) (get-record d name))
- divisions))
+   (flatmap
+    (lambda (d) (get-record d name))
+    divisions))
 }
 
 If Insatiable takes over a new company, they have a few options for integrating
@@ -3240,7 +3240,7 @@ indirection by creating a new table keyed by the company. For example:
 
 @codeblock{
  (define (get-record company division name)
- (((get 'get company) 'lookup division) name))
+   (((get 'get company) 'lookup division) name))
 }
 
 This is less invasive than possibly modifying the names of the divisions to
@@ -3258,15 +3258,15 @@ We can write @tt{make-from-mag-ang} in the new message-passing style
 like this:
 
 @codeblock{
- (define (make-from-mag-ang r a)
- (define (dispatch op)
- (cond ((eq? op 'real-part) (* r (cos a)))
- ((eq? op 'imag-part) (* r (sin a)))
- ((eq? op 'magnitude) r)
- ((eq? op 'angle) a)
- (else
- (error "Unknown op -- MAKE-FROM-MAG-ANG" op))))
- dispatch)
+(define (make-from-mag-ang r a)
+  (define (dispatch op)
+    (cond ((eq? op 'real-part) (* r (cos a)))
+          ((eq? op 'imag-part) (* r (sin a)))
+          ((eq? op 'magnitude) r)
+          ((eq? op 'angle) a)
+          (else
+           (error "Unknown op -- MAKE-FROM-MAG-ANG" op))))
+  dispatch)
 }
 
 Just like the new @tt{make-from-real-imag}, this relies on using the magnitude
@@ -3419,20 +3419,25 @@ in @tt{attach-tag} for extra safety.
 
 @;examples[#:eval ev #:no-prompt
 @codeblock{
- (define (install-=zero?-predicate)
- (define (=zero?-scheme-number x)
- (= 0 x))
- (define (=zero?-rational x)
- (and (= 0 (numer x))
- (not (= 0 (denom x)))))
- (define (=zero?-complex z)
- (and (= 0 (real-part z))
- (= 0 (imag-part z))))
- (put '=zero? 'scheme-number =zero?-scheme-number)
- (put '=zero? 'rational =zero?-rational)
- (put '=zero? 'complex =zero?-complex))
- 
- (define (=zero? x) (apply-generic '=zero? x))
+(define (install-equ?-predicate)
+  (define (equ?-scheme-number x y) (= x y))
+  (define (equ?-rational x y)
+    (and (= (numer x) (numer y))
+         (= (denom x) (denom y))))
+  (define (equ?-complex z1 z2)
+    (and (= (real-part z1) (real-part z2))
+         (= (imag-part z1) (imag-part z2))))
+  (put 'equ? '(scheme-number scheme-number)
+       (lambda (x y)
+         (attach-tag 'scheme-number (equ?-scheme-number x y))))
+  (put 'equ? '(rational rational)
+       (lambda (x y)
+         (attach-tag 'rational (equ?-rational x y))))
+  (put 'equ? '(complex complex)
+       (lambda (z1 z2)
+         (attach-tag 'complex (equ?-complex z1 z2)))))
+
+(define (equ? x y) (apply-generic 'equ? x y))
 }
 
 @section[#:tag "c2e81"]{Exercise 2.81}
@@ -3451,7 +3456,7 @@ numbers, created like this:
  (define (exp x y) (apply-generic 'exp x y))
  
  (put 'exp '(scheme-number scheme-number)
- (lambda (x y) (tag (expt x y))))
+      (lambda (x y) (tag (expt x y))))
 }
 
 If we try to call this procedure on two complex numbers, @tt{apply-generic}
@@ -3462,15 +3467,15 @@ don't have to write these self-coercions:
 
 @;examples[#:eval ev #:no-prompt
 @codeblock{
- (let ((t1->t2 (get-coercion type1 type2))
- (t2->t1 (get-coercion type2 type1)))
- (cond (t1->t2
- (apply-generic op (t1->t2 a1) a2))
- (t2->t1
- (apply-generic op a1 (t2->t1 a2)))
- (else
- (error "no method for these types"
- (list op type-tags)))))
+(let ((t1->t2 (get-coercion type1 type2))
+      (t2->t1 (get-coercion type2 type1)))
+  (cond (t1->t2
+         (apply-generic op (t1->t2 a1) a2))
+        (t2->t1
+         (apply-generic op a1 (t2->t1 a2)))
+        (else
+         (error "no method for these types"
+                (list op type-tags)))))
 }
 
 If we don't install self-coercions into the table, neither @tt{t1->t2} nor
@@ -3488,17 +3493,17 @@ We could modify @tt{apply-generic} to not attempt to look up coercions if
 the types are the same. It might look something like this:
 
 @codeblock{
- (define (apply-generic op . args)
- (let ((type-tags (map type-tag args)))
- (let ((proc (get op type-tags)))
- (if proc
- (apply proc (map contents args))
- (if (and (= (length args) 2)
- (not (eq? (car type-tags)
- (cadr type-tags))))
- ;; ...
- (error "No method for these types"
- (list op type-tags)))))))
+(define (apply-generic op . args)
+  (let ((type-tags (map type-tag args)))
+    (let ((proc (get op type-tags)))
+      (if proc
+          (apply proc (map contents args))
+          (if (and (= (length args) 2)
+                   (not (eq? (car type-tags)
+                             (cadr type-tags))))
+              ;; ...
+              (error "No method for these types"
+                     (list op type-tags)))))))
 }
 
 You could also check if the types are equal inside the @tt{if} (conveniently
@@ -3516,19 +3521,19 @@ need to add another call to @tt{error}).
 
 @;examples[#:eval ev #:no-prompt
 @codeblock{
- (define (install-raise-package)
- (define (raise-integer-rational x)
- (attach-tag 'rational (make-rational x 1)))
- (define (raise-rational-real x)
- (attach-tag 'real (make-real (/ (numer x) (denom x)))))
- (define (raise-real-complex x)
- (attach-tag 'complex (make-complex-from-real-imag x 0)))
- (put 'raise 'integer raise-integer-rational)
- (put 'raise 'rational raise-rational-real)
- (put 'raise 'real raise-real-complex))
- 
- (define (raise x)
- ((get 'raise (type-tag x)) x))
+(define (install-raise-package)
+  (define (raise-integer-rational x)
+    (attach-tag 'rational (make-rational x 1)))
+  (define (raise-rational-real x)
+    (attach-tag 'real (make-real (/ (numer x) (denom x)))))
+  (define (raise-real-complex x)
+    (attach-tag 'complex (make-complex-from-real-imag x 0)))
+  (put 'raise 'integer raise-integer-rational)
+  (put 'raise 'rational raise-rational-real)
+  (put 'raise 'real raise-real-complex))
+
+(define (raise x)
+  ((get 'raise (type-tag x)) x))
 }
 
 @section[#:tag "c2e84"]{Exercise 2.84}
