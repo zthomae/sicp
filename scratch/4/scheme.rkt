@@ -181,10 +181,20 @@
           (((car rest)) (iter (cdr rest)))
           (else false)))
   (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))
-    
+
+(define (expand-and exps)
+  (if (null? exps)
+      true
+      (make-if (car exps) (expand-and (cdr exps)) 'false)))
+
 (define (eval-or exps env)
   (define (iter rest)
     (cond ((null? rest) false)
           (((car rest) true))
           (else (iter (cdr rest)))))
   (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))
+
+(define (expand-or exps)
+  (if (null? exps)
+      false
+      (make-if (car exps) 'true (expand-or (cdr exps)))))

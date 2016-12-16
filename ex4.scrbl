@@ -127,4 +127,25 @@ forms) and iterating through them as much as is necessary to find
 the answer.
 
 Alternatively, we could translate each of them into a set of nested
-@tt{if} expressions.
+@tt{if} expressions:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (expand-and exps)
+   (if (null? exps)
+       true
+       (make-if (car exps) (expand-and (cdr exps)) 'false)))
+ (define (expand-or exps)
+   (if (null? exps)
+       false
+       (make-if (car exps) 'true (expand-or (cdr exps)))))
+ ]
+
+Here, @tt{expand-and} and @tt{expand-or} are procedures which
+return syntactic objects that will evaluate to the correct
+result. The way that this can work is by passing the first
+expression as the predicate to @tt{if}, and either resulting
+in a constant value if we know the answer or an expression
+computing the answer given the rest of the expressions if we
+don't. The latter can be accomplished by recursively calling
+the expansion procedure.
