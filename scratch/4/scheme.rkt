@@ -175,10 +175,16 @@
                      (expand-clauses rest))))))
 
 
-(define (eval- exp env)
-  (if (self-evaluating? exp)
-      (real-exp exp)
-      ((get 'eval (exp-type exp)) (real-exp exp) env)))
-
-(define exp-type car)
-(define real-exp cdr)
+(define (eval-and exps env)
+  (define (iter rest)
+    (cond ((null? rest) true)
+          (((car rest)) (iter (cdr rest)))
+          (else false)))
+  (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))
+    
+(define (eval-or exps env)
+  (define (iter rest)
+    (cond ((null? rest) false)
+          (((car rest) true))
+          (else (iter (cdr rest)))))
+  (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))

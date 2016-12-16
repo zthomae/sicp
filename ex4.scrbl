@@ -97,3 +97,34 @@ table, e.g.:
 (put 'eval 'quoted (lambda (exp env) (text-of-quotation exp)))
 ...
 }
+
+@section[#:tag "c4e4"]{Exercise 4.4}
+
+@tt{or} and @tt{and} can be implemented by direct evaluation in the
+interpreter as follows:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (eval-and exps env)
+   (define (iter rest)
+     (cond ((null? rest) true)
+           (((car rest)) (iter (cdr rest)))
+           (else false)))
+   (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))
+    
+ (define (eval-or exps env)
+   (define (iter rest)
+     (cond ((null? rest) false)
+           (((car rest) true))
+           (else (iter (cdr rest)))))
+   (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))
+ ]
+
+Here, we follow the same pattern of creating a thunk evaluating to
+the @tt{eval}'d form of each expression (wrapped in a thunk in order
+to simulate the lazy evaluation of the arguments to these special
+forms) and iterating through them as much as is necessary to find
+the answer.
+
+Alternatively, we could translate each of them into a set of nested
+@tt{if} expressions.
