@@ -199,7 +199,7 @@ as in the last problem. First, the requisite bindings:
  #:eval ev #:label #f #:no-prompt
  (define (let? exp) (tagged-list? exp 'let))
  (define (let-bindings exp) (cadr exp))
- (define (let-body exp) (caddr exp))
+ (define (let-body exp) (cddr exp))
  (define (let-names exp) (map car (let-bindings exp)))
  (define (let-values exp) (map cadr (let-bindings exp)))
  ]
@@ -210,7 +210,7 @@ expression:
 @examples[
  #:eval ev #:label #f #:no-prompt
  (define (let->combination exp)
-   (list (make-lambda (let-names exp) (list (let-body exp)))
+   (list (make-lambda (let-names exp) (let-body exp))
          (let-values exp)))
 ]
 
@@ -296,9 +296,9 @@ the expression to be legal.
         '()
         (make-define
          (named-let-name exp)
-         (make-lambda (named-let-parameters exp) (list (named-let-body exp))))
+         (make-lambda (named-let-parameters exp) (named-let-body exp)))
         (cons (named-let-name exp) (named-let-initial-values exp)))
-       (list (make-lambda (let-names exp) (list (let-body exp)))
+       (list (make-lambda (let-names exp) (let-body exp))
              (let-values exp))))
  ]
 

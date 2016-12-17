@@ -19,6 +19,9 @@
         ((begin? exp)
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
+        ((while? exp) (eval (while->combination exp) env))
+        ((until? exp) (eval (until->while exp) env))
+        ((for? exp) (eval (for->while exp) env))
         ((application? exp)
          (apply (eval (operator exp) env)
                 (list-of-values (operands exp) env)))
@@ -230,7 +233,7 @@
 
 (define (let? exp) (tagged-list? exp 'let))
 (define (let-bindings exp) (cadr exp))
-(define (let-body exp) (caddr exp))
+(define (let-body exp) (cddr exp))
 (define (let-names exp) (map car (let-bindings exp)))
 (define (let-values exp) (map cadr (let-bindings exp)))
 
@@ -249,10 +252,15 @@
        '()
        (make-define
         (named-let-name exp)
-        (make-lambda (named-let-parameters exp) (list (named-let-body exp))))
+        (make-lambda (named-let-parameters exp) (named-let-body exp)))
        (cons (named-let-name exp) (named-let-initial-values exp)))
-      (list (make-lambda (let-names exp) (list (let-body exp)))
-            (let-values exp))))
+      (let ((values (let-values exp))
+            (proc (make-lambda (let-names exp) (let-body exp))))
+        (if (null? let-values)
+            (list proc)
+            (cons proc values)))))
+
+(define l '(let () 5 3))
 
 (define l1
   '(let ((v1 e1)
@@ -526,6 +534,8 @@
         (list 'cdr cdr)
         (list 'cons cons)
         (list 'null? null?)
+        (list '+ +)
+        (list '< <)
         ;; more...
         ))
 
