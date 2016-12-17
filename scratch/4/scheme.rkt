@@ -395,14 +395,16 @@
             (make-while (for-predicate exp)
                         (list 'begin (for-body exp) (for-continue exp)))))
 
-(define inner
-  '(for (((y 0)) (< y 5) (begin (set! y (+ y 1)) y)) (set! sum (+ sum x y))))
-
 (define nested-for
-  `(for (((x 0) (sum 0))
-         (< x 5)
-         (begin (set! x (+ x 1)) sum))
-     ,(for->while inner)))
+  (for->while
+   `(for (((x 0) (sum 0))
+          (< x 5)
+          (begin (set! x (+ x 1)) sum))
+      ,(for->while
+        '(for (((y 0))
+               (< y 5)
+               (begin (set! y (+ y 1)) y))
+           (set! sum (+ sum x y)))))))
 
 (define nested-for-transformed
   '(let ((x 0) (sum 0))

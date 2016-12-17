@@ -246,6 +246,14 @@ a series of nested @tt{let} expressions (one per binding).
        (iter (let-bindings exp))))
  ]
 
+It is fully legal to rewrite the @tt{let*} expression into
+a series of nested @tt{let} expressions and add a rule
+to @tt{eval} that will evaluate this, as in @tt{(eval (let*->nested-lets exp) env)}.
+All that will happen is that @tt{eval} will be indirected
+once more before ultimately simplifying to non-derived expressions
+and evalauting them. This is no different than how @tt{let}
+expressions are handled now.
+
 @section[#:tag "c4e8"]{Exercise 4.8}
 
 In order to support the named @tt{let} form, we can check
@@ -301,6 +309,18 @@ the expression to be legal.
 @tt{while} is the most primitive iteration construct I've done
 for this exercise, so I will define it first.
 
+A @tt{while} expression has two parts:
+
+@itemlist[
+ @item{A predicate, determining whether to execute the body or not}
+ @item{A body expression that is evaluated multiple times}
+ ]
+
+I will allow for the expression to return a value (which will be
+what the body evaluated to in the last time it was evaluated), but
+the primary purpose of a @tt{while} loop (and of all of the
+iteration constructs we are defining here) is to do mutations.
+
 Example:
 
 @verbatim{
@@ -346,7 +366,9 @@ should translate to:
 
 @bold{until}
 
-@tt{until} is a simple syntactic sugar around @tt{while}.
+@tt{until} is a simple syntactic sugar around @tt{while} where
+the predicate is negated. Therefore, we can translate it directly
+to a @tt{while} expression.
 
 Example:
 
@@ -383,7 +405,42 @@ should translate to:
 @bold{for}
 
 @tt{for} is also reducible to @tt{while}, albeit in a more complex
-way.
+way. The @tt{for} loop contains a body as well as a sequence
+of three control expressions:
+
+@itemlist[
+ @item{A sequence of initializing bindings creating scoped definitions
+       with initial values}
+ @item{A predicate determining whether to evaluate the body}
+ @item{A continuing expression to be evaluated after the body, before
+       testing the predicate again}
+ ]
+
+The @tt{for} loop is introduced to account for the pattern
+seen above, where a value is incremented or decremented at
+the end of a @tt{while} loop body. It is easy to write a
+@tt{while} loop and forget this, accidentally leaving yourself
+with an infinite loop; furthermore, for certain kinds of
+iterations, it is likely the case that the @tt{for} loop
+demonstrates intent more precisely, since only some kinds
+of iterations make more sense when described in this way.
+
+A @tt{for} loop can be reduced to a @tt{while} whose body
+is comprised of the @tt{for} loop body followed by the
+@tt{for} loop continuing expressions and whose predicate
+is the same, all inside a @tt{let} expression creating
+the bindings of the @tt{for} loop's initialization sequence.
+
+Like a @tt{while} expression, the @tt{for} expression also
+results in a value even though it is mostly intended for
+side-effectful computing. Since the @tt{while} loop evaluates
+to the last execution of the body, since the last-executed
+expression in the body is the continuing expression, the
+last evaluation of the continuing expression of the @tt{for}
+expression is the final result. I will be using that below
+to avoid having to define bindings outside of the @tt{for}
+expression in my examples, but the value of the @tt{for}
+expression is not its main purpose.
 
 Example:
 
@@ -419,4 +476,134 @@ should translate to:
                          (list 'begin (for-body exp) (for-continue exp)))))
  ]
 
-@bold{TODO: Write explanations, and use larger example from scratch file}
+@bold{A longer example}
+
+Consider the nested @tt{for} expression below:
+
+@verbatim{
+(for (((x 0) (sum 0))
+       (< x 5)
+       (begin (set! x (+ x 1)) sum))
+  (for (((y 0))
+         (< y 5)
+         (begin (set! y (+ y 1)) y))
+    (set! sum (+ sum x y))))
+}
+
+Due to how we have constructed the continuing expressions,
+the end result of this expression should be the final
+@tt{sum}.
+
+If we reduce both @tt{for} expressions to @tt{while}
+expressions, we end up with
+
+@verbatim{
+(let ((x 0) (sum 0))
+  (while (< x 5)
+         (begin
+           (let ((y 0))
+             (while (< y 5)
+                    (begin
+                      (set! sum (+ sum x y))
+                      (begin (set! y (+ y 1)) y))))
+           (begin (set! x (+ x 1)) sum))))
+}
+
+And if we reduce both of these @tt{while} expressions,
+we end up with
+
+@verbatim{
+(let ((x 0) (sum 0))
+  (let ()
+    (define while-iter
+      (lambda (last-value)
+        (if (< x 5)
+            (while-iter
+             (begin
+               (let ((y 0))
+                 (let ()
+                   (define while-iter
+                     (lambda (last-value)
+                       (if (< y 5)
+                           (while-iter
+                            (begin
+                              (set! sum (+ sum x y))
+                              (begin (set! y (+ y 1)) y)))
+                           last-value)))
+                   (while-iter false)))
+               (begin
+                 (set! x (+ x 1))
+                 sum)))
+            last-value)))
+    (while-iter false)))
+}
+
+We can actually evaluate that and see that we get
+the correct answer:
+
+@examples[
+ #:eval ev #:label #f
+ (let ((x 0) (sum 0))
+   (let ()
+     (define while-iter
+       (lambda (last-value)
+         (if (< x 5)
+             (while-iter
+              (begin
+                (let ((y 0))
+                  (let ()
+                    (define while-iter
+                      (lambda (last-value)
+                        (if (< y 5)
+                            (while-iter
+                             (begin
+                               (set! sum (+ sum x y))
+                               (begin (set! y (+ y 1)) y)))
+                            last-value)))
+                    (while-iter false)))
+                (begin
+                  (set! x (+ x 1))
+                  sum)))
+             last-value)))
+     (while-iter false)))
+ ]
+
+One may argue that these looping constructs are not
+necessary. However, if you observe the difference in the
+clarity of the @tt{for} expressions compared to what is
+ultimately evaluated, it is clear that there is, in fact, a
+use for these. That said, I have committed a sleight of hand
+here, as there is a much more straightforward solution to
+the given problem. Consider what the sum actually is:
+
+@verbatim{
+  (0 + 0) + (0 + 1) + (0 + 2) + (0 + 3) + (0 + 4)
++ (1 + 0) + (1 + 1) + (1 + 2) + (1 + 3) + (1 + 4)
++ (2 + 0) + (2 + 1) + (2 + 2) + (2 + 3) + (2 + 4)
++ (3 + 0) + (3 + 1) + (3 + 2) + (3 + 3) + (3 + 4)
++ (4 + 0) + (4 + 1) + (4 + 2) + (4 + 3) + (4 + 4)
+}
+
+It is clear that each value is added to the sum
+@tt{10} times, and thus we can trivially compute
+it with
+
+@examples[
+ #:eval ev #:label #f
+ (* 10 (+ 1 2 3 4))
+ ]
+
+It is true that this is only because the actual work being
+done by the above @tt{for} expression is trivial and
+actually not taking advantage of the main power of the
+construct -- that is, concisely being able to describe
+iterative side effects. But this wouldn't be the first time
+that an imperative construct was used when a simpler option
+exists. This is why it's important to use these iterative
+constructs for what they are actually best for --
+side-effectful computing that can't be concisely stated as a
+straightforward evaluation.
+
+@section[#:tag "c4e10"]{Exercise 4.10}
+
+@bold{I'm going to come back to this one when I have a fun idea}
