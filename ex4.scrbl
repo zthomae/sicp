@@ -152,4 +152,40 @@ the expansion procedure.
 
 @section[#:tag "c4e5"]{Exercise 4.5}
 
-@bold{TODO}
+The most natural place to add support for the alternate form
+is in @tt{expand-clauses}. In the alternate case, we
+reformulate the generated code to be an @tt{if} expression
+wrapped in an immediately-invoked @tt{lambda} (since we
+won't have @tt{let} expansion until the next exercise), so
+we can reuse the computed value if it turns out to be truthy.
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (expand-clauses clauses)
+   (if (null? clauses)
+       'false
+       (let ((first (car clauses))
+             (rest (cdr clauses)))
+         (cond ((cond-else-clause? first)
+                (if (null? rest)
+                    (sequence->exp (cond-actions first))
+                    (error "ELSE clause isn't last  -- COND->IF"
+                           clauses)))
+               ((cond-alternate-form? first)
+                (list (make-lambda '(v f) (list (make-if 'v '(f v) (expand-clauses rest))))
+                      (cond-predicate first)
+                      (cond-alternate-form-proc first)))
+               (else
+                (make-if (cond-predicate first)
+                         (sequence->exp (cond-actions first))
+                         (expand-clauses rest)))))))
+ ]
+
+We also rely on the following helper procedures:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (cond-alternate-form? clause)
+   (eq? (car (cond-actions clause)) '=>))
+ (define (cond-alternate-form-proc clause) (cadr (cond-actions clause)))
+ ]

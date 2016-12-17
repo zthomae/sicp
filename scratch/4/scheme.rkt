@@ -129,7 +129,7 @@
       (make-lambda (cdadr exp)    ; formal parameters
                    (cddr exp))))  ; body
 
-(define (lambda? ex p) (tagged-list? exp 'lambda))
+(define (lambda? exp) (tagged-list? exp 'lambda))
 (define (lambda-parameters exp) (cadr exp))
 (define (lambda-body exp) (cddr exp))
 
@@ -190,7 +190,7 @@
                    (error "ELSE clause isn't last  -- COND->IF"
                           clauses)))
               ((cond-alternate-form? first)
-               (list (make-lambda 'v 'f (make-if 'v '(f v) (expand-clauses rest)))
+               (list (make-lambda '(v f) (list (make-if 'v '(f v) (expand-clauses rest))))
                      (cond-predicate first)
                      (cond-alternate-form-proc first)))
               (else
@@ -221,3 +221,19 @@
   (if (null? exps)
       false
       (make-if (car exps) 'true (expand-or (cdr exps)))))
+
+(define c1 '(cond ((assoc 'b '((a 1) (b 2))) => cadr) ((assoc 'a '((a 1) (b 2))) => cadr) (else (+ 1 3))))
+(define c2 '(cond ((assoc 'b '((a 1) (b 2))) (+ 1 2)) ((assoc 'a '((a 1) (b 2))) (+ 1 2)) (else (+ 1 3))))
+
+(define (expanded-c1)
+  ((lambda (v f)
+   (if v
+       (f v)
+       ((lambda (v f)
+          (if v
+              (f v)
+              (+ 1 3)))
+        (assoc 'a '((a 1) (b 2)))
+        cadr)))
+ (assoc 'b '((a 1) (b 2)))
+ cadr))
