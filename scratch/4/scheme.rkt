@@ -1,5 +1,20 @@
 #lang sicp
 
+(#%require (only racket/base error))
+
+(define (lookup-variable-value exp env) (error "Not implemented -- LOOKUP-VARIABLE-VALUE"))
+(define (make-procedure parameters body env) (error "Not implemented -- MAKE-PROCEDURE"))
+(define (primitive-procedure? proc) #f)
+(define (apply-primitive-procedure proc args) (error "Not implemented -- APPLY-PRIMITIVE-PROCEDURE"))
+(define (compound-procedure? proc) #f)
+(define (procedure-body proc) (error "Not implemented -- PROCEDURE-BODY"))
+(define (extend-environment parameters args env) (error "Not implemented -- EXTEND-ENVIRONMENT"))
+(define (procedure-parameters proc) (error "Not implemented -- PROCEDURE-PARAMETERS"))
+(define (procedure-environment proc) (error "Not implemented -- PROCEDURE-ENVIRONMENT"))
+(define (true? v) (error "Not implemented -- TRUE?"))
+(define (set-variable-value! var val env) (error "Not implemented -- SET-VARIABLE-VALUE!"))
+(define (define-variable! var val env) (error "Not implemented -- DEFINE-VARIABLE!"))
+
 (define (eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
@@ -12,7 +27,7 @@
                          (lambda-body exp)
                          env))
         ((begin? exp)
-         (eval-sequence (begin-actions exp) e nv))
+         (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
         ((application? exp)
          (apply (eval (operator exp) env)
@@ -29,12 +44,12 @@
           (extend-environment
            (procedure-parameters procedure)
            arguments
-           (Procedure-environment procedure))))
+           (procedure-environment procedure))))
         (else
          (error
           "Unknown procedure type -- APPLY" procedure))))
 
-(define (list-of-values exp env)
+(define (list-of-values exps env)
   (if (no-operands? exps)
       '()
       (cons (eval (first-operand exps) env)
@@ -64,14 +79,14 @@
 
 ;; begin exercise 4.1
 
-(define (list-of-values-ltr exp env)
+(define (list-of-values-ltr exps env)
   (if (no-operands? exps)
       '()
       (let* ((first (eval (first-operand exps) env))
              (rest (list-of-values (rest-operands exps) env)))
         (cons first rest))))
 
-(define (list-of-values-rtl exp env)
+(define (list-of-values-rtl exps env)
   (if (no-operands? exps)
       '()
       (let* ((rest (list-of-values (rest-operands exps) env))
@@ -92,7 +107,7 @@
 
 (define (text-of-quotation exp) (cadr exp))
 
-(define (tagged-list? exp ta g)
+(define (tagged-list? exp tag)
   (if (pair? exp)
       (eq? (car exp) tag)
       false))
@@ -109,7 +124,7 @@
       (cadr exp)
       (caadr exp)))
 (define (definition-value exp)
-  (if (symbol? (cadr e xp))
+  (if (symbol? (cadr exp))
       (caddr exp)
       (make-lambda (cdadr exp)    ; formal parameters
                    (cddr exp))))  ; body
@@ -157,6 +172,10 @@
   (eq? (cond-predicate clause) 'else))
 (define (cond-predicate clause) (car clause))
 (define (cond-actions clause) (cdr clause))
+(define (cond-alternate-form? clause)
+  (eq? (car (cond-actions clause)) '=>))
+(define (cond-alternate-form-proc clause) (cadr (cond-actions clause)))
+
 (define (cond->if exp)
   (expand-clauses (cond-clauses exp)))
 
@@ -165,15 +184,19 @@
       'false
       (let ((first (car clauses))
             (rest (cdr clauses)))
-        (if (cond-else-clause? first)
-            (if (null? rest)
-                (sequence->exp (cond-actions first))
-                (error "ELSE clause isn't last  -- COND->IF"
-                       clauses))
-            (make-if (cond-predicate first)
-                     (sequence->exp (cond-actions first))
-                     (expand-clauses rest))))))
-
+        (cond ((cond-else-clause? first)
+               (if (null? rest)
+                   (sequence->exp (cond-actions first))
+                   (error "ELSE clause isn't last  -- COND->IF"
+                          clauses)))
+              ((cond-alternate-form? first)
+               (list (make-lambda 'v 'f (make-if 'v '(f v) (expand-clauses rest)))
+                     (cond-predicate first)
+                     (cond-alternate-form-proc first)))
+              (else
+               (make-if (cond-predicate first)
+                        (sequence->exp (cond-actions first))
+                        (expand-clauses rest)))))))
 
 (define (eval-and exps env)
   (define (iter rest)

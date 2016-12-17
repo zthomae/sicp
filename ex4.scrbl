@@ -149,3 +149,7 @@ in a constant value if we know the answer or an expression
 computing the answer given the rest of the expressions if we
 don't. The latter can be accomplished by recursively calling
 the expansion procedure.
+
+@section[#:tag "c4e5"]{Exercise 4.5}
+
+@bold{TODO}
