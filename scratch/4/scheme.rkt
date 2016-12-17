@@ -21,6 +21,7 @@
         ((quoted? exp) (text-of-quotation exp))
         ((assignment? exp) (eval-assignment exp env))
         ((definition? exp) (eval-definition exp env))
+        ((let? exp) (eval (let->combination exp) env))
         ((if? exp) (eval-if exp env))
         ((lambda? exp)
          (make-procedure (lambda-parameters exp)
@@ -237,3 +238,223 @@
         cadr)))
  (assoc 'b '((a 1) (b 2)))
  cadr))
+
+(define (let? exp) (or (tagged-list? exp 'let) (tagged-list? exp 'let*)))
+(define (let-bindings exp) (cadr exp))
+(define (let-body exp) (caddr exp))
+(define (let-names exp) (map car (let-bindings exp)))
+(define (let-values exp) (map cadr (let-bindings exp)))
+
+(define (named-let? exp) (variable? (cadr exp)))
+(define (named-let-name exp) (cadr exp))
+(define (named-let-bindings exp) (caddr exp))
+(define (named-let-parameters exp) (map car (named-let-bindings exp)))
+(define (named-let-initial-values exp) (map cadr (named-let-bindings exp)))
+(define (named-let-body exp) (cadddr exp))
+
+(define (make-define binding val) (list 'define binding val))
+
+(define (let->combination exp)
+  (if (named-let? exp)
+      (make-let
+       '()
+       (make-define
+        (named-let-name exp)
+        (make-lambda (named-let-parameters exp) (list (named-let-body exp))))
+       (cons (named-let-name exp) (named-let-initial-values exp)))
+      (list (make-lambda (let-names exp) (list (let-body exp)))
+            (let-values exp))))
+
+(define l1
+  '(let ((v1 e1)
+         (v2 e2))
+     (+ v1 v2)))
+
+(define (make-let bindings . body)
+  (append (list 'let bindings) body))
+
+(define (let*->nested-lets exp)
+  (define (iter bindings)
+    (make-let
+     (list (car bindings))
+     (if (null? (cdr bindings))
+         (let-body exp)
+         (iter (cdr bindings)))))
+  (if (null? (let-bindings exp))
+      (let-body exp)
+      (iter (let-bindings exp))))
+
+(define l*
+  '(let* ((x 3)
+          (y (+ x 2))
+          (z (+ x y 5)))
+     (* x z)))
+
+(define l*-result
+  '(let ((x 3))
+     (let ((y (+ x 2)))
+       (let ((z (+ x y 5)))
+         (* x z)))))
+
+(define nl
+  '(let fib-iter ((a 1)
+                  (b 0)
+                  (count n))
+     (if (= count 0)
+         b
+         (fib-iter (+ a b) a (- count 1)))))
+
+(define nl-expected
+  '(let ()
+     (define fib-iter
+       (lambda (a b count)
+         (if (= count 0)
+             b
+             (fib-iter (+ a b) a (- count 1)))))
+     (fib-iter 1 0 n)))
+
+;; while: while the predicate is true, continue to evaluate
+;; the body expression. evaluates to the value of the last
+;; execution of the body (or false if it never evaluated).
+(define while-example
+  '(while (> x 0)
+          (begin
+            (displayln x)
+            (set! x (- x 1))
+            x)))
+
+(define while-transformed
+  '(let ()
+     (define while-iter
+       (lambda (last-value)
+         (if (> x 0)
+             (while-iter
+              (begin
+                (displayln x)
+                (set! x (- x 1))
+                x))
+             last-value)))
+     (while-iter false)))
+
+(define (while? exp) (tagged-list? exp 'while))
+(define (while-predicate exp) (cadr exp))
+(define (while-body exp) (caddr exp))
+
+(define (while->combination exp)
+  (make-let
+   '()
+   (make-define 'while-iter
+                (make-lambda '(last-value)
+                             (list (make-if (while-predicate exp)
+                                            (list 'while-iter (while-body exp))
+                                            'last-value))))
+   '(while-iter false)))
+                                               
+;; until: the same as while, but with the predicate inverted
+(define until-example
+  '(until (= x 0)
+          (begin
+            (displayln x)
+            (set! x (- x 1))
+            x)))
+
+(define (make-while predicate body) (list 'while predicate body))
+
+(define (until? exp) (tagged-list? exp 'until))
+(define (until-predicate exp) (cadr exp))
+(define (until-body exp) (caddr exp))
+
+(define (until->while exp)
+  (make-while (list 'not (until-predicate exp)) (until-body exp)))
+
+;; for: initialize a list of variables, and execute the body and the
+;; continuing expression while the predicate evalutes to true. the
+;; expression evaluates to the value of the continuing expression...
+(define for-example
+  '(for (((x 0) (y 0) (sum 0))
+         (and (< x 5) (< x 5))
+         (begin (set! x (+ x 1)) (set! y (+ y 1)) sum))
+     (set! sum (+ sum x y))))
+
+(define for-transformed
+  '(let ((x 0) (y 0) (sum 0))
+     (while (and (< x 5) (< x 5))
+            (begin
+              (set! sum (+ sum x y))
+              (begin (set! x (+ x 1)) (set! y (+ y 1)) sum)))))
+
+(define (for? exp) (tagged-list? exp 'for))
+(define (for-control exp) (cadr exp))
+(define (for-initialization exp) (car (for-control exp)))
+(define (for-predicate exp) (cadr (for-control exp)))
+(define (for-continue exp) (caddr (for-control exp)))
+(define (for-body exp) (caddr exp))
+
+(define (for->while exp)
+  (make-let (for-initialization exp)
+            (make-while (for-predicate exp)
+                        (list 'begin (for-body exp) (for-continue exp)))))
+
+(define inner
+  '(for (((y 0)) (< y 5) (begin (set! y (+ y 1)) y)) (set! sum (+ sum x y))))
+
+(define nested-for
+  `(for (((x 0) (sum 0))
+         (< x 5)
+         (begin (set! x (+ x 1)) sum))
+     ,(for->while inner)))
+
+(define nested-for-transformed
+  '(let ((x 0) (sum 0))
+     (while (< x 5)
+            (begin
+              (let ((y 0))
+                (while (< y 5)
+                       (begin
+                         (set! sum (+ sum x y))
+                         (begin (set! y (+ y 1)) y))))
+              (begin (set! x (+ x 1)) sum)))))
+
+(define inner-while
+  '(while (< y 5)
+          (begin
+            (set! sum (+ sum x y))
+            (begin (set! y (+ y 1)) y))))
+
+(define nested-while
+  `(let ((x 0) (sum 0))
+     ,(while->combination
+       `(while (< x 5)
+               (begin
+                 (let ((y 0))
+                   ,(while->combination
+                     '(while (< y 5)
+                             (begin
+                               (set! sum (+ sum x y))
+                               (begin (set! y (+ y 1)) y)))))
+                 (begin (set! x (+ x 1)) sum))))))
+
+(define nested-while-transformed
+  '(let ((x 0) (sum 0))
+     (let ()
+       (define while-iter
+         (lambda (last-value)
+           (if (< x 5)
+               (while-iter
+                (begin
+                  (let ((y 0))
+                    (let ()
+                      (define while-iter
+                        (lambda (last-value)
+                          (if (< y 5)
+                              (while-iter
+                               (begin
+                                 (set! sum (+ sum x y))
+                                 (begin (set! y (+ y 1)) y)))
+                              last-value)))
+                      (while-iter false)))
+                  (begin
+                    (set! x (+ x 1))
+                    sum)))
+               last-value)))
+       (while-iter false))))

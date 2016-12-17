@@ -189,3 +189,234 @@ We also rely on the following helper procedures:
    (eq? (car (cond-actions clause)) '=>))
  (define (cond-alternate-form-proc clause) (cadr (cond-actions clause)))
  ]
+
+@section[#:tag "c4e6"]{Exercise 4.6}
+
+We can transform @tt{let} expressions using the same pattern
+as in the last problem. First, the requisite bindings:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (let? exp) (tagged-list? exp 'let))
+ (define (let-bindings exp) (cadr exp))
+ (define (let-body exp) (caddr exp))
+ (define (let-names exp) (map car (let-bindings exp)))
+ (define (let-values exp) (map cadr (let-bindings exp)))
+ ]
+
+And now, using them to construct an immediately-invoked lambda
+expression:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (let->combination exp)
+   (list (make-lambda (let-names exp) (list (let-body exp)))
+         (let-values exp)))
+]
+
+We also need to add a line to @tt{eval}, dispatching on whether
+we have a @tt{let} expression. This must come before normal
+function application, as @tt{let} is a special form.
+
+@verbatim{
+...
+((let? exp) (eval (let->combination exp) env))
+...
+}
+
+@section[#:tag "c4e7"]{Exercise 4.7}
+
+We can support @tt{let*} expressions by transforming them into
+a series of nested @tt{let} expressions (one per binding).
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+(define (make-let bindings . body)
+  (append (list 'let bindings) body))
+
+ (define (let*->nested-lets exp)
+   (define (iter bindings)
+     (make-let
+      (list (car bindings))
+      (if (null? (cdr bindings))
+          (let-body exp)
+          (iter (cdr bindings)))))
+   (if (null? (let-bindings exp))
+       (let-body exp)
+       (iter (let-bindings exp))))
+ ]
+
+@section[#:tag "c4e8"]{Exercise 4.8}
+
+In order to support the named @tt{let} form, we can check
+whether the second element of the @tt{let} expression is a
+list or not. If it is a list, then we are using a standard
+@tt{let} expression. If it is a variable, then we have a
+named @tt{let}.
+
+First, we define a predicate for determining if an expression
+(which is already assumed to be a @tt{let} expression of some
+form) is a named let expression, and write new accessors
+for it:
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (named-let? exp) (variable? (cadr exp)))
+ (define (named-let-name exp) (cadr exp))
+ (define (named-let-bindings exp) (caddr exp))
+ (define (named-let-parameters exp) (map car (named-let-bindings exp)))
+ (define (named-let-initial-values exp) (map cadr (named-let-bindings exp)))
+ (define (named-let-body exp) (cadddr exp))
+ ]
+
+Next we define the new version of @tt{let->combination},
+which chooses to reduce a named let expression to a @tt{define}
+(since we need to call this procedure recursively, it needs
+a name, and this is how we know how to do this). I've also
+defined a @tt{make-define} procedure in line with the other
+@tt{make-} procedures. Note that this @tt{define} is wrapped
+inside a @tt{let} with no bindings -- this is required for
+the expression to be legal.
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (make-define binding val) (list 'define binding val))
+
+ (define (let->combination exp)
+   (if (named-let? exp)
+       (make-let
+        '()
+        (make-define
+         (named-let-name exp)
+         (make-lambda (named-let-parameters exp) (list (named-let-body exp))))
+        (cons (named-let-name exp) (named-let-initial-values exp)))
+       (list (make-lambda (let-names exp) (list (let-body exp)))
+             (let-values exp))))
+ ]
+
+@section[#:tag "c4e9"]{Exercise 4.9}
+
+@bold{while}
+
+@tt{while} is the most primitive iteration construct I've done
+for this exercise, so I will define it first.
+
+Example:
+
+@verbatim{
+(while (> x 0)
+       (begin
+         (displayln x)
+         (set! x (- x 1))
+         x))
+}
+
+should translate to:
+
+@verbatim{
+(let ()
+  (define while-iter
+    (lambda (last-value)
+      (if (> x 0)
+          (while-iter
+           (begin
+             (displayln x)
+             (set! x (- x 1))
+             x))
+          last-value)))
+  (while-iter false))
+}
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (while? exp) (tagged-list? exp 'while))
+ (define (while-predicate exp) (cadr exp))
+ (define (while-body exp) (caddr exp))
+
+ (define (while->combination exp)
+   (make-let
+    '()
+    (make-define 'while-iter
+                 (make-lambda '(last-value)
+                              (list (make-if (while-predicate exp)
+                                             (list 'while-iter (while-body exp))
+                                             'last-value))))
+    '(while-iter false)))
+ ]
+
+@bold{until}
+
+@tt{until} is a simple syntactic sugar around @tt{while}.
+
+Example:
+
+@verbatim{
+(until (= x 0)
+       (begin
+         (displayln x)
+         (set! x (- x 1))
+         x))
+}
+
+should translate to:
+
+@verbatim{
+(while (not (= x 0))
+       (begin
+         (displayln x)
+         (set! x (- x 1))
+         x))
+}
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (make-while predicate body) (list 'while predicate body))
+
+ (define (until? exp) (tagged-list? exp 'until))
+ (define (until-predicate exp) (cadr exp))
+ (define (until-body exp) (caddr exp))
+
+ (define (until->while exp)
+   (make-while (list 'not (until-predicate exp)) (until-body exp)))
+ ]
+
+@bold{for}
+
+@tt{for} is also reducible to @tt{while}, albeit in a more complex
+way.
+
+Example:
+
+@verbatim{
+(for (((x 0) (sum 0))
+      (< x 5)
+      (begin (set! x (+ x 1)) sum))
+  (set! sum (+ sum x y)))
+}
+
+should translate to:
+
+@verbatim{
+(let ((x 0) (sum 0))
+  (while (< x 5)
+         (begin
+           (set! sum (+ sum x y))
+           (begin (set! x (+ x 1)) sum))))
+}
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (for? exp) (tagged-list? exp 'for))
+ (define (for-control exp) (cadr exp))
+ (define (for-initialization exp) (car (for-control exp)))
+ (define (for-predicate exp) (cadr (for-control exp)))
+ (define (for-continue exp) (caddr (for-control exp)))
+ (define (for-body exp) (caddr exp))
+
+ (define (for->while exp)
+   (make-let (for-initialization exp)
+             (make-while (for-predicate exp)
+                         (list 'begin (for-body exp) (for-continue exp)))))
+ ]
+
+@bold{TODO: Write explanations, and use larger example from scratch file}
