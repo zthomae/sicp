@@ -580,3 +580,120 @@
                      (procedure-body object)
                      '<procedure-env>))
       (display object)))
+
+;;; alternate environment functions -- exercise 4.11
+
+(define the-empty-environment-2 '(head))
+
+(define (lookup-variable-value-2 var env)
+  (define (env-loop env)
+    (define (scan bindings)
+      (cond ((null? bindings) (env-loop (enclosing-environment env)))
+            ((eq? var (caar bindings)) (cdar bindings))
+            (else (scan (cdr bindings)))))
+    (if (eq? env the-empty-environment-2)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (cdr frame)))))
+  (env-loop env))
+
+(define (extend-environment-2 bindings base-env)
+  (cons bindings base-env))
+
+(define (add-binding-to-frame-2! var val frame)
+  (if (null? (cdr frame))
+      (set-cdr! frame (cons var val))
+      (begin
+        (set-cdr! (cdr frame) (cons (cadr frame) (cddr frame)))
+        (set-car! (cdr frame) (cons var val)))))
+
+(define (define-variable-2! var val env)
+  (let ((frame (first-frame env)))
+    (define (scan bindings)
+      (cond ((null? bindings)
+             (add-binding-to-frame-2! var val frame))
+            ((eq? var (caar bindings))
+             (set-car! (car bindings) val))
+            (else (scan (cdr bindings)))))
+    (scan (cdr frame))))
+
+(define (set-variable-2! var val env)
+  (define (env-loop env)
+    (define (scan bindings)
+      (cond ((null? bindings)
+             (env-loop (enclosing-environment env)))
+            ((eq? var (caar bindings))
+             (set-cdr! (car bindings) val))
+            (else (scan (cdr bindings)))))
+    (if (eq? env the-empty-environment-2)
+        (error "Unbound variable -- SET!" var)
+        (let ((frame (first-frame env)))
+          (scan (cdr frame)))))
+  (env-loop env))
+
+(define (zip f lists)
+  (cond ((null? lists) '())
+        ((null? (car lists)) '())
+        (else (cons (apply-in-underlying-scheme f (map car lists))
+                    (zip f (map cdr lists))))))
+
+(define (setup-environment-2)
+  (let* ((bindings (zip cons (list (primitive-procedure-names) (primitive-procedure-objects))))
+         (initial-env
+          (extend-environment-2 bindings the-empty-environment-2)))
+    (define-variable-2! 'true true initial-env)
+    (define-variable-2! 'false false initial-env)
+    initial-env))
+
+(define the-global-environment-2 (setup-environment-2))
+
+;;; abstracting variable lookup/setting
+
+;; traverse-env: run the procedure when-found on vars and vals
+;; when var is at the head of vars
+
+(define (traverse-env when-found)
+  (lambda (var env)
+    (define (env-loop env)
+      (define (scan vars vals)
+        (cond ((null? vars) (env-loop (enclosing-environment env)))
+              ((eq? var (car vars)) (when-found vars vals))
+              (else (scan (cdr vars) (cdr vals)))))
+      (if (eq? env the-empty-environment)
+          (error "Unbound variable" var)
+          (let ((frame (first-frame env)))
+            (scan (frame-variables frame)
+                  (frame-values frame)))))
+    (env-loop env)))
+
+(define (lookup-variable-value-alt val env)
+  ((traverse-env (lambda (vars vals) (car vals))) val env))
+
+(define (set-variable-value-alt! var val env)
+  ((traverse-env (lambda (vars vals) (set-car! vals val))) var env))
+
+;; the similarity of define-variable! to the above that I haven't
+;; abstracted bothers me. I think there is a better way to organize
+;; this, based on the fundamental ideas of
+;; - "folding" over a single frame to search for a variable
+;;   - applying a procedure to a binding that has been found
+;;   - applying a different procedure if it isn't
+;; - applying a procedure to every frame in an environment (another
+;;   level of "folidng")
+
+;;; thoughts on 4.13
+
+;; only attempting to unbind variables in the first frame is the
+;; more predictable approach. if this is not so, multiple closures defined
+;; from the same base environment could unbind each other's bindings.
+;; and set! means that changing the value of these shared bindings _is_
+;; an expected behavior that we can't wish away entirely.
+;;
+;; since we can redefine variables at arbitrary levels of the environment,
+;; we don't need this feature to unbind primitives.
+;;
+;; I do not approve of this idea, but I am afraid to limit its power
+;; because I can't think of how to use it. unbinding symbols in parent
+;; environments seems to be completely fraught with danger to me, but
+;; I don't know if I've thought enough to be justified in disallowing
+;; it outright.
