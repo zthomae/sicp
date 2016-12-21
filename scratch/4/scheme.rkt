@@ -598,7 +598,7 @@
   (env-loop env))
 
 (define (extend-environment-2 bindings base-env)
-  (cons bindings base-env))
+  (cons (cons 'head bindings) base-env))
 
 (define (add-binding-to-frame-2! var val frame)
   (if (null? (cdr frame))

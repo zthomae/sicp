@@ -607,3 +607,68 @@ straightforward evaluation.
 @section[#:tag "c4e10"]{Exercise 4.10}
 
 @bold{I'm going to come back to this one when I have a fun idea}
+
+@section[#:tag "c4e11"]{Exercise 4.11}
+
+One of the reasons that the approach using separate lists for
+variables and values in the environment worked so nicely is
+that a natural representation containing pointers to these
+lists fell out of it. If we imagine the bindings instead as
+a single list of binding pairs (where the value can itself
+also be a list), our data representation seems more elegant,
+but we lose that level of indirection that made the mutations
+easy to write. To deal with this, we can instead define a
+frame as having a @tt{head} element in front, such that the
+@tt{cdr} of this frame is a reliable pointer to the list
+of bindings.
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define the-empty-environment-2 '(head))
+
+ (define (lookup-variable-value-2 var env)
+   (define (env-loop env)
+     (define (scan bindings)
+       (cond ((null? bindings) (env-loop (enclosing-environment env)))
+             ((eq? var (caar bindings)) (cdar bindings))
+             (else (scan (cdr bindings)))))
+     (if (eq? env the-empty-environment-2)
+         (error "Unbound variable" var)
+         (let ((frame (first-frame env)))
+           (scan (cdr frame)))))
+   (env-loop env))
+ 
+ (define (extend-environment-2 bindings base-env)
+   (cons (cons 'head bindings) base-env))
+ 
+ (define (add-binding-to-frame-2! var val frame)
+   (if (null? (cdr frame))
+       (set-cdr! frame (cons var val))
+       (begin
+         (set-cdr! (cdr frame) (cons (cadr frame) (cddr frame)))
+         (set-car! (cdr frame) (cons var val)))))
+
+ (define (define-variable-2! var val env)
+   (let ((frame (first-frame env)))
+     (define (scan bindings)
+       (cond ((null? bindings)
+              (add-binding-to-frame-2! var val frame))
+             ((eq? var (caar bindings))
+              (set-car! (car bindings) val))
+             (else (scan (cdr bindings)))))
+     (scan (cdr frame))))
+ 
+ (define (set-variable-2! var val env)
+   (define (env-loop env)
+     (define (scan bindings)
+       (cond ((null? bindings)
+              (env-loop (enclosing-environment env)))
+             ((eq? var (caar bindings))
+              (set-cdr! (car bindings) val))
+             (else (scan (cdr bindings)))))
+     (if (eq? env the-empty-environment-2)
+         (error "Unbound variable -- SET!" var)
+         (let ((frame (first-frame env)))
+           (scan (cdr frame)))))
+   (env-loop env))
+]
