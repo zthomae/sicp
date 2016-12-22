@@ -649,37 +649,35 @@
 
 ;;; abstracting variable lookup/setting
 
-;; traverse-env: run the procedure when-found on vars and vals
-;; when var is at the head of vars
-
-(define (traverse-env when-found)
+(define (search-env if-found if-not-found)
   (lambda (var env)
-    (define (env-loop env)
-      (define (scan vars vals)
-        (cond ((null? vars) (env-loop (enclosing-environment env)))
-              ((eq? var (car vars)) (when-found vars vals))
-              (else (scan (cdr vars) (cdr vals)))))
-      (if (eq? env the-empty-environment)
-          (error "Unbound variable" var)
-          (let ((frame (first-frame env)))
-            (scan (frame-variables frame)
-                  (frame-values frame)))))
-    (env-loop env)))
+    (define (scan vars vals)
+      (cond ((null? vars) (if-not-found env))
+            ((eq? var (car vars)) (if-found vars vals))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame))))))
 
 (define (lookup-variable-value-alt val env)
-  ((traverse-env (lambda (vars vals) (car vals))) val env))
+  ((search-env
+    (lambda (vars vals) (car vals))
+    (lambda (env) (lookup-variable-value-alt val (enclosing-environment env))))
+   val env))
 
 (define (set-variable-value-alt! var val env)
-  ((traverse-env (lambda (vars vals) (set-car! vals val))) var env))
+  ((search-env
+    (lambda (vars vals) (set-car! vals val))
+    (lambda (env) (set-variable-value-alt! var val (enclosing-environment env))))
+   var env))
 
-;; the similarity of define-variable! to the above that I haven't
-;; abstracted bothers me. I think there is a better way to organize
-;; this, based on the fundamental ideas of
-;; - "folding" over a single frame to search for a variable
-;;   - applying a procedure to a binding that has been found
-;;   - applying a different procedure if it isn't
-;; - applying a procedure to every frame in an environment (another
-;;   level of "folidng")
+(define (define-variable!-alt var val env)
+  ((search-env
+    (lambda (vars vals) (set-car! vals val))
+    (lambda (env) (add-binding-to-frame! var val (first-frame env))))
+   var env))
 
 ;;; thoughts on 4.13
 
@@ -697,3 +695,18 @@
 ;; environments seems to be completely fraught with danger to me, but
 ;; I don't know if I've thought enough to be justified in disallowing
 ;; it outright.
+
+(define (make-unbound! var env)
+  (define (scan vars vals)
+    (cond ((null? (cdr vars))
+           (error "Cannot unbind non-bound variable" var))
+          ((eq? var (cadr vars))
+           (begin
+             (set-cdr! vars (cddr vars))
+             (set-cdr! vals (cddr vals))))
+          (else (scan (cdr vars) (cdr vals)))))
+  (if (eq? env the-empty-environment)
+      (error "Cannot unbind non-bound variable" var)
+      (let ((frame (first-frame env)))
+        (scan (cons 'vars (frame-variables frame))
+              (cons 'vals (frame-values frame))))))

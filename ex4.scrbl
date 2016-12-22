@@ -672,3 +672,111 @@ of bindings.
            (scan (cdr frame)))))
    (env-loop env))
 ]
+
+@section[#:tag "c4e12"]{Exercise 4.12}
+
+If we generalize @tt{lookup-variable-value}, @tt{set-variable-value!},
+and @tt{define-variable!} fully, we can see that the common pattern
+in each is that we loop through one frame in the environment, running
+one procedure if we find a binding with a given variable name, and
+running a different procedure if we reach the end of the current frame
+without finding it. In the case of @tt{lookup-variable-value} and
+@tt{set-variable-value!}, the latter procedure is the same iterative
+loop, but it doesn't need to be so.
+
+Based on the behaviors of these procedures, we can (somewhat
+arbitrarily) decide that the procedure executed if we find a
+binding should take the lists of variables and values as its
+parameters, and that the procedure to be performed if the
+frame doesn't contain the binding we're looking for only
+needs to take the current environment.
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (search-env if-found if-not-found)
+   (lambda (var env)
+     (define (scan vars vals)
+       (cond ((null? vars) (if-not-found env))
+             ((eq? var (car vars)) (if-found vars vals))
+             (else (scan (cdr vars) (cdr vals)))))
+     (if (eq? env the-empty-environment)
+         (error "Unbound variable" var)
+         (let ((frame (first-frame env)))
+           (scan (frame-variables frame)
+                 (frame-values frame))))))
+ 
+ (define (lookup-variable-value-alt val env)
+   ((search-env
+     (lambda (vars vals) (car vals))
+     (lambda (env) (lookup-variable-value-alt val (enclosing-environment env))))
+    val env))
+
+ (define (set-variable-value-alt! var val env)
+   ((search-env
+     (lambda (vars vals) (set-car! vals val))
+     (lambda (env) (set-variable-value-alt! var val (enclosing-environment env))))
+    var env))
+
+ (define (define-variable!-alt var val env)
+   ((search-env
+     (lambda (vars vals) (set-car! vals val))
+     (lambda (env) (add-binding-to-frame! var val (first-frame env))))
+    var env))
+ ]
+
+This arguably makes it clearer what the semantics of these
+procedures are -- in particular, whether they search beyond
+the first frame of the environment or not.
+
+@section[#:tag "c4e13"]{Exercise 4.13}
+
+I believe that unbinding variables is already a bad idea,
+and would not choose to include the feature. I am also
+inclined to believe that allowing variables in parent
+environments to be unbound is an even more dangerous idea --
+imagine if a binding in a closure was destroyed somewhere
+far away in a way that you didn't expect. If you were
+relying on this behavior, it may be very tricky to discover
+what exactly has gone wrong.
+
+On the other hand, we need to be careful with restricting
+functionality simply because we believe it is dangerous.
+Even it actually being dangerous is not necessarily an
+argument for disallowing it. There is a tradeoff between
+preventing the unexpected or unwanted and allowing the
+unforeseen but necessary.
+
+For now, I'm going to make the decision to only allow
+unbinding variables in the current frame, even though I have
+misgivings about it.
+
+There is a bit of subtlety in defining @tt{make-unbound!},
+because we need to modify @tt{vars} and @tt{vals} such that
+the binding is question is  no longer present. This is easy
+to do if the list has more than one element in it, but if
+there is only one then we are stuck -- no use of @tt{set-car!}
+and @tt{set-cdr!} can turn this actual pair into @tt{nil}.
+So, we instead perform iterate through such that the current
+variable is the second in the list, and seed the initial
+lists with dummy head elements to allow for all of the
+bindings to be deleted. In other words, the base case is now
+a one-element list, not an empty one. Unfortunately, this
+means we can't use @tt{search-env} from the last exercise.
+
+@examples[
+ #:eval ev #:label #f #:no-prompt
+ (define (make-unbound! var env)
+   (define (scan vars vals)
+     (cond ((null? (cdr vars))
+            (error "Cannot unbind non-bound variable" var))
+           ((eq? var (cadr vars))
+            (begin
+              (set-cdr! vars (cddr vars))
+              (set-cdr! vals (cddr vals))))
+           (else (scan (cdr vars) (cdr vals)))))
+   (if (eq? env the-empty-environment)
+       (error "Cannot unbind non-bound variable" var)
+       (let ((frame (first-frame env)))
+         (scan (cons 'vars (frame-variables frame))
+               (cons 'vals (frame-values frame))))))
+ ]
