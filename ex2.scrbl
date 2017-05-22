@@ -220,7 +220,7 @@ from the ends of the width and height segments, we can do this:
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define (get-width-segment rect) (car rect))
- 
+
  (define (get-width rect)
    (x-point (end-segment (get-width-segment rect))))
  ]
@@ -228,7 +228,7 @@ from the ends of the width and height segments, we can do this:
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define (get-height-segment rect) (cdr rect))
- 
+
  (define (get-height rect)
    (y-point (end-segment (get-height-segment rect))))
  ]
@@ -273,7 +273,7 @@ are fewer data structures to traverse:
  #:label #f #:eval ev #:no-prompt
  (define (get-width-corner rect)
    (car rect))
- 
+
  (define (get-width rect)
    (x-point (get-width-corner rect)))
  ]
@@ -282,7 +282,7 @@ are fewer data structures to traverse:
  #:label #f #:eval ev #:no-prompt
  (define (get-height-corner rect)
    (cdr rect))
- 
+
  (define (get-height rect)
    (y-point (get-height-corner rect)))
  ]
@@ -372,14 +372,14 @@ Using the substitution model to evaluate:
  (n f)
  ((lambda (f) (lambda (x) x)) f)
  (lambda (x) x)
- 
+
  ((n f) x)
  ((lambda (x) x) x)
  x
- 
+
  (f ((n f) x))
  (f x)
- 
+
  (lambda (f) (lambda (x) (f ((n f) x))))
  (lambda (f) (lambda (x) (f x)))
 }
@@ -392,14 +392,14 @@ Using the substitution model to evaluate:
  (n f)
  ((lambda (f) (lambda (x) (f x))) f)
  (lambda (x) (f x))
- 
+
  ((n f) x)
  ((lambda (x) (f x)) x)
  (f x)
- 
+
  (f ((n f) x))
  (f (f x))
- 
+
  (lambda (f) (lambda (x) (f ((n f) x))))
  (lambda (f) (lambda (x) (f (f x))))
 }
@@ -480,11 +480,11 @@ in terms of the widths of the operands:
  Let x and y be intervals (ax, bx) and (ay, by)
  width(x) = (ax + bx) / 2
  width(y) = (ay + by) / 2
- 
+
  width(x+y) = ((ax + ay) + (bx + by)) / 2
  = ((ax + bx) + (ay + by)) / 2
  = width(x) + width(y)
- 
+
  Similarly,
  width(x - y) = ((ax - ay) + (bx - by)) / 2
  = ((ax + bx) - (ay + by)) / 2
@@ -508,7 +508,7 @@ using our procedures:
          (p4 (* (upper-bound x) (upper-bound y))))
      (make-interval (min p1 p2 p3 p4)
                     (max p1 p2 p3 p4))))
- 
+
  (define (div-interval x y)
    (mul-interval x
                  (make-interval (/ 1.0 (upper-bound y))
@@ -520,11 +520,11 @@ using our procedures:
  (define i1 (make-interval 0 5))
  (define i2 (make-interval 5 10))
  (= (width i1) (width i2))
- 
+
  (define i3 (make-interval 1 10))
- 
+
  (= (width (mul-interval i1 i3)) (width (mul-interval i2 i3)))
- 
+
  (= (width (div-interval i1 i3)) (width (div-interval i2 i3)))
  ]
 
@@ -549,12 +549,12 @@ Now we can do the following:
  #:label #f #:eval ev
  (define i1 (make-interval 1 10))
  (define i2 (make-interval -5 5))
- 
+
  (define ri1 (reciprocal i1))
  (define ri2 (reciprocal i2))
- 
+
  ri1
- 
+
  ri2
  ]
 
@@ -910,17 +910,17 @@ I give solutions both in reduced and unreduced form.
  #:label #f #:eval ev
  (define 25-1 (list 1 3 (list 5 7) 9))
  (= 7 (car (cdr (car (cdr (cdr 25-1))))))
- 
+
  (= 7 (car (cdaddr 25-1)))
- 
+
  (define 25-2 (list (list 7)))
  (= 7 (car (car 25-2)))
- 
+
  (= 7 (caar 25-2))
- 
+
  (define 25-3 (list 1 (list 2 (list 3 (list 4 (list 5 (list 6 7)))))))
  (= 7 (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr (car (cdr 25-3)))))))))))))
- 
+
  (= 7 (cadadr (cadadr (cadadr 25-3))))
  ]
 
@@ -990,7 +990,7 @@ create the wrong list structure. In other words,
      ((not (pair? l)) l)
      ;((null? (cdr l)) (deep-reverse (car l)))
      (else (cons (deep-reverse (cdr l)) (list (deep-reverse (car l)))))))
- 
+
  (deep-reverse x)
  ]
 
@@ -1044,7 +1044,7 @@ and @tt{weigh-branch}, both of which call each other:
    (let ((s (branch-structure branch)))
      (if (not (list? s)) s
          (total-weight s))))
- 
+
  (define (total-weight mobile)
    (+ (weigh-branch (left-branch mobile)) (weigh-branch (right-branch mobile))))
  ]
@@ -1178,7 +1178,7 @@ new sequence will be in the right order.
        initial
        (op (car sequence)
            (accumulate op initial (cdr sequence)))))
- 
+
  (define (map p sequence)
    (accumulate (lambda (x y) (cons (p x) y)) nil sequence))
  ]
@@ -1319,7 +1319,7 @@ First @tt{(/ 3 2)} is computed, then this is divided by @tt{1}, making
          (iter (op result (car rest))
                (cdr rest))))
    (iter initial sequence))
- 
+
  (fold-left / 1 (list 1 2 3))
  ]
 
@@ -1610,9 +1610,9 @@ Vectors can simply be another pair joined by @tt{cons}:
 @examples[
  #:label #f #:eval paint-ev #:no-prompt
  (define (make-vect x y) (cons x y))
- 
+
  (define (xcor-vect v) (car v))
- 
+
  (define (ycor-vect v) (cdr v))
  ]
 
@@ -1623,11 +1623,11 @@ The operators @tt{add-vect}, @tt{sub-vect}, and @tt{scale-vect} are similarly tr
  (define (add-vect v1 v2)
    (make-vect (+ (xcor-vect v1) (xcor-vect v2))
               (+ (ycor-vect v1) (ycor-vect v2))))
- 
+
  (define (sub-vect v1 v2)
    (make-vect (- (xcor-vect v1) (xcor-vect v2))
               (- (ycor-vect v1) (ycor-vect v2))))
- 
+
  (define (scale-vect s v)
    (make-vect (* s (xcor-vect v))
               (* s (ycor-vect v))))
@@ -1640,9 +1640,9 @@ If frames are defined using a list:
 @examples[
  #:label #f #:eval paint-ev #:no-prompt
  (define (origin-frame frame) (car frame))
- 
+
  (define (edge1-frame frame) (cadr frame))
- 
+
  (define (edge2-frame frame) (caddr frame))
  ]
 
@@ -1652,9 +1652,9 @@ vectors:
 @examples[
  #:label #f #:eval paint-ev #:no-prompt
  (define (origin-frame frame) (car frame))
- 
+
  (define (edge1-frame frame) (cadr frame))
- 
+
  (define (edge2-frame frame) (cddr frame))
  ]
 
@@ -1674,9 +1674,9 @@ However, these exercises are very boring to comment on.
 @examples[
  #:label #f #:eval paint-ev #:no-prompt
  (define (make-segment start end) (cons start end))
- 
+
  (define (start-segment segment) (car segment))
- 
+
  (define (end-segment segment) (cdr segment))
  ]
 
@@ -1890,17 +1890,17 @@ the left and right halves in the @tt{square-of-four} call:
 @examples[
  #:label #f #:eval ev
  (list 'a 'b 'c)
- 
+
  (list (list 'george))
- 
+
  (cdr '((x1 x2) (y1 y2)))
- 
+
  (cadr '((x1 x2) (y1 y2)))
- 
+
  (pair? (car '(a short list)))
- 
+
  (memq 'red '((red shoes) (blue socks)))
- 
+
  (memq 'red '(red shoes blue socks))
  ]
 
@@ -1946,9 +1946,9 @@ trivial, basically identical to similar procedures for other operations:
  #:label #f #:eval ev #:no-prompt
  (define (exponentiation? x)
    (and (pair? x) (eq? (car x) '**)))
- 
+
  (define (base x) (cadr x))
- 
+
  (define (exponent x) (caddr x))
  ]
 
@@ -2014,7 +2014,7 @@ Finally, the extended @tt{deriv} is as follows:
    (and (pair? x) (eq? (car x) '*)))
  (define (multiplier p) (cadr p))
  (define (multiplicand p) (caddr p))
- 
+
  (define (deriv exp var)
    (cond ((number? exp) 0)
          ((variable? exp)
@@ -2056,7 +2056,7 @@ below.
    (if (null? (cdddr s))
        (caddr s)
        (append (list '+) (cddr s))))
- 
+
  (define (multiplicand p)
    (if (null? (cdddr p))
        (caddr p)
@@ -2081,9 +2081,9 @@ operation-selection procedures for the first argument (e.g. @tt{addend}), use
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define (addend s) (car s))
- 
+
  (define (multiplier p) (car p))
- 
+
  (define (base x) (car x))
  ]
 
@@ -2097,14 +2097,14 @@ the positions of the operator and the first argument in the list.
          ((=number? a2 0) a1)
          ((and (number? a1) (number? a2)) (+ a1 a2))
          (else (list a1 '+ a2))))
- 
+
  (define (make-product m1 m2)
    (cond ((or (=number? m1 0) (=number? m2 0)) 0)
          ((=number? m1 1) m2)
          ((=number? m2 1) m1)
          ((and (number? m1) (number? m2)) (* m1 m2))
          (else (list m1 '* m2))))
- 
+
  (define (make-exponentiation base exponent)
    (cond ((=number? exponent 0) 1)
          ((=number? exponent 1) base)
@@ -2123,10 +2123,10 @@ won't.
  #:label #f #:eval ev #:no-prompt
  (define (sum? x)
    (and (pair? x) (eq? (cadr x) '+)))
- 
+
  (define (product? x)
    (and (pair? x) (eq? (cadr x) '*)))
- 
+
  (define (exponentiation? x)
    (and (pair? x) (eq? (cadr x) '**)))
  ]
@@ -2227,10 +2227,10 @@ general @tt{valid-operation?} procedure and reimplement @tt{sum?} and
          (and (not (null? (car groups)))
               (not (null? (cdr groups))))
          #f)))
- 
+
  (define (sum? x)
    (valid-operation? '+ x))
- 
+
  (define (product? x)
    (and (valid-operation? '* x)
         (not (sum? x))))
@@ -2261,10 +2261,10 @@ the final procedures as such:
  #:label #f #:eval ev #:no-prompt
  (define (sum? x)
    (valid-operation? '+ x))
- 
+
  (define (product? x)
    (valid-operation? '* x))
- 
+
  (define (exponentiation? x)
    (valid-operation? '** x))
  ]
@@ -2276,15 +2276,15 @@ have to do is minimal.
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define (addend s) (car (find-groups '+ s)))
- 
+
  (define (augend s) (cdr (find-groups '+ s)))
- 
+
  (define (multiplier p) (car (find-groups '* p)))
- 
+
  (define (multiplicand p) (cdr (find-groups '* p)))
- 
+
  (define (base x) (car (find-groups '** x)))
- 
+
  (define (exponent x) (cdr (find-groups '** x)))
  ]
 
@@ -2500,17 +2500,17 @@ produce the same results:
  (define ta (list 7 (list 3 (list 1 '() '()) (list 5 '() '())) (list 9 '() (list 11 '() '()))))
  (define tb (list 3 (list 1 '() '()) (list 7 (list 5 '() '()) (list 9 '() (list 11 '() '())))))
  (define tc (list 5 (list 3 (list 1 '() '()) '()) (list 9 (list 7 '() '()) (list 11 '() '()))))
- 
+
  (tree->list-1 ta)
- 
+
  (tree->list-2 ta)
- 
+
  (tree->list-1 tb)
- 
+
  (tree->list-2 tb)
- 
+
  (tree->list-1 tc)
- 
+
  (tree->list-2 tc)
 }
 
@@ -2793,7 +2793,7 @@ Then, we can define our intersection and union procedures easily:
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define intersection-btset (btset-convert-op intersection-oset))
- 
+
  (define union-btset (btset-convert-op union-oset))
  ]
 
@@ -3052,7 +3052,7 @@ traverse the list of symbols.
            ((eq? key (caar back)) (cons front back))
            (else (loop (cons (car back) front) (cdr back)))))
    (loop '() ps))
- 
+
  (define (generate-weights symlist)
    (define (add-symbol weights symbols)
      (if (null? symbols)
@@ -3080,7 +3080,7 @@ We can set up the tree and the message as such:
          sha na na na na na na na na
          wah yip yip yip yip yip yip yip yip yip
          sha boom))
- 
+
  (define song-tree (generate-huffman-tree (generate-weights song)))
  ]
 
@@ -3153,7 +3153,7 @@ so that it uses data-directed programming, like this:
          ((variable? exp) (if (same-variable? exp var) 1 0))
          (else ((get 'deriv (operator exp)) (operands exp)
                                             var))))
- 
+
  (define (operator exp) (car exp))
  (define (operand exp) (cdr exp))
  ]
@@ -3172,7 +3172,7 @@ multiplications like this:
      (lambda (exp var)
        (make-sum (deriv (addend exp) var)
                  (deriv (augend exp) var))))
- 
+
 (put 'deriv '(*)
      (lambda (exp var)
        (make-sum
@@ -3349,7 +3349,7 @@ With this in place, the call to @tt{magnitude} can be expanded like this
 
 @tt{apply-generic} gets called twice, or once for each layer of typing our
 generic @tt{complex} object has. In the first call, @tt{magnitude} dispatches
-to itself, and in the second call, the procedure for the given type of the 
+to itself, and in the second call, the procedure for the given type of the
 object (in this case, @tt{rectangular}).
 
 @section[#:tag "c2e78"]{Exercise 2.78}
@@ -3367,14 +3367,14 @@ and @tt{contents}, probably like this:
        (if (number? datum)
            'scheme-number
            (error "Bad tagged datum -- TYPE-TAG" datum))))
- 
+
  (define (contents datum)
    (if (pair? datum)
        (cdr datum)
        (if (number? datum)
            datum
            (error "Bad tagged datum -- CONTENTS" datum))))
- 
+
  (define (attach-tag type-tag contents)
    (if (and
         (eq? type-tag 'scheme-number)
@@ -3387,33 +3387,6 @@ I've elected to check the type of @tt{contents} and the given @tt{type-tag}
 in @tt{attach-tag} for extra safety.
 
 @section[#:tag "c2e79"]{Exercise 2.79}
-
-@bold{TODO: Explain and verify}
-
-@;examples[#:eval ev #:no-prompt
-@codeblock{
- (define (install-equ?-predicate)
- (define (equ?-scheme-number x y) (= x y))
- (define (equ?-rational x y)
- (and (= (numer x) (numer y))
- (= (denom x) (denom y))))
- (define (equ?-complex z1 z2)
- (and (= (real-part z1) (real-part z2))
- (= (imag-part z1) (imag-part z2))))
- (put 'equ? '(scheme-number scheme-number)
- (lambda (x y)
- (attach-tag 'scheme-number (equ?-scheme-number x y))))
- (put 'equ? '(rational rational)
- (lambda (x y)
- (attach-tag 'rational (equ?-rational x y))))
- (put 'equ? '(complex complex)
- (lambda (z1 z2)
- (attach-tag 'complex (equ?-complex z1 z2)))))
- 
- (define (equ? x y) (apply-generic 'equ? x y))
-}
-
-@section[#:tag "c2e80"]{Exercise 2.80}
 
 @bold{TODO: Explain and verify}
 
@@ -3440,6 +3413,10 @@ in @tt{attach-tag} for extra safety.
 (define (equ? x y) (apply-generic 'equ? x y))
 }
 
+@section[#:tag "c2e80"]{Exercise 2.80}
+
+@bold{TODO}
+
 @section[#:tag "c2e81"]{Exercise 2.81}
 
 Louis Reasoner wants to install coercions from types to themselves, because
@@ -3454,7 +3431,7 @@ numbers, created like this:
 @;examples[#:eval ev #:no-prompt
 @codeblock{
  (define (exp x y) (apply-generic 'exp x y))
- 
+
  (put 'exp '(scheme-number scheme-number)
       (lambda (x y) (tag (expt x y))))
 }
