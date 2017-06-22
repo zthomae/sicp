@@ -1,15 +1,10 @@
-image: jackfirth/racket:6.8-onbuild
-
-before_script:
-  - apt-get update
-  - apt-get install -y build-essential libglib2.0-dev libfontconfig1-dev libcairo2-dev libpango1.0-dev libjpeg62-dev libgtk2.0-dev xvfb
-  - Xvfb :1 -screen - 1024x768x16 &
-  - raco pkg install --auto sicp
+image: registry.gitlab.com/zthomae/sicp
 
 pages:
   stage: deploy
   script:
-    DISPLAY=:1.0 make
+    - Xvfb :1 -screen - 1024x768x16 &
+    - DISPLAY=:1.0 make
   artifacts:
     paths:
     - public
