@@ -21,7 +21,7 @@ order to force the order of evaluation:
        (let* ((first (eval (first-operand exps) env))
               (rest (list-of-values (rest-operands exps) env)))
          (cons first rest))))
- 
+
  (define (list-of-values-rtl exp env)
    (if (no-operands? exps)
        '()
@@ -111,7 +111,7 @@ interpreter as follows:
            (((car rest)) (iter (cdr rest)))
            (else false)))
    (iter (map (lambda (exp) (lambda () (eval exp env))) exps)))
-    
+
  (define (eval-or exps env)
    (define (iter rest)
      (cond ((null? rest) false)
@@ -637,10 +637,10 @@ of bindings.
          (let ((frame (first-frame env)))
            (scan (cdr frame)))))
    (env-loop env))
- 
+
  (define (extend-environment-2 bindings base-env)
    (cons (cons 'head bindings) base-env))
- 
+
  (define (add-binding-to-frame-2! var val frame)
    (if (null? (cdr frame))
        (set-cdr! frame (cons var val))
@@ -657,7 +657,7 @@ of bindings.
               (set-car! (car bindings) val))
              (else (scan (cdr bindings)))))
      (scan (cdr frame))))
- 
+
  (define (set-variable-2! var val env)
    (define (env-loop env)
      (define (scan bindings)
@@ -704,7 +704,7 @@ needs to take the current environment.
          (let ((frame (first-frame env)))
            (scan (frame-variables frame)
                  (frame-values frame))))))
- 
+
  (define (lookup-variable-value-alt val env)
    ((search-env
      (lambda (vars vals) (car vals))
@@ -780,3 +780,13 @@ means we can't use @tt{search-env} from the last exercise.
          (scan (cons 'vars (frame-variables frame))
                (cons 'vals (frame-values frame))))))
  ]
+
+@section[#:tag "c4e14"]{Exercise 4.14}
+
+The reason that @tt{map} can't be installed as a primitive
+is that the primitive implementation requires the function
+being mapped with to be pure procedures as they would be
+represented in the underlying Scheme. Neither our primitive
+nor our compound procedures meet this criteria -- the
+compount procedures use entirely our own representation,
+while primitive procedures are tagged.
