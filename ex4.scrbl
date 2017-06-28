@@ -790,3 +790,25 @@ represented in the underlying Scheme. Neither our primitive
 nor our compound procedures meet this criteria -- the
 compount procedures use entirely our own representation,
 while primitive procedures are tagged.
+
+@section[#:tag "c4e15"]{Exercise 4.15}
+
+Suppose we have a procedure @tt{halts} which determines
+whether the one-argument procedure @tt{p} terminates when
+given the input @tt{a}. Suppose we then had the given example
+program:
+
+@racketblock[
+(define (run-forever) (run-forever))
+
+(define (try p)
+  (if (halts? p p)
+      (run-forever)
+      'halted))
+]
+
+Now suppose we do as they suggest and evaluate @tt{(try try)}.
+This will either call @tt{run-forever} if @tt{(halts? try try)}
+returns true -- that is, if @tt{(try try)} does not run forever --
+or will halt if it does run forever. This is a contradiction, and
+guarantees that implementing @tt{halts?} is impossible.
