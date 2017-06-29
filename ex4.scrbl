@@ -812,3 +812,82 @@ This will either call @tt{run-forever} if @tt{(halts? try try)}
 returns true -- that is, if @tt{(try try)} does not run forever --
 or will halt if it does run forever. This is a contradiction, and
 guarantees that implementing @tt{halts?} is impossible.
+
+@section[#:tag "c4e16"]{Exercise 4.16}
+
+@tt{lookup-variable-value} should be modified to look like
+this (modified to check the value after the binding has been
+found, only returning successfully if it is assigned):
+
+@racketblock[
+(define (lookup-variable-value var env)
+  (define (env-loop env)
+    (define (scan vars vals)
+      (cond ((null? vars) (env-loop (enclosing-environment env)))
+            ((eq? var (car vars))
+             (let ((val (car vals)))
+               (if (eq? val '*unassigned*)
+                   (error "Use of unassigned variable" var)
+                   val)))
+            (else (scan (cdr vars) (cdr vals)))))
+    (if (eq? env the-empty-environment)
+        (error "Unbound variable" var)
+        (let ((frame (first-frame env)))
+          (scan (frame-variables frame)
+                (frame-values frame)))))
+  (env-loop env))
+]
+
+The basic strategy for defining @tt{scan-out-defines} will
+be as follows:
+
+@itemlist[
+@item{Grab all of the definition at the start of the
+      procedure body. (It is illegal to have internal definitions
+      after any non-definition expressions)}
+@item{If there are no internal definitions, return the body}
+@item{Zip each of the variables of the internal definition in a list with @tt{'*unassigned*}}
+@item{Create @tt{set!} expressions for each of the definitions}
+@item{Make a @tt{let} expression with our bindings and the @tt{set!} expressions
+      appended with the original body}
+]
+
+To do this, we will first define helper procedures @tt{partition} and @tt{make-set}:
+
+@racketblock[
+(define (partition pred lst)
+  (define (go acc rest)
+    (if (null? rest)
+        (cons (reverse acc) '())
+        (let ((x (car rest))
+              (xs (cdr rest)))
+          (if (pred x)
+              (go (cons x acc) xs)
+              (cons (reverse acc) rest)))))
+  (go '() lst))
+
+(define (make-set var val)
+  (list 'set! var val))
+]
+
+The definition of @tt{scan-out-defines} is as follows:
+
+@racketblock[
+(define (scan-out-defines procedure-body)
+  (let* ((define-partition (partition definition? procedure-body))
+         (defines (car define-partition))
+         (body (cdr define-partition)))
+    (if (null? defines)
+        body
+        (let ((unassigned-bindings
+               (map (lambda (d) (list (definition-variable d) '*unassigned*)) defines))
+              (set-expressions
+               (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
+          (make-let unassigned-bindings (append set-expressions body))))))
+]
+
+I believe that @tt{make-procedure} is the best place to
+transform the body into our new normalized form -- it seems
+better to me that having the body in the form we want is
+best guaranteed when the procedure object is defined, rather
+than (hopefully!) normalizing it when it is accessed.

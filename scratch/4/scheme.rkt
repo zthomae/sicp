@@ -348,7 +348,7 @@
                                             (list 'while-iter (while-body exp))
                                             'last-value))))
    '(while-iter false)))
-                                               
+
 ;; until: the same as while, but with the predicate inverted
 (define until-example
   '(until (= x 0)
@@ -464,7 +464,7 @@
 (define (false? x) (eq? x false))
 
 (define (make-procedure parameters body env)
-  (list 'procedure parameters body env))
+  (list 'procedure parameters (scan-out-defines body) env))
 (define (compound-procedure? p)
   (tagged-list? p 'procedure))
 (define (procedure-parameters p) (cadr p))
@@ -494,7 +494,11 @@
   (define (env-loop env)
     (define (scan vars vals)
       (cond ((null? vars) (env-loop (enclosing-environment env)))
-            ((eq? var (car vars)) (car vals))
+            ((eq? var (car vars))
+             (let ((val (car vals)))
+               (if (eq? val '*unassigned*)
+                   (error "Use of unassigned variable" var)
+                   val)))
             (else (scan (cdr vars) (cdr vals)))))
     (if (eq? env the-empty-environment)
         (error "Unbound variable" var)
@@ -710,3 +714,34 @@
       (let ((frame (first-frame env)))
         (scan (cons 'vars (frame-variables frame))
               (cons 'vals (frame-values frame))))))
+
+(define (partition pred lst)
+  (define (go acc rest)
+    (if (null? rest)
+        (cons (reverse acc) '())
+        (let ((x (car rest))
+              (xs (cdr rest)))
+          (if (pred x)
+              (go (cons x acc) xs)
+              (cons (reverse acc) rest)))))
+  (go '() lst))
+
+(define (make-set var val)
+  (list 'set! var val))
+
+(define (scan-out-defines procedure-body)
+  (let* ((define-partition (partition definition? procedure-body))
+         (defines (car define-partition))
+         (body (cdr define-partition)))
+    (if (null? defines)
+        body
+        (let ((unassigned-bindings
+               (map (lambda (d) (list (definition-variable d) '*unassigned*)) defines))
+              (set-expressions
+               (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
+          (make-let unassigned-bindings (append set-expressions body))))))
+
+(define test-inner-definitions-proc-1
+  '((define u e1)
+    (define v e2)
+    e3))
