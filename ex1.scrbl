@@ -160,11 +160,11 @@ of @tt{0.001}.)
  #:label #f #:eval ev #:no-prompt
  (define (cube-root x)
    (root-iter x 1.0 0.0 cube-root-improve))
- 
+
  (define (root-iter x guess previous-guess improve)
    (if (good-enough? guess previous-guess) guess
        (root-iter x (improve guess x) guess improve)))
- 
+
  (define (cube-root-improve x guess)
    (/
     (+
@@ -178,7 +178,7 @@ of @tt{0.001}.)
 The evaluation of the expression @tt{(+ 4 5)} with the first procedure using the substition
 model is as follows:
 
-@verbatim{
+@racketblock[
  (+ 4 5)
  (inc (+ (dec 4) 5))
  (inc (+ 3 5))
@@ -193,13 +193,13 @@ model is as follows:
  (inc (inc 7))
  (inc 8)
  9
-}
+]
 
 The first procedure generates a recursive process.
 
 The evaluation using the second procedure generates an iterative process:
 
-@verbatim{
+@racketblock[
  (+ 4 5)
  (+ (dec 4) (inc 5))
  (+ 3 6)
@@ -210,7 +210,7 @@ The evaluation using the second procedure generates an iterative process:
  (+ (dec 1) (inc 8))
  (+ 0 9)
  9
-}
+]
 
 @section[#:tag "c1e10"]{Exercise 1.10}
 
@@ -251,21 +251,21 @@ The answer is @tt{2^10 = 1024}
 Next, @tt{(A 2 4)}. To solve this in fewer explicit steps, we use the result above
 and completely skip simple math procedures.
 
-@verbatim{
+@racketblock[
  (A 2 4)
  (A 1 (A 2 3))
  (A 1 (A 1 (A 2 2)))
  (A 1 (A 1 (A 1 (A 2 1))))
-}
+]
 
 @tt{(A 2 1) = 2}, so:
 
-@verbatim{
+@racketblock[
  (A 1 (A 1 (A 1 2)))
  (A 1 (A 1 (A 0 (A 1 1))))
  (A 1 (A 1 (A 0 2)))
  (A 1 (A 1 4))
-}
+]
 
 This is a substitution we already know how to make. Accelerating the process:
 
@@ -364,7 +364,7 @@ triangle:
  (define (make-new-row depth)
    (define (loop depth col str)
      (if (> col depth) str
-         (string-append str 
+         (string-append str
                         (number->string (pascal-value depth col))
                         (loop depth (+ col 1) " "))))
    (loop depth 0 ""))
@@ -499,11 +499,11 @@ where @tt{kinds-of-coins} is @tt{1} and then work up to the starting value of
 
 @tt{(cc n 1)} evaluates like this:
 
-@verbatim{
+@racketblock[
  (cc n 1)
  (+ (cc n 0) (cc (- n (first-denomination 1)) 1))
  (+ (cc n 0) (cc (- n 1) 1))
-}
+]
 
 Since @tt{(cc n 0)} simply returns @tt{1}, it has time complexity @tt{O(1)}. And
 since every call of @tt{cc} calls @tt{cc} one more time until eventually reaching
@@ -511,10 +511,10 @@ an @tt{O(1)} base case, @tt{(c n 1)} has time complexity @tt{O(n)}.
 
 Now suppose we want to evaluate @tt{(cc n 2)}:
 
-@verbatim{
+@racketblock[
  (cc n 2)
  (+ (cc n 1) (cc (- n 5) 2))
-}
+]
 
 Since @tt{5} is subtracted each time from @tt{n}, there are @tt{n / 5} calls to
 @tt{cc} with a @tt{kinds-of-coins} value of @tt{2}. And each of these calls
@@ -537,14 +537,14 @@ of the last one.
 When evaluating @tt{(sine 12.15)}, the expression expands as
 follows:
 
-@verbatim{
+@racketblock[
  (sine 12.15)
  (p (sine 4.05))
  (p (p (sine 1.35)))
  (p (p (p (sine 0.45))))
  (p (p (p (p (sine 0.15)))))
  (p (p (p (p (p (sine 0.05))))))
-}
+]
 
 @tt{p} is evaluated five times.
 
@@ -644,7 +644,7 @@ use this to finish the procedure below:
  #:label #f #:eval ev #:no-prompt
  (define (fib n)
    (fib-iter 1 0 0 1 n))
- 
+
  (define (fib-iter a b p q count)
    (cond ((= count 0) b)
          ((even? count)
@@ -668,32 +668,32 @@ the number of times @tt{remainder} is called will be equal to the number of
 
 @verbatim{
  (gcd 206 40)
- 
+
  (if (= 40 0)
  206
  (gcd 40 (remainder 206 40)))
- 
+
  (if (= (remainder 206 40) 0)
  ...)
- 
+
  (if (= 6 0)
  40
  (gcd (remainder 206 40) (remainder 40 (remainder 206 40))))
- 
+
  (if (= (remainder 40 (remainder 206 40)) 0)
  ...)
- 
+
  (if (= 4 0)
  (remainder 206 40)
  (gcd (remainder 40 (remainder 206 40))
  (remainder (remainder 206 40)
  (remainder 40 (remainder 206 40)))))
- 
+
  (if (= (remainder (remainder 206 40)
  (remainder 40 (remainder 206 40)))
  0)
  ...)
- 
+
  (if (= 2 0)
  (remainder 40 (remainder 206 40))
  (gcd (remainder (remainder 206 40)
@@ -701,13 +701,13 @@ the number of times @tt{remainder} is called will be equal to the number of
  (remainder (remainder 40 (remainder 206 40))
  (remainder (remainder 206 40)
  (remainder 40 (remainder 206 40))))))
- 
+
  (if (= (remainder (remainder 40 (remainder 206 40))
  (remainder (remainder 206 40)
  (remainder 40 (remainder 206 40))))
  0)
  ....)
- 
+
  (if (= 0 0)
  (remainder (remainder 206 40)
  (remainder 40 (remainder 206 40)))
@@ -728,21 +728,21 @@ within them:
  (if (= <0> 0)
  <0>
  (gcd <0> (remainder <0> <0>)))
- 
+
  (gcd <0> <1>)
  (if (= <1> 0)
  <0>
  (gcd <1> (remainder <0> <1>)))
- 
+
  (gcd <1> <2>)
  (if (= <2> 0)
  <1>)
  (gcd <2> <4>)
- 
+
  (if (= <4> 0)
  <2>
  (gcd <4> (remainder <2> <4>)))
- 
+
  (gcd <4> <7>)
  (if (= <7> 0)
  <4>
@@ -752,7 +752,7 @@ within them:
 Under applicative-order evaluation, @tt{remainder} is always evaluated
 before calling @tt{gcd}. In the end, it is only called @tt{4} times:
 
-@verbatim{
+@racketblock[
  (gcd 206 40)
  (gcd 40 (remainder 206 40))
  (gcd 40 6)
@@ -763,7 +763,7 @@ before calling @tt{gcd}. In the end, it is only called @tt{4} times:
  (gcd 2 (remainder 4 2))
  (gcd 2 0)
  2
-}
+]
 
 @section[#:tag "c1e21"]{Exercise 1.21}
 
@@ -771,15 +771,15 @@ before calling @tt{gcd}. In the end, it is only called @tt{4} times:
  #:label #f #:eval ev #:hidden
  (define (smallest-divisor n)
    (find-divisor n 2))
- 
+
  (define (find-divisor n test-divisor)
    (cond ((> (square test-divisor) n) n)
          (( divides? test-divisor n) test-divisor)
          (else (find-divisor n (+ test-divisor 1)))))
- 
+
  (define (divides? a b)
    (= (remainder b a) 0))
- 
+
  (define (prime? n)
    (= n (smallest-divisor n)))
  ]
@@ -964,7 +964,7 @@ This procedure computes integrals with Simpson's rule:
 
 The decision that made this simplest to write was to let @tt{a} and @tt{b} in the @tt{sum}
 be @tt{1} and @tt{n-1}, respectively -- the indexes of the evaluated function values, rather
-than the values themselves. This way, we can test for what to multiply the value by (@tt{1}, 
+than the values themselves. This way, we can test for what to multiply the value by (@tt{1},
 @tt{2}, or @tt{4}) by examining the index, rather than having to describe the rule using the sum
 of multiple summations or something else more complicated than this.
 
@@ -1387,11 +1387,11 @@ We can verify this works with an example, finding the root of the function
    (lambda (x)
      (/ (- (g (+ x dx)) (g x))
         dx)))
- 
+
  (define (newton-transform g)
    (lambda (x)
      (- x (/ (g x) ((deriv g) x)))))
- 
+
  (define (newtons-method g guess)
    (fixed-point (newton-transform g) guess))
  ]

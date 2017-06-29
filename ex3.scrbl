@@ -725,22 +725,22 @@ to create those functions on top of an object like this.
  #:label #f #:eval ev #:no-prompt
  (define (empty-deque? dq)
    ((dq 'empty-deque?)))
- 
+
  (define (front-deque dq)
    ((dq 'front-deque)))
- 
+
  (define (rear-deque dq)
    ((dq 'rear-deque)))
- 
+
  (define (front-insert-deque! dq item)
    ((dq 'front-insert-deque!) item))
- 
+
  (define (rear-insert-deque! dq item)
    ((dq 'rear-insert-deque!) item))
- 
+
  (define (front-delete-deque! dq)
    ((dq 'front-delete-deque!)))
- 
+
  (define (rear-delete-deque! dq)
    ((dq 'rear-delete-deque!)))
  ]
@@ -757,7 +757,7 @@ that can be called within our new @tt{make-table} variant.
    (cond ((null? records) false)
          ((same-key? key (caar records)) (car records))
          (else (generic-assoc key (cdr records) same-key?))))
- 
+
  (define (make-table same-key?)
    (let ((assoc (lambda (key records) (generic-assoc key records same-key?)))
          (local-table (list '*table*)))
@@ -813,7 +813,7 @@ functions easier when operating on the same table.
 
 @bold{TODO: Look more carefully at this}
 
-@examples[       
+@examples[
  #:label #f #:eval ev #:no-prompt
  (define (lookup table)
    (lambda (keys)
@@ -859,10 +859,10 @@ almost identical, and the two procedures are almost identical.
  (define (entry tree) (car tree))
  (define (left-branch tree) (cadr tree))
  (define (right-branch tree) (caddr tree))
- 
+
  (define (make-tree entry left right)
    (list entry left right))
- 
+
  (define (make-table)
    (list '*table*))
  ]
@@ -880,7 +880,7 @@ almost identical, and the two procedures are almost identical.
                (cond ((= key entry-key) entry-val)
                      ((< key entry-key) ((lookup (left-branch entries)) key))
                      ((> key entry-key) ((lookup (right-branch entries)) key)))))))))
- 
+
  (define (insert! table)
    (lambda (key value)
      (let ((entries (cdr table)))
@@ -944,7 +944,7 @@ An implementation of generic tables is as follows:
                    (cond ((eq key entry-key) entry-val)
                          ((lt key entry-key) ((lookup (left-branch entries)) key))
                          ((gt key entry-key) ((lookup (right-branch entries)) key)))))))))))
- 
+
  (define (make-insert! cmp)
    (let ((lt (lambda (a b) (= -1 (cmp a b))))
          (eq (lambda (a b) (= 0 (cmp a b))))
@@ -972,7 +972,7 @@ share the same table, and because new results can be computed
 from old results in constant time, the overall running time
 for @tt{memo-fib} is now linear.
 
-It would @emph{not} have worked to define @tt{memo-fib} as 
+It would @emph{not} have worked to define @tt{memo-fib} as
 @tt{(memoize (fib)} because the unmemoized @tt{fib}
 function would be used to compute results. Only the direct
 results of calling @tt{memo-fib} would be stored in the
@@ -988,7 +988,7 @@ it to.
 @examples[
  #:hidden #:eval ev
  (define (make-queue) (cons '() '()))
- 
+
  (define (make-wire)
    (let ((signal-value 0) (action-procedures '()))
      (define (set-my-signal! new-value)
@@ -996,40 +996,40 @@ it to.
            (begin (set! signal-value new-value)
                   (call-each action-procedures))
            'done))
-     
+
      (define (accept-action-procedure! proc)
        (set! action-procedures (cons proc action-procedures))
        (proc))
-     
+
      (define (dispatch m)
        (cond ((eq? m 'get-signal) signal-value)
              ((eq? m 'set-signal!) set-my-signal!)
              ((eq? m 'add-action!) accept-action-procedure!)
              (else (error "Unknown operation -- WIRE" m))))
-     
+
      dispatch))
- 
+
  (define (call-each procedures)
    (if (null? procedures)
        'done
        (begin
          ((car procedures))
          (call-each (cdr procedures)))))
- 
+
  (define (get-signal wire)
    (wire 'get-signal))
- 
+
  (define (set-signal! wire new-value)
    ((wire 'set-signal!) new-value))
- 
+
  (define (add-action! wire action-procedure)
    ((wire 'add-action!) action-procedure))
- 
+
  (define (after-delay delay action)
    (add-to-agenda! (+ delay (current-time the-agenda))
                    action
                    the-agenda))
- 
+
  (define (propagate)
    (if (empty-agenda? the-agenda)
        'done
@@ -1037,7 +1037,7 @@ it to.
          (first-item)
          (remove-first-agenda-item! the-agenda)
          (propagate))))
- 
+
  (define (probe name wire)
    (add-action! wire
                 (lambda ()
@@ -1047,33 +1047,33 @@ it to.
                   (display (current-time the-agenda))
                   (display " New value = ")
                   (display (get-signal wire)))))
- 
+
  (define (make-time-segment time queue)
    (cons time queue))
- 
+
  (define (segment-time s) (car s))
- 
+
  (define (segment-queue s) (cdr s))
- 
+
  (define (make-agenda) (list 0))
- 
+
  (define (current-time agenda) (car agenda))
- 
+
  (define (set-current-time! agenda time)
    (set-car! agenda time))
- 
+
  (define (segments agenda) (cdr agenda))
- 
+
  (define (set-segments! agenda segments)
    (set-cdr! agenda segments))
- 
+
  (define (first-segment agenda) (car (segments agenda)))
- 
+
  (define (rest-segments agenda) (cdr (segments agenda)))
- 
+
  (define (empty-agenda? agenda)
    (null? (segments agenda)))
- 
+
  (define (add-to-agenda! time action agenda)
    (define (belongs-before? segments)
      (or (null? segments)
@@ -1100,22 +1100,22 @@ it to.
           (cons (make-new-time-segment time action)
                 segments))
          (add-to-segments! segments))))
- 
+
  (define (remove-first-agenda-item! agenda)
    (let ((q (segment-queue (first-segment agenda))))
      (delete-queue! q)
      (if (empty-queue? q)
          (set-segments! agenda (rest-segments agenda)))))
- 
+
  (define (first-agenda-item agenda)
    (if (empty-agenda? agenda)
        (error "Agenda is empty -- FIRST-AGENDA-ITEM")
        (let ((first-seg (first-segment agenda)))
          (set-current-time! agenda (segment-time first-seg))
          (front-queue (segment-queue first-seg)))))
- 
+
  (define inverter-delay 2)
- 
+
  (define (inverter input output)
    (define (invert-input)
      (let ((new-value (logical-not (get-signal input))))
@@ -1124,14 +1124,14 @@ it to.
                       (set-signal! output new-value)))))
    (add-action! input invert-input)
    'ok)
- 
+
  (define (logical-not s)
    (cond ((= s 0) 1)
          ((= s 1) 0)
          (else (error "Invalid signal" s))))
- 
+
  (define and-gate-delay 3)
- 
+
  (define (and-gate a1 a2 output)
    (define (and-action-procedure)
      (let ((new-value
@@ -1142,14 +1142,14 @@ it to.
    (add-action! a1 and-action-procedure)
    (add-action! a2 and-action-procedure)
    'ok)
- 
+
  (define (logical-and a b)
    (cond ((and (= a 0) (= b 0)) 0)
          ((and (= a 1) (= b 0)) 0)
          ((and (= a 0) (= b 1)) 0)
          ((and (= a 1) (= b 1)) 1)
          (else (error "Invalid signals" a b))))
- 
+
  (define (half-adder a b s c)
    (let ((d (make-wire)) (e (make-wire)))
      (or-gate a b d)
@@ -1157,7 +1157,7 @@ it to.
      (inverter c e)
      (and-gate d e s)
      'ok))
- 
+
  (define (full-adder a b c-in sum c-out)
    (let ((s (make-wire))
          (c1 (make-wire))
@@ -1173,7 +1173,7 @@ Implementing @tt{or-gate} by copying @tt{and-gate} is fairly trivial:
 @examples[
  #:label #f #:eval ev #:no-prompt
  (define or-gate-delay 5)
- 
+
  (define (or-gate o1 o2 output)
    (define (or-action-procedure)
      (let ((new-value (logical-or (get-signal o1) (get-signal o2))))
@@ -1182,7 +1182,7 @@ Implementing @tt{or-gate} by copying @tt{and-gate} is fairly trivial:
    (add-action! o1 or-action-procedure)
    (add-action! o2 or-action-procedure)
    'ok)
- 
+
  (define (logical-or a b)
    (cond ((and (= a 0) (= b 0)) 0)
          ((and (= a 1) (= b 0)) 1)
@@ -1206,7 +1206,7 @@ of the binary operation:
      (add-action! x binary-action-procedure)
      (add-action! y binary-action-procedure)
      'ok))
- 
+
  (define and-gate (binary-op logical-and and-gate-delay))
  (define or-gate (binary-op logical-or or-gate-delay))
  ]
@@ -1226,7 +1226,7 @@ negated inputs.
      (inverter A nA)
      (inverter B nB)
      (and-gate nA nB nO)
-     (inverter nO output)))              
+     (inverter nO output)))
  ]
 
 The delay of this component is equal to the delay of the one
@@ -1286,9 +1286,9 @@ procedure after adding it ot the list:
  (define input-2 (make-wire))
  (define sum (make-wire))
  (define carry (make-wire))
- 
+
  (probe 'sum sum)
- 
+
  (probe 'carry carry)
 
  (half-adder input-1 input-2 sum carry)
@@ -1311,30 +1311,30 @@ If we change the definition to not do this, we get this session:
            (begin (set! signal-value new-value)
                   (call-each action-procedures))
            'done))
-     
+
      (define (accept-action-procedure! proc)
        (set! action-procedures (cons proc action-procedures)))
-     
+
      (define (dispatch m)
        (cond ((eq? m 'get-signal) signal-value)
              ((eq? m 'set-signal!) set-my-signal!)
              ((eq? m 'add-action!) accept-action-procedure!)
              (else (error "Unknown operation -- WIRE" m))))
-     
+
      dispatch))
    ]
 
 @examples[
  #:label #f #:eval ev
  (define the-agenda (make-agenda))
- 
+
  (define input-1 (make-wire-bad))
  (define input-2 (make-wire-bad))
  (define sum (make-wire-bad))
  (define carry (make-wire-bad))
- 
+
  (probe 'sum sum)
- 
+
  (probe 'carry carry)
 
  (half-adder input-1 input-2 sum carry)
@@ -1352,7 +1352,7 @@ meaning that later calculations are not done corrrectly.
 
 @section[#:tag "c3e32"]{Exercise 3.32}
 
-Suppose that we have an and gate whose inputs change from 
+Suppose that we have an and gate whose inputs change from
 @tt{(0, 1)} to @tt{(1, 0)} in the same time segment. This
 means that two procedures setting the output value of the
 gate are added to the agenda. In the first of these procedures,
@@ -1395,11 +1395,11 @@ added.
      (forget-value! a2 me)
      (process-new-value))
    (define (me request)
-     (cond ((eq? request 'I-have-a-value)  
+     (cond ((eq? request 'I-have-a-value)
             (process-new-value))
-           ((eq? request 'I-lost-my-value) 
+           ((eq? request 'I-lost-my-value)
             (process-forget-value))
-           (else 
+           (else
             (error "Unknown request -- ADDER" request))))
    (connect a1 me)
    (connect a2 me)
@@ -1489,7 +1489,7 @@ added.
            'ignored))
      (define (connect new-constraint)
        (if (not (memq new-constraint constraints))
-           (set! constraints 
+           (set! constraints
                  (cons new-constraint constraints)))
        (if (has-value? me)
            (inform-about-value new-constraint))
@@ -2154,30 +2154,30 @@ on it.
        the-empty-stream
        (cons-stream (proc (stream-car s))
                     (stream-map proc (stream-cdr s)))))
- 
+
  (define (stream-for-each proc s)
    (if (stream-null? s)
        'done
        (begin (proc (stream-car s))
               (stream-for-each proc (stream-cdr s)))))
- 
+
  (define (display-stream s)
    (stream-for-each display-line s))
- 
+
  (define (display-line x)
    (newline)
    (display x))
- 
+
  (define (stream-car stream) (car stream))
  (define (stream-cdr stream) (force (cdr stream)))
- 
+
  (define (stream-enumerate-interval low high)
    (if (> low high)
        the-empty-stream
        (cons-stream
         low
         (stream-enumerate-interval (+ low 1) high))))
- 
+
  (define (stream-filter pred stream)
    (cond ((stream-null? stream) the-empty-stream)
          ((pred (stream-car stream))
@@ -2185,7 +2185,7 @@ on it.
                        (stream-filter pred
                                       (stream-cdr stream))))
          (else (stream-filter pred (stream-cdr stream)))))
- 
+
  (define (show x)
    (display-line x)
    x)
@@ -2309,20 +2309,20 @@ is actually a definition of the powers of two. A proof by induction:
  #:eval ev #:hidden
  (define (integers-starting-from n)
    (cons-stream n (integers-starting-from (+ n 1))))
- 
+
  (define integers (integers-starting-from 1))
- 
+
  (define (divisible? x y) (= (remainder x y) 0))
- 
+
  (define no-sevens
    (stream-filter (lambda (x) (not (divisible? x 7)))
                   integers))
- 
+
  (define (fibgen a b)
    (cons-stream a (fibgen b (+ a b))))
- 
+
  (define fibs (fibgen 0 1))
- 
+
  (define (sieve stream)
    (cons-stream
     (stream-car stream)
@@ -2330,32 +2330,32 @@ is actually a definition of the powers of two. A proof by induction:
             (lambda (x)
               (not (divisible? x (stream-car stream)))))
            (stream-cdr stream))))
- 
+
  (define ones (cons-stream 1 ones))
- 
+
  (define (add-streams s1 s2)
    (stream-map + s1 s2))
- 
+
  (define integers-implicitly (cons-stream 1 (add-streams ones integers-implicitly)))
- 
+
  (define fibs-implicitly
    (cons-stream 0
                 (cons-stream 1
                              (add-streams (stream-cdr fibs-implicitly)
                                           fibs-implicitly))))
- 
+
  (define (scale-stream stream factor)
    (stream-map (lambda (x) (* x factor)) stream))
- 
+
  (define double (cons-stream 1 (scale-stream double 2)))
- 
+
  (define (square x) (* x x))
- 
+
  (define primes
    (cons-stream
     2
     (stream-filter prime? (integers-starting-from 3))))
- 
+
  (define (prime? n)
    (define (iter ps)
      (cond ((> (square (stream-car ps))  n) true)
@@ -2496,9 +2496,9 @@ defined as follows:
  (define (mul-series s1 s2)
    (cons-stream (* (stream-car s1)
                    (stream-car s2))
-                (add-streams (scale-stream (stream-cdr s2) 
+                (add-streams (scale-stream (stream-cdr s2)
                                            (stream-car s1))
-                             (mul-series (stream-cdr s1) 
+                             (mul-series (stream-cdr s1)
                                          s2))))
  ]
 
@@ -2512,7 +2512,7 @@ We can use this to verify the identity
        the-empty-stream
        (cons-stream (stream-car s)
                     (take-stream (stream-cdr s) (- n 1)))))
- 
+
  (define sine-cosine-identity
    (add-streams (mul-series sine-series sine-series)
                 (mul-series cosine-series cosine-series)))
@@ -2566,7 +2566,7 @@ This can be expressed succinctly with the definitions
        (mul-series s1 (invert-unit-series s2))))
  ]
 
-We can use @tt{div-series} to define the series for 
+We can use @tt{div-series} to define the series for
 @tt{tan}, which is equivalent to the series for @tt{cosine}
 divided by the series for @tt{sine}:
 
@@ -2635,7 +2635,7 @@ can define an accelerated version of this stream as follows:
      (cons-stream (- s2 (/ (square (- s2 s1))
                            (+ s0 (* -2 s1) s2)))
                   (euler-transform (stream-cdr s)))))
- 
+
  (define ln-stream++ (euler-transform ln-stream))
  ]
 
@@ -2652,7 +2652,7 @@ stream:
  (define (accelerated-sequence transform s)
    (stream-map stream-car
                (make-tableau transform s)))
- 
+
  (define ln-stream# (accelerated-sequence euler-transform ln-stream))
  ]
 
@@ -2686,7 +2686,7 @@ tolerance bounds, we would say that @tt{2} stream values
 have been consumed before reaching this precision. In other
 words, the minimal number of stream values that need to be
 examined before the last two are within tolerance is, of
-course, @tt{2}. (It is merely a convention that the value 
+course, @tt{2}. (It is merely a convention that the value
 @tt{i} denotes the number of values that will have been
 processed after that iteration of @tt{count}).
 
@@ -2797,20 +2797,20 @@ Consider the following incorrect implementation of
 
 For reference, this is the definiton of @tt{interleave}:
 
-@verbatim{
+@racketblock[
 (define (interleave s1 s2)
   (if (stream-null? s1)
       s2
       (cons-stream (stream-car s1)
                    (interleave s2 (stream-cdr s1)))))
-}
+]
 
 Now observe that @tt{stream-cdr} will force the first
 element of the stream:
 
-@verbatim{
+@racketblock[
 (define (stream-cdr stream) (force (cdr stream)))
-}
+]
 
 The second stream passed to @tt{interleave} will be forced.
 Since @tt{pairs} unconditionally evaluates this with
@@ -2964,12 +2964,12 @@ consecutively to mean two or more times in a row).
  (define (weight-cubed p)
    (let ((cube (lambda (x) (* x x x))))
      (+ (cube (car p)) (cube (cadr p)))))
- 
+
  (define (drop-while f s)
    (cond ((stream-null? s) the-empty-stream)
          ((f (stream-car s)) (drop-while f (stream-cdr s)))
          (else s)))
- 
+
  (define (find-consecutive s)
    (if (stream-null? s)
        the-empty-stream
@@ -2983,7 +2983,7 @@ consecutively to mean two or more times in a row).
                                 (find-consecutive (drop-while (lambda (x) (= x first))
                                                               (stream-cdr rest))))
                    (find-consecutive rest)))))))
- 
+
  (define ramanujan-pairs
    (find-consecutive (stream-map weight-cubed
                                  (weighted-pairs weight-cubed integers integers))))
@@ -3020,10 +3020,10 @@ We can then see the one number provided and the five after it:
                                        (drop-while (lambda (x) (= (f x) (f first)))
                                                    (stream-cdr rrest))))
                          (find-three-consecutive-by f g rest)))))))))
- 
+
  (define (weight-squared p)
    (+ (square (car p)) (square (cadr p))))
- 
+
  (define squares-three-ways
    (find-three-consecutive-by
     car
@@ -3213,7 +3213,7 @@ it will have one fewer element.)
    (if (stream-car experiment-stream)
        (next (+ passed 1) failed)
        (next passed (+ failed 1))))
- 
+
  (define (stream-with f) (cons-stream (f) (stream-with f)))
 
  (define (estimate-integral-stream P x1 x2 y1 y2)

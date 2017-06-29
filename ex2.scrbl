@@ -319,13 +319,13 @@ calls @tt{z} on a procedure that returns the first of two arguments given to it.
 
 We can see how this evaluates by substituting:
 
-@verbatim{
+@racketblock[
  (car z)
  (z (lambda (p q) p))
  ((lambda (m) (m x y)) (lambda (p q) p))
  ((lambda (p q) p) x y)
  x
-}
+]
 
 We know that @tt{(car z)} should return @tt{x} by definition, so we can conclude
 that @tt{car} is correct.
@@ -341,13 +341,13 @@ except it passes a procedure returning its second of two arguments.
 
 Using the substitution model to evaluate:
 
-@verbatim{
+@racketblock[
  (cdr z)
  (z (lambda (p q) q))
  ((lambda (m) (m x y)) (lambda (p q) q))
  ((lambda (p q) q) x y)
  y
-}
+]
 
 @section[#:tag "c2e5"]{Exercise 2.5}
 
@@ -368,7 +368,7 @@ Using the substitution model to evaluate:
    (lambda (f) (lambda (x) (f ((n f) x)))))
  ]
 
-@verbatim{
+@racketblock[
  (n f)
  ((lambda (f) (lambda (x) x)) f)
  (lambda (x) x)
@@ -382,13 +382,13 @@ Using the substitution model to evaluate:
 
  (lambda (f) (lambda (x) (f ((n f) x))))
  (lambda (f) (lambda (x) (f x)))
-}
+]
 
-@verbatim{
+@racketblock[
  (define one (lambda (f) (lambda (x) (f x))))
-}
+]
 
-@verbatim{
+@racketblock[
  (n f)
  ((lambda (f) (lambda (x) (f x))) f)
  (lambda (x) (f x))
@@ -402,7 +402,7 @@ Using the substitution model to evaluate:
 
  (lambda (f) (lambda (x) (f ((n f) x))))
  (lambda (f) (lambda (x) (f (f x))))
-}
+]
 
 @examples[
  #:label #f #:eval ev #:no-prompt
@@ -1144,10 +1144,10 @@ of @tt{(cdr s)} in order to add @tt{(car s)} to each of them and append them to 
 subsets of @tt{(cdr s)} to get our answer. The operation of adding @tt{(car s)} to
 a subset of @tt{(cdr s)} is:
 
-@verbatim{
+@racketblock[
  (lambda (subset)
  (append subset (list (car s))))
-}
+]
 
 The complete procedure is below.
 
@@ -1925,15 +1925,15 @@ the left and right halves in the @tt{square-of-four} call:
 
 When evaluating
 
-@verbatim{
+@racketblock[
  (car ''abracadabra)
-}
+]
 
 the expanded evaluation is
 
-@verbatim{
+@racketblock[
  (car (quote (quote abracadabra)))
-}
+]
 
 It is clear from this that @tt{quote} is the corect answer.
 
@@ -2589,17 +2589,17 @@ This sets up the base case of the procedure, which is clearly going to be
 recursive.  We can look at the way @tt{partial-tree} is called to understand
 what the base case means:
 
-@verbatim{
+@racketblock[
  (define (list->tree elements)
  (car (partial-tree elements (length elements))))
-}
+]
 
 So @tt{n} is the number of elements that this call of @tt{partial-tree} is going to
 process. If there are none left, then we evaluate
 
-@verbatim{
+@racketblock[
  (cons '() elts)
-}
+]
 
 and return an empty list (meaning an empty tree -- there are no elements left
 to add) paired with the @tt{elts} we passed to @tt{partial-tree}.
@@ -2615,9 +2615,9 @@ values that we will use to get our result. The first of these is @tt{left-size},
 which is @tt{(n - 1) / 2}. We'll see why we subtract @tt{1} later; for now, just
 understand that this is our value called @tt{left-size}.
 
-@verbatim{
+@racketblock[
  (left-result (partial-tree elts left-size))
-}
+]
 
 The value @tt{left-result} is given the meaning of the tree representation of
 @tt{left-size} elements from @tt{elts}. Instead of creating a sublist with just
@@ -2625,10 +2625,10 @@ this many elements, we use the @tt{n} argument in @tt{partial-tree} to regulate
 how many elements are taken in all of the recursive calls (as seen here --
 we're only turning the first half of the list into a tree).
 
-@verbatim{
+@racketblock[
  (left-tree (car left-result))
  (non-left-elts (cdr left-result))
-}
+]
 
 We know that @tt{partial-tree}, in the base case, returns a pair consisting of
 an empty list and the elements passed to it that weren't used in that base
@@ -2644,9 +2644,9 @@ and @tt{non-left-elts} contain all of our original elements, none of which are
 in @tt{left-tree}. The reasons for this behavior will become clearer in a
 moment, but it is at least plausible that this works.
 
-@verbatim{
+@racketblock[
  (right-size (- n (+ left-size 1)))
-}
+]
 
 This is similar to @tt{left-size}, and is probably the number of elements that
 are going to be in the right-side tree. And again, we see that the size is not
@@ -2654,9 +2654,9 @@ equal to @tt{n} minus @tt{left-size}, but is one less than that. In other words,
 @tt{left-size} and @tt{right-size}, moving inward, leave one element in the middle of
 the list. And what is this used for? We can see in the next line:
 
-@verbatim{
+@racketblock[
  (this-entry (car non-left-elts))
-}
+]
 
 We assign the first element in @tt{non-left-elts} to a new value,
 @tt{this-entry}. It is reasonable to suspect that this is going to be the root
@@ -2666,17 +2666,17 @@ be in either of its subtrees. This is what happens to the first element of
 @tt{elts} in the case considered above, where @tt{n} is @tt{1} -- exactly as we
 would expect.
 
-@verbatim{
+@racketblock[
  (right-result (partial-tree (cdr non-left-elts) right-size))
-}
+]
 
 This computes the right side of the tree, using @tt{right-size} and the elements of
 @tt{non-left-elts} following the root of the tree.
 
-@verbatim{
+@racketblock[
  (right-tree (car right-result))
  (remaining-elts (cdr right-result))
-}
+]
 
 These correspond to the definitions earlier, getting the computed tree and the elements
 not used it in from the pair produced by @tt{partial-tree}.
@@ -2684,9 +2684,9 @@ not used it in from the pair produced by @tt{partial-tree}.
 Having now processed all of the bindings in the @tt{let*} expression, we only have
 the body of the procedure left:
 
-@verbatim{
+@racketblock[
  (cons (make-tree this-entry left-tree right-tree) remaining-elts)
-}
+]
 
 This is just the general case of the result we saw earlier in the base case, and have
 used twice in the procedure so far. By this time, it should be clear how it works.
@@ -3335,7 +3335,7 @@ procedure itself as the entry for this type, as so:
 With this in place, the call to @tt{magnitude} can be expanded like this
 (I've simplified some of the steps for readability):
 
-@verbatim{
+@racketblock[
  (magnitude '(complex (rectangular (3 4))))
  (apply-generic 'magnitude '(complex (rectangular (3 4))))
  (apply (get 'magnitude (type-tag '(complex (rectangular (3 4))))) (contents '(complex (rectangular (3 4)))))
@@ -3345,7 +3345,7 @@ With this in place, the call to @tt{magnitude} can be expanded like this
  (apply-generic 'magnitude '(rectangular (3 4)))
  (apply (get 'magnitude (type-tag '(rectangular (3 4)))) (contents '(rectangular (3 4))))
  (apply (get 'magnitude 'rectangular) (3 4))
-}
+]
 
 @tt{apply-generic} gets called twice, or once for each layer of typing our
 generic @tt{complex} object has. In the first call, @tt{magnitude} dispatches

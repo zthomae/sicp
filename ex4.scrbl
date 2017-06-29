@@ -45,15 +45,15 @@ element is the symbol @tt{call}, followed by the function
 name and all the arguments, we would have to rewrite the
 detection for function application as follows:
 
-@verbatim{
+@racketblock[
 (define (application? exp) (tagged-list? exp 'call))
 (define (operator exp) (cadr exp))
 (define (operands exp) (cddr exp))
-}
+]
 
 And then @tt{eval} would look more like this:
 
-@verbatim{
+@racketblock[
 (define (eval exp env)
   (cond ((self-evaluating? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
@@ -73,13 +73,13 @@ And then @tt{eval} would look more like this:
         ((cond? exp) (eval (cond->if exp) env))
         (else
          (error "Unknown expression type -- EVAL" exp))))
-}
+]
 
 @section[#:tag "c4e3"]{Exercise 4.3}
 
 We can write the new version of @tt{eval} like this:
 
-@verbatim{
+@racketblock[
 (define (eval- exp env)
   (if (self-evaluating? exp)
       (real-exp exp)
@@ -87,16 +87,16 @@ We can write the new version of @tt{eval} like this:
 
 (define exp-type car)
 (define real-exp cdr)
-}
+]
 
 We would then install the various operations into the
 table, e.g.:
 
-@verbatim{
+@racketblock[
 (put 'eval 'variable (lambda (exp env) (lookup-variable-value exp env)))
 (put 'eval 'quoted (lambda (exp env) (text-of-quotation exp)))
 ...
-}
+]
 
 @section[#:tag "c4e4"]{Exercise 4.4}
 
@@ -323,17 +323,17 @@ iteration constructs we are defining here) is to do mutations.
 
 Example:
 
-@verbatim{
+@racketblock[
 (while (> x 0)
        (begin
          (displayln x)
          (set! x (- x 1))
          x))
-}
+]
 
 should translate to:
 
-@verbatim{
+@racketblock[
 (let ()
   (define while-iter
     (lambda (last-value)
@@ -345,7 +345,7 @@ should translate to:
              x))
           last-value)))
   (while-iter false))
-}
+]
 
 @examples[
  #:eval ev #:label #f #:no-prompt
@@ -372,23 +372,23 @@ to a @tt{while} expression.
 
 Example:
 
-@verbatim{
+@racketblock[
 (until (= x 0)
        (begin
          (displayln x)
          (set! x (- x 1))
          x))
-}
+]
 
 should translate to:
 
-@verbatim{
+@racketblock[
 (while (not (= x 0))
        (begin
          (displayln x)
          (set! x (- x 1))
          x))
-}
+]
 
 @examples[
  #:eval ev #:label #f #:no-prompt
@@ -444,22 +444,22 @@ expression is not its main purpose.
 
 Example:
 
-@verbatim{
+@racketblock[
 (for (((x 0) (sum 0))
       (< x 5)
       (begin (set! x (+ x 1)) sum))
   (set! sum (+ sum x y)))
-}
+]
 
 should translate to:
 
-@verbatim{
+@racketblock[
 (let ((x 0) (sum 0))
   (while (< x 5)
          (begin
            (set! sum (+ sum x y))
            (begin (set! x (+ x 1)) sum))))
-}
+]
 
 @examples[
  #:eval ev #:label #f #:no-prompt
@@ -480,7 +480,7 @@ should translate to:
 
 Consider the nested @tt{for} expression below:
 
-@verbatim{
+@racketblock[
 (for (((x 0) (sum 0))
        (< x 5)
        (begin (set! x (+ x 1)) sum))
@@ -488,7 +488,7 @@ Consider the nested @tt{for} expression below:
          (< y 5)
          (begin (set! y (+ y 1)) y))
     (set! sum (+ sum x y))))
-}
+]
 
 Due to how we have constructed the continuing expressions,
 the end result of this expression should be the final
@@ -497,7 +497,7 @@ the end result of this expression should be the final
 If we reduce both @tt{for} expressions to @tt{while}
 expressions, we end up with
 
-@verbatim{
+@racketblock[
 (let ((x 0) (sum 0))
   (while (< x 5)
          (begin
@@ -507,12 +507,12 @@ expressions, we end up with
                       (set! sum (+ sum x y))
                       (begin (set! y (+ y 1)) y))))
            (begin (set! x (+ x 1)) sum))))
-}
+]
 
 And if we reduce both of these @tt{while} expressions,
 we end up with
 
-@verbatim{
+@racketblock[
 (let ((x 0) (sum 0))
   (let ()
     (define while-iter
@@ -536,7 +536,7 @@ we end up with
                  sum)))
             last-value)))
     (while-iter false)))
-}
+]
 
 We can actually evaluate that and see that we get
 the correct answer:
