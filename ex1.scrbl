@@ -235,7 +235,7 @@ First, @tt{(A 1 10)}. First, expanding the arguments to @tt{A} until finding a b
 }
 
 Now, we know that @tt{(A 1 1)} evaluates to @tt{2}. Building on this,
-@tt{(A 0 (A 1 1)} is the same as @tt{(A 0 2)}, which evaluates to @tt{(* 2 y)},
+@tt{(A 0 (A 1 1))} is the same as @tt{(A 0 2)}, which evaluates to @tt{(* 2 y)},
 or @tt{4} in this case. We could use this to substitute in values of calls of @tt{A}
 until finding an answer, but the answer is simpler to find directly. Notice the following:
 
@@ -315,7 +315,7 @@ procedures that evaluate @tt{A} for fixed @tt{x} values.
  (h 1) = (A 2 1) = 2
  (h 2) = (A 2 2) = (A 1 (A 2 1)) = (A 1 2) = 2^2 = 4
  (h 3) = (A 2 3) = 2^(2^4) = 16
- (h 4) = (A 2 4) = 2^(2^(2^4))) = 2^16}
+ (h 4) = (A 2 4) = 2^(2^(2^4)) = 2^16}
 
 Put concisely, @tt{(h n) = 2^(h (dec n))}.
 
