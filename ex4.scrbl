@@ -1025,3 +1025,75 @@ that the attempt to set the initial value will error on
 trying to reference the value of this binding.
 
 @bold{TODO: Environment diagram}
+
+@section[#:tag "c4e21"]{Exercise 4.21}
+
+First off, let's verify that the given expression in fact
+evaluates the factorial of 10:
+
+@examples[
+#:eval ev #:label #f
+(letrec ((fact
+          (lambda (n)
+            (if (= n 1)
+                1
+                (* n (fact (- n 1)))))))
+  (fact 10))
+
+((lambda (n)
+   ((lambda (fact)
+      (fact fact n))
+    (lambda (ft k)
+      (if (= k 1)
+          1
+          (* k (ft ft (- k 1)))))))
+ 10)
+]
+
+This is using a trick known as the Y combinator to call a
+function recursively without giving it an explicit binding
+-- that is, the "name" is supplied by passing the function
+as an argument. One way of describing the "trick" is that
+the name of the function is preserved by passing the function
+to itself -- that way, the function will always have a name
+for itself.
+
+Now let's suppose we have the following function to check
+whether a value is even:
+
+@examples[
+#:eval ev #:label #f
+(define (f x)
+  (define (even? n)
+    (if (= n 0)
+        true
+        (odd? (- n 1))))
+  (define (odd? n)
+    (if (= n 0)
+        false
+        (even? (- n 1))))
+  (even? x))
+(f 1)
+(f 100)
+]
+
+We can write an equivalent version of this without using
+internal definitions by following the lead of the above and
+passing both @tt{even?} and @tt{odd?} to themselves (even
+though only one of them will need to be executed directly,
+the other will be needed if the base case is not yet reached).
+
+Following the template, we can arrive at the following:
+
+@examples[
+#:eval ev #:label #f
+(define (f x)
+  ((lambda (even? odd?)
+     (even? even? odd? x))
+   (lambda (ev? od? n)
+     (if (= n 0) true (od? ev? od? (- n 1))))
+   (lambda (ev? od? n)
+     (if (= n 0) false (ev? ev? od? (- n 1))))))
+(f 1)
+(f 100)
+]
