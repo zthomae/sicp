@@ -883,7 +883,7 @@ The definition of @tt{scan-out-defines} is as follows:
                (map (lambda (d) (list (definition-variable d) '*unassigned*)) defines))
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
-          (make-let unassigned-bindings (append set-expressions body))))))
+          (append (list 'let unassigned-bindings) (append set-expressions body))))))
 ]
 
 I believe that @tt{make-procedure} is the best place to
@@ -891,3 +891,137 @@ transform the body into our new normalized form -- it seems
 better to me that having the body in the form we want is
 best guaranteed when the procedure object is defined, rather
 than (hopefully!) normalizing it when it is accessed.
+
+@section[#:tag "c4e17"]{Exercise 4.17}
+
+@bold{TODO}
+
+@section[#:tag "c4e18"]{Exercise 4.18}
+
+@bold{TODO: Why wouldn't the definition work in both?}
+
+@section[#:tag "c4e19"]{Exercise 4.19}
+
+Consider the following:
+
+@racketblock[
+(let ((a 1))
+  (define (f x)
+    (define b (+ a x))
+    (define a 5)
+    (+ a b))
+  (f 10))
+]
+
+What should the result be? We are given a few options:
+
+@itemlist[
+
+@item{16, because @tt{b} is computed to be 11 (using the
+definition of @tt{a} as 1) and @tt{a} is then reset to 5}
+
+@item{No value -- because the internal definition of @tt{a}
+would be lifted and unassigned at the time the value of
+@tt{b} is computed}
+
+@item{20, because the internal definition are truly
+simultaneous and @tt{a} has the value of 5}
+
+]
+
+I believe the first option is a violation of the semantics
+of the language as I understand them, which state that
+internal definitions are computed simultaneously. But the
+meaning of "simultaneously" is tricky, as supporting the
+third option requires us to traverse the definitions to
+compute the dependencies between them to attempt to reorder
+them such that they can be computed sequentially (as they
+must be in practice).
+
+Alternatively, if the definition of @tt{b} (which references
+that of @tt{a}) were only computed at the point when it is
+used, which takes place after the sequence of internal
+definitions, then the use of the internal definition of
+@tt{a} would almost naturally fall out. However, this would
+not be in line with Scheme's strict evaluation.
+
+It's not clear to me that there is a simple way to decide
+whether a set of internal definitions can be reordered such
+that they can be evaluated sequentially. For a counterexample,
+consider the following:
+
+@racketblock[
+(let ((a 1))
+  (define b a)
+  (define a b)
+  (+ a b))
+]
+
+By the intuition of strictly sequential definitions, one
+could imagine what this might do. But given that the
+internal definitions are done "simultaneously", this
+expression isn't meaningful at all.
+
+In light of this, allowing the procedure to evaluate to an
+error due to the referencing of an unassigned value seems
+to me to be a reasonable thing to do.
+
+@section[#:tag "c4e20"]{Exercise 4.20}
+
+Consider the given use of @tt{letrec}:
+
+@racketblock[
+(define (f x)
+  (letrec ((even?
+            (lambda (n)
+              (if (= n 0)
+                  true
+                  (odd? (- n 1)))))
+           (odd?
+            (lambda (n)
+              (if (= n 0)
+                  false
+                  (even? (- n 1))))))
+    <rest of body of f>))
+]
+
+This is equivalent to the following:
+
+@racketblock[
+(define (f x)
+  (let ((even? '*unassigned*)
+        (odd? '*unassigned*))
+    (set! even?
+          (lambda (n)
+            (if (= n 0)
+                true
+                (odd? (- n 1)))))
+    (set! odd?
+          (lambda (n)
+            (if (= n 0)
+                false
+                (even? (- n 1)))))
+    <rest of body of f>))
+]
+
+We can write a transformation procedure similar to
+@tt{scan-out-defines} as follows:
+
+@racketblock[
+(define (letrec->nested-let exp)
+  (let ((names (let-names exp))
+        (body (let-body exp)))
+    (let ((unassigned-bindings
+           (map (lambda (n) (list n '*unassigned)) names))
+          (set-expressions
+           (map (lambda (p) (make-set (car p) (cdr p))) (let-bindings exp))))
+      (append (list 'let unassigned-bindings) (append set-expressions body)))))
+]
+
+Louis is wrong because, if using a standard @tt{let}
+expression, the definition of @tt{even?} will fail because
+@tt{odd?} is not yet present in the environment, meaning
+that the attempt to set the initial value will error on
+trying to reference the value of this binding.
+
+@bold{TODO: Environment diagram}

@@ -267,6 +267,12 @@
          (v2 e2))
      (+ v1 v2)))
 
+(define l2
+  '(let ((v1 e1)
+         (v2 e2))
+     (+ v1 v2)
+     v2))
+
 (define (make-let bindings . body)
   (append (list 'let bindings) body))
 
@@ -739,9 +745,33 @@
                (map (lambda (d) (list (definition-variable d) '*unassigned*)) defines))
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
-          (make-let unassigned-bindings (append set-expressions body))))))
+          (append (list 'let unassigned-bindings) (append set-expressions body))))))
 
 (define test-inner-definitions-proc-1
   '((define u e1)
     (define v e2)
     e3))
+
+(define (letrec? exp) (tagged-list? exp 'letrec))
+
+(define (letrec->nested-let exp)
+  (let ((names (let-names exp))
+        (body (let-body exp)))
+    (let ((unassigned-bindings
+           (map (lambda (n) (list n '*unassigned)) names))
+          (set-expressions
+           (map (lambda (p) (make-set (car p) (cdr p))) (let-bindings exp))))
+      (append (list 'let unassigned-bindings) (append set-expressions body)))))
+
+(define test-letrec
+  '(letrec ((even?
+             (lambda (n)
+               (if (= n 0)
+                   true
+                   (odd? (- n 1)))))
+            (odd?
+             (lambda (n)
+               (if (= n 0)
+                   false
+                   (even? (- n 1))))))
+     (even? x)))
