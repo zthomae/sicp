@@ -1097,3 +1097,97 @@ Following the template, we can arrive at the following:
 (f 1)
 (f 100)
 ]
+
+@section[#:tag "c4e22"]{Exercise 4.22}
+
+Adding support for @tt{let} expressions in this new
+analyzing interpreter is nearly trivial, because previously
+we supported them by transforming them into a form we
+already supported -- namely, that of an immediately invoked
+anonymous function.
+
+@racketblock[
+(define (analyze exp)
+  (cond ((self-evaluating? exp)
+         (analyze-self-evaluating exp))
+        ((quoted? exp) (analyze-quoted exp))
+        ((variable? exp) (analyze-variable exp))
+        ((assignment? exp) (analyze-assignment exp))
+        ((definition? exp) (analyze-definition exp))
+        ((if? exp) (analyze-if exp))
+        ((lambda? exp) (analyze-lambda exp))
+        ((begin? exp) (analyze-sequence (begin-actions exp)))
+        ((cond? exp) (analyze (cond->if exp)))
+        ((let? exp) (analyze (let->combination exp))) ;; this is the new line
+        ((application? exp) (analyze-application exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+]
+
+I say almost trivial because @tt{scan-out-defines} does not work
+immediately like this, since the procedure has already been analyzed
+at the time when it is called. @bold{TODO: Remove this limitation...}
+
+@section[#:tag "c4e23"]{Exercise 4.23}
+
+Consider the two implementations of @tt{analyze-sequence}:
+
+@racketblock[
+(define (analyze-sequence exps)
+  (define (sequentially proc1 proc2)
+    (lambda (env) (proc1 env) (proc2 env)))
+  (define (loop first-proc rest-procs)
+    (if (null? rest-procs)
+        first-proc
+        (loop (sequentially first-proc (car rest-procs))
+              (cdr rest-procs))))
+  (let ((procs (map analyze exps)))
+    (if (null? procs)
+        (error "Empty sequence -- ANALYZE"))
+    (loop (car procs) (cdr procs))))
+]
+
+@racketblock[
+(define (analyze-sequence exps)
+  (define (execute-sequence procs env)
+    (cond ((null? (cdr procs)) ((car procs) env))
+          (else ((car procs) env)
+                (execute-sequence (cdr procs) env))))
+  (let ((procs (map analyze exps)))
+    (if (null? procs)
+        (error "Empty sequence -- ANALYZE")
+    (lambda (env) (execute-sequence procs env)))))
+]
+
+Suppose we have a body with a single expression. In the
+first variant, @tt{loop} will immediately hit the base case
+and return that (analyzed) expression, to be executed
+directly when being evaluated. In the second variant, the
+base case in @tt{execute-sequence} will similarly
+immediately be hit when the body is evaluated. The key
+difference is that this happens during execution and not
+analysis, as the text says.  In the presence of repeated
+execution, this is a bit suboptimal.
+
+In the case where the body has two expressions, the second
+variant will still defer all work in the analysis
+phase. During evaluation, it will iterate through thef
+sequence of expressions, evaluating each in turn. The first
+variant, however, will construct a new procedure that, when
+given an environment, will first call the first expression
+and then the second. (In the general case, it will chain
+these together, by using the sequenced execution of the first
+two expressions as the new "first expression" in the next
+@tt{loop} iteration.) Again, the second variant is suboptimal
+when a procedure is evaluated more than once.
+
+Another thing to note is that, by doing a list traversal at
+evaluation time, the second variant also has to repeatedly
+check for the end of the list. This is not the case when
+evaluating the sequence in the first variant, as the new
+composed procedure calls exactly what it needs to
+unconditionally.
+
+@section[#:tag "c4e24"]{Exercise 4.24}
+
+@bold{TODO}
