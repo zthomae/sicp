@@ -1,7 +1,12 @@
 #lang sicp
 
-(#%require (only racket/base error)
-           (rename r5rs apply-in-underlying-scheme apply))
+(#%require (rename r5rs apply-in-underlying-scheme apply))
+
+(define (error . args)
+  (newline)
+  (display "ERROR: ")
+  (for-each (lambda (a) (display a) (display " ")) args)
+  (newline))
 
 (define (eval exp env)
   ((analyze exp) env))
