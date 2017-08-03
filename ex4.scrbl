@@ -1191,3 +1191,112 @@ unconditionally.
 @section[#:tag "c4e24"]{Exercise 4.24}
 
 @bold{TODO}
+
+@section[#:tag "c4e25"]{Exercise 4.25}
+
+Suppose we have the following procedure for computing factorials:
+
+@racketblock[
+(define (factorial n)
+  (unless (= n 1)
+    (* n (factorial (- n 1)))
+    1))
+]
+
+Ignoring the fact that this doesn't compute the factorial of
+@tt{0}, this won't work at all with strict evaluation. The
+arguments to the @tt{unless} function will unconditionally
+be evaluated, meaning that the recursive call to
+@tt{factorial} will always be evaluated and the procedure
+will never terminate. With lazy evaluation, we will only
+force the evaluation of the recursive call in the case where
+@tt{n} is not equal to @tt{1}.
+
+@section[#:tag "c4e26"]{Exercise 4.26}
+
+Suppose that Ben Bitdiddle responds to this by saying that
+@tt{unless} could still be defined as a special form when
+evaluating in applicative order. He is correct: You could
+define @tt{unless} to be a syntactic transformation to
+the equivalent @tt{if} expression that swaps the result
+expressions:
+
+@examples[
+#:eval ev #:label #f
+(define-syntax unless
+  (syntax-rules ()
+    ((_ condition alternative consequent)
+     (if condition
+         consequent
+         alternative))))
+
+(define (factorial n)
+  (unless (= n 1)
+    (* n (factorial (- n 1)))
+    1))
+
+(factorial 10)
+]
+
+We're lucky to be able to define special forms ourselves
+in Lisp, but this is not universally true. In many languages,
+the choice of evaluation strategy is something you can only
+get around by the crudest means, if at all.
+
+In fact, one of the reasons why macros in Lisp are so useful
+is because they let us simulate lazy evaluation. One could
+easily argue that using lazy evaluation would be a reasonable
+substitute for macros in many cases. This would also have
+the benefit of allowing contructions like @tt{unless} to be
+first-class values -- note that it is impossible to pass
+@tt{unless}, @tt{if}, or any other special form as an argument,
+for example, because they aren't actually values. If you try
+to evaluate them by themselves, you'll get a syntax error.
+
+@section[#:tag "c4e27"]{Exercise 4.27}
+
+Let's run through the given session in the lazy REPL to
+see an example of how mutation and lazy evaluation can
+interact with one another strangely. Suppose we begin
+with the following:
+
+@racketblock[
+(define count 0)
+
+(define (id x)
+  (set! count (+ count 1))
+  x)
+]
+
+Now we do the following:
+
+@racketblock[
+(define w (id (id 10)))
+]
+
+One thing to note is that, when a definition is evaluated,
+the value being assigned is evaluated. So even before
+we've used the value @tt{w}, the expression of its value
+has been evaluated. This means that one @tt{id}, the outer
+one, has been evaluated, and @tt{count} has been incremented
+once for it.
+
+But what about the inner @tt{id} expression? Remember that
+the argument to @tt{id} is simply passed through -- in other
+words, @tt{(id 10)} would evaluated to @tt{10}. However,
+that expression has not been evaluated yet, because the
+value of @tt{w} hasn't been forced yet. Therefore, the
+value of @tt{count} at this point is @tt{1}.
+
+After we evaluated @tt{w} (which results in @tt{10}, as we
+should have expected), @tt{count} is @tt{2}. Since the
+value of @tt{w} was memoized, every new evaluation of @tt{w}
+will result in no change to @tt{count}.
+
+@section[#:tag "c4e28"]{Exercise 4.28}
+
+One of the changes we made to the evaluator was to make
+@tt{eval} use @tt{actual-value} instead of @tt{eval} on
+the operator when evaluating an application...
+
+@bold{TODO: Finish}
