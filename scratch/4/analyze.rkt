@@ -6,7 +6,13 @@
   (newline)
   (display "ERROR: ")
   (for-each (lambda (a) (display a) (display " ")) args)
-  (newline))
+  (newline)
+  error-value)
+
+(define (error? exp)
+  (tagged-list? exp 'ERROR))
+
+(define error-value (list 'ERROR))
 
 (define (eval exp env)
   ((analyze exp) env))
@@ -14,6 +20,7 @@
 (define (analyze exp)
   (cond ((self-evaluating? exp)
          (analyze-self-evaluating exp))
+        ((error? exp) exp)
         ((quoted? exp) (analyze-quoted exp))
         ((variable? exp) (analyze-variable exp))
         ((assignment? exp) (analyze-assignment exp))
@@ -86,9 +93,16 @@
                            (map (lambda (aproc) (aproc env))
                                 aprocs)))))
 
+(define (any? xs)
+  (if (null? xs)
+      #f
+      (or (car xs) (any? (cdr xs)))))
+
 (define (execute-application proc args)
   (cond ((primitive-procedure? proc)
-         (apply-primitive-procedure proc args))
+         (if (any? (map error? args))
+             error-value
+             (apply-primitive-procedure proc args)))
         ((compound-procedure? proc)
          ((procedure-body proc)
           (extend-environment (procedure-parameters proc)
@@ -335,16 +349,20 @@
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
-  (env-loop env))
+  (if (error? val)
+      error-value
+      (env-loop env)))
 
 (define (define-variable! var val env)
-  (let ((frame (first-frame env)))
-    (define (scan vars vals)
-      (cond ((null? vars) (add-binding-to-frame! var val frame))
-            ((eq? var (car vars)) (set-car! vals val))
-            (else (scan (cdr vars) (cdr vals)))))
-    (scan (frame-variables frame)
-          (frame-values frame))))
+  (if (error? val)
+      error-value
+      (let ((frame (first-frame env)))
+        (define (scan vars vals)
+          (cond ((null? vars) (add-binding-to-frame! var val frame))
+                ((eq? var (car vars)) (set-car! vals val))
+                (else (scan (cdr vars) (cdr vals)))))
+        (scan (frame-variables frame)
+              (frame-values frame)))))
 
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))

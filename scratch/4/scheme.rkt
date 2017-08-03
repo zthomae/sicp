@@ -6,10 +6,17 @@
   (newline)
   (display "ERROR: ")
   (for-each (lambda (a) (display a) (display " ")) args)
-  (newline))
+  (newline)
+  (error-value))
+
+(define (error? exp)
+  (tagged-list? exp 'ERROR))
+
+(define error-value (list 'ERROR))
 
 (define (eval exp env)
   (cond ((self-evaluating? exp) exp)
+        ((error? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp) (text-of-quotation exp))
         ((assignment? exp) (eval-assignment exp env))
@@ -33,9 +40,16 @@
         (else
          (error "Unknown expression type -- EVAL" exp))))
 
+(define (any? xs)
+  (if (null? xs)
+      #f
+      (or (car xs) (any? (cdr xs)))))
+
 (define (apply procedure arguments)
   (cond ((primitive-procedure? procedure)
-         (apply-primitive-procedure procedure arguments))
+         (if (any? (map error? arguments))
+             error-value
+             (apply-primitive-procedure procedure arguments)))
         ((compound-procedure? procedure)
          (eval-sequence
           (procedure-body procedure)
@@ -529,16 +543,20 @@
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
-  (env-loop env))
+  (if (error? val)
+      error-value
+      (env-loop env)))
 
 (define (define-variable! var val env)
-  (let ((frame (first-frame env)))
-    (define (scan vars vals)
-      (cond ((null? vars) (add-binding-to-frame! var val frame))
-            ((eq? var (car vars)) (set-car! vals val))
-            (else (scan (cdr vars) (cdr vals)))))
-    (scan (frame-variables frame)
-          (frame-values frame))))
+  (if (error? val)
+      error-value
+      (let ((frame (first-frame env)))
+        (define (scan vars vals)
+          (cond ((null? vars) (add-binding-to-frame! var val frame))
+                ((eq? var (car vars)) (set-car! vals val))
+                (else (scan (cdr vars) (cdr vals)))))
+        (scan (frame-variables frame)
+              (frame-values frame)))))
 
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
