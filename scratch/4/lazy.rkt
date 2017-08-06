@@ -472,7 +472,7 @@
     (if (null? defines)
         body
         (let ((unassigned-bindings
-               (map (lambda (d) (list (definition-variable d) '(quote *unassigned*))) defines))
+               (map (lambda (d) (list (definition-variable d) ''*unassigned*)) defines))
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
           (list (append (list 'let unassigned-bindings) (append set-expressions body)))))))

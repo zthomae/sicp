@@ -880,7 +880,7 @@ The definition of @tt{scan-out-defines} is as follows:
     (if (null? defines)
         body
         (let ((unassigned-bindings
-               (map (lambda (d) (list (definition-variable d) '(quote *unassigned*))) defines))
+               (map (lambda (d) (list (definition-variable d) ''*unassigned*)) defines))
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
           (list (append (list 'let unassigned-bindings) (append set-expressions body)))))))
@@ -888,7 +888,7 @@ The definition of @tt{scan-out-defines} is as follows:
 
 One thing to note is that the return value is wrapped in a
 list. I got this wrong before. Also of note is the fact
-that the unassigned value is passed as @tt{'(quote *unassigned*)}.
+that the unassigned value is passed as @tt{''*unassigned*}.
 I also got this wrong initially, but it is very important --
 otherwise this is taken to be the variable @tt{*unassigned*}, which
 of course has no value and is not what we want to do.
