@@ -1,6 +1,9 @@
 #lang sicp
 
-(#%require (rename r5rs apply-in-underlying-scheme apply))
+(#%require (rename r5rs apply-in-underlying-scheme apply)
+           (only racket print-as-expression))
+
+(print-as-expression #f)
 
 (define (error . args)
   (newline)
@@ -32,7 +35,7 @@
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
         ((application? exp)
-         (apply (actual-value (operator exp) env)
+         (apply (eval (operator exp) env)
                 (operands exp)
                 env))
         (else

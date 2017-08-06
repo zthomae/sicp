@@ -1,6 +1,9 @@
 #lang sicp
 
-(#%require (rename r5rs apply-in-underlying-scheme apply))
+(#%require (rename r5rs apply-in-underlying-scheme apply)
+           (only racket print-as-expression))
+
+(print-as-expression #f)
 
 (define (error . args)
   (newline)
