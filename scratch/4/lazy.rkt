@@ -57,6 +57,11 @@
          (thunk-value obj))
         (else obj)))
 
+;; (define (force-it obj)
+;;   (if (thunk? obj)
+;;       (actual-value (thunk-exp obj) (thunk-env obj))
+;;       obj))
+
 (define (delay-it exp env)
   (list 'thunk exp env))
 
@@ -80,10 +85,10 @@
   (cond ((primitive-procedure? procedure)
          (let ((args (list-of-arg-values arguments env)))
            (if (any? (map error? args))
-               (list 'ERROR)
+               error-value
                (apply-primitive-procedure
                 procedure
-                (list-of-arg-values arguments env)))))
+                args))))
         ((compound-procedure? procedure)
          (eval-sequence
           (procedure-body procedure)
@@ -392,11 +397,13 @@
         (list 'cons cons)
         (list 'null? null?)
         (list '+ +)
+        (list '- -)
         (list '< <)
         (list '> >)
         (list '= =)
         (list 'true #t)
         (list 'false #f)
+        (list '* *)
         (list '/ /)
         ;; more...
         ))

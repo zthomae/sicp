@@ -1313,3 +1313,40 @@ as follows:
 and therefore both @tt{primitive-procedure?} and
 @tt{compound-procedure?}  will be false, causing an error as
 it does not appear to be a procedure at all.
+
+@section[#:tag "c4e29"]{Exercise 4.29}
+
+A simple program that performs much more slowly without memoization:
+
+@racketblock[
+(define (fib n)
+  (cond ((= n 0) 1)
+        ((= n 1) 1)
+        (else (+ (fib (- n 1)) (fib (- n 2))))))
+
+(define (square x) (* x x))
+
+(square (fib 10))
+]
+
+Now consider the following program:
+
+@racketblock[
+(define count 0)
+
+(define (id x)
+  (set! count (+ count 1))
+  x)
+
+(define (square x) (* x x))
+
+(square (id 10))
+
+count
+]
+
+With memoization, the result is @tt{1} -- @tt{(id 10)} gets
+evaluated, and increments @tt{count}, only once, even though
+@tt{square} references its value twice. However, without
+memoization, @tt{count} is actually @tt{2}, because @tt{x} is
+referenced by name twice in the body of @tt{square}.
