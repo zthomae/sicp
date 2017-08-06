@@ -1350,3 +1350,82 @@ evaluated, and increments @tt{count}, only once, even though
 @tt{square} references its value twice. However, without
 memoization, @tt{count} is actually @tt{2}, because @tt{x} is
 referenced by name twice in the body of @tt{square}.
+
+@section[#:tag "c4e30"]{Exercise 4.30}
+
+Consider the @tt{for-each} procedure:
+
+@racketblock[
+(define (for-each proc items)
+  (if (null? items)
+      'done
+      (begin (proc (car items))
+             (for-each proc (cdr items)))))
+]
+
+Ben is calling is like so, and claims that its side effects are
+performed:
+
+@racketblock[
+(for-each (lambda (x) (newline) (display x))
+          (list 57 321 88))
+]
+
+He very well may be right, because these functions are
+not being passed side-effectful operation as arguments.
+
+However, I would claim that this only works correctly given
+certain assumptions about how the @tt{newline} and
+@tt{display} functions are implemented in our
+evaluator. Remember that the only difference between our
+original evaluator and this one is that compound procedures
+are non-strict in their arguments. This leaves open the case
+where side-effectful operations could be passed as arguments
+to functions, in which case they well may not be
+forced. Consider the two following functions:
+
+@racketblock[
+(define (p1 x)
+  (set! x (cons x '(2)))
+  x)
+
+(define (p2 x)
+  (let ((p (lambda (e) e x)))
+    (p (set! x (cons x '(2))))))
+]
+
+With our current evaluator, @tt{(p1 1)} creates the
+@tt{cons} cell @tt{(1 . 2)} and @tt{(p2 1)} does not. With
+Cy's proposed change, they both do. This is because @tt{p1}
+evaluates its side effect as one of a sequence of
+expressions in the function definition, while with @tt{p2}
+the side-effecting computation binds to a new value @tt{e}
+that is itself evaluated, but not forced, by the inner
+procedure @tt{p}, leaving @tt{x} unchanged.
+
+Cy is right that, if the given @tt{for-each} example works
+in the original evaluator, it will continue to work in
+his -- if @tt{eval} is enough to force a side effect, then
+@tt{actual-value} will not change this. However, it would not
+be right to say that all @tt{for-each} calls will be handled
+identically. Consider the following:
+
+@racketblock[
+(define count 0)
+
+(define (id x) (set! count (+ count 1)) x)
+
+(define (perform x) x 'ok)
+
+(for-each (lambda (x) (perform (id x))) '(1 2 3))
+
+count
+]
+
+Under the original evaluator, @tt{count} will still be
+@tt{0}, but with Cy's change, it will be @tt{3}.
+
+Laziness and side effects being mixed makes me very
+uncomfortable, but at the moment, I think Cy's change
+might be more predictable for thinking about when (or
+whether) side effects occur.
