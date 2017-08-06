@@ -771,7 +771,7 @@
                (map (lambda (d) (list (definition-variable d) '*unassigned*)) defines))
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
-          (append (list 'let unassigned-bindings) (append set-expressions body))))))
+          (list (append (list 'let unassigned-bindings) (append set-expressions body)))))))
 
 (define test-inner-definitions-proc-1
   '((define u e1)

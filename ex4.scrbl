@@ -883,8 +883,11 @@ The definition of @tt{scan-out-defines} is as follows:
                (map (lambda (d) (list (definition-variable d) '*unassigned*)) defines))
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
-          (append (list 'let unassigned-bindings) (append set-expressions body))))))
+          (list (append (list 'let unassigned-bindings) (append set-expressions body)))))))
 ]
+
+One thing to note is that the return value is wrapped in a
+list. I got this wrong before.
 
 I believe that @tt{make-procedure} is the best place to
 transform the body into our new normalized form -- it seems
