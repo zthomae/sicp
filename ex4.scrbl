@@ -1397,8 +1397,10 @@ forced. Consider the two following functions:
   x)
 
 (define (p2 x)
-  (let ((p (lambda (e) e x)))
-    (p (set! x (cons x '(2))))))
+  (define (p e)
+    e
+    x)
+  (p (set! x (cons x '(2)))))
 ]
 
 With our current evaluator, @tt{(p1 1)} creates the
