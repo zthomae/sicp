@@ -35,7 +35,7 @@
          (eval-sequence (begin-actions exp) env))
         ((cond? exp) (eval (cond->if exp) env))
         ((application? exp)
-         (apply (eval (operator exp) env)
+         (apply (actual-value (operator exp) env)
                 (operands exp)
                 env))
         (else
@@ -93,7 +93,7 @@
            (procedure-environment procedure))))
         (else
          (error
-          ("Unknown procedure type -- APPLY" procedure)))))
+          "Unknown procedure type -- APPLY" procedure))))
 
 (define (list-of-arg-values exps env)
   (if (no-operands? exps)
@@ -397,6 +397,7 @@
         (list '= =)
         (list 'true #t)
         (list 'false #f)
+        (list '/ /)
         ;; more...
         ))
 

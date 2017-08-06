@@ -1297,6 +1297,19 @@ will result in no change to @tt{count}.
 
 One of the changes we made to the evaluator was to make
 @tt{eval} use @tt{actual-value} instead of @tt{eval} on
-the operator when evaluating an application...
+the operator when evaluating an application. This is
+necessary, as the book says, because the operator needs to
+be forced before being passed to the @tt{apply} function
+before it can be distinguished as a primitive or compound
+procedure and correctly applied. A simple test case is
+as follows:
 
-@bold{TODO: Finish}
+@racketblock[
+(define (f g x) (g x))
+(g + 1)
+]
+
+@tt{+} will be a thunk when passed to the @tt{apply} method,
+and therefore both @tt{primitive-procedure?} and
+@tt{compound-procedure?}  will be false, causing an error as
+it does not appear to be a procedure at all.
