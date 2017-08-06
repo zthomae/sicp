@@ -1438,3 +1438,127 @@ Laziness and side effects being mixed makes me very
 uncomfortable, but at the moment, I think Cy's change
 might be more predictable for thinking about when (or
 whether) side effects occur.
+
+@section[#:tag "c4e31"]{Exercise 4.31}
+
+Suppose we want to give the user the option to choose
+whether function parameters are strict or lazy, and
+whether lazy parameters are memoized or not. This
+is proposed with an example of new @tt{define} syntax:
+
+@racketblock[
+(define (f a (b lazy) c (d lazy-memo))
+  ...)
+]
+
+However, I think an unstated assumption is that this
+feature would also apply to anonymous functions (not
+in the least because @tt{define}s are evaluated by
+transforming their bodies into @tt{lambda}s). So,
+the way that we are going to proceed is as follows:
+
+@itemlist[
+@item{The functions for creating procedures will not change.
+          All the information about how the parameters are
+          supposed to be handled are in the parameter lists.}
+@item{A new function for getting argument values will be created
+        for compound procedures. This will expect the arguments
+        to be a list of lists, where the first element is the
+        expression and the second is the type dictating how lazily
+        it is to be evaluated. This is one of @tt{'strict},
+        @tt{'lazy}, or @tt{'lazy-memo}.}
+@item{Since the parameter lists of the procedure store the types
+            of each parameter (or nothing, if the parameter is strict),
+            we can zip along it and pair each argument expression with
+            the type very easily.}
+]
+
+The code changes are as follows. First, our new procedures:
+
+@racketblock[
+(define (delay-it-memo exp env)
+  (list 'thunk-memo exp env))
+
+(define (memo-thunk? obj)
+  (tagged-list? obj 'thunk-memo))
+
+(define (is-strict-param? p) (symbol? p))
+(define (is-lazy-param? p) (and (pair? p) (eq? (parameter-type p) 'lazy)))
+(define (is-lazy-memo-param? p) (and (pair? p) (eq? (parameter-type p) 'lazy-memo)))
+
+(define (parameter-name p) (if (pair? p) (car p) p))
+(define (parameter-type p) (if (pair? p) (cadr p) 'strict))
+
+(define (zip-with-types parameters arguments)
+  (define (loop params args)
+    (if (null? params)
+        '()
+        (cons (list (car args) (parameter-type (car params)))
+              (loop (cdr params) (cdr args)))))
+  (loop parameters arguments))
+
+(define (argument-exp exp) (car exp))
+(define (argument-type exp) (cadr exp))
+
+(define (list-of-mixed-arg-values exps env)
+  (if (no-operands? exps)
+      '()
+      (let* ((first (first-operand exps))
+             (exp (argument-exp first))
+             (type (argument-type first))
+             (next-value
+              (cond ((eq? type 'strict) (actual-value exp env))
+                    ((eq? type 'lazy) (delay-it exp env))
+                    ((eq? type 'lazy-memo) (delay-it-memo exp env))
+                    (else (error "Unknown laziness type -- LIST-OF-MIXED-ARG-VALUES" first)))))
+        (cons next-value (list-of-mixed-arg-values (rest-operands exps)
+                                                   env)))))
+]
+
+Next, we change the evaluation strategy for compound
+procedures in @tt{apply}. The only difference is in
+the first two arguments passed to @tt{extend-environment}:
+
+@racketblock[
+(define (apply procedure arguments env)
+  (cond ((primitive-procedure? procedure)
+         (let ((args (list-of-arg-values arguments env)))
+           (if (any? (map error? args))
+               error-value
+               (apply-primitive-procedure
+                procedure
+                args))))
+        ((compound-procedure? procedure)
+         (eval-sequence
+          (procedure-body procedure)
+          (extend-environment
+           (map parameter-name (procedure-parameters procedure))
+           (list-of-mixed-arg-values (zip-with-types (procedure-parameters procedure) arguments) env)
+           (procedure-environment procedure))))
+        (else
+         (error
+          "Unknown procedure type -- APPLY" procedure))))
+]
+
+Lastly, @tt{force-it} needs to force memoized and non-memoized
+thunks differently:
+
+@racketblock[
+(define (force-it obj)
+  (cond ((memo-thunk? obj)
+         (let ((result (actual-value
+                        (thunk-exp obj)
+                        (thunk-env obj))))
+           (set-car! obj 'evaluated-thunk)
+           (set-car! (cdr obj) result)
+           (set-cdr! (cdr obj) '())
+           result))
+        ((evaluated-thunk? obj)
+         (thunk-value obj))
+        ((thunk? obj)
+         (actual-value (thunk-exp obj) (thunk-env obj)))
+        (else obj)))
+]
+
+This is all that's required to make it possible to specify
+the laziness of any parameter to a function.

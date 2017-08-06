@@ -45,7 +45,7 @@
   (force-it (eval exp env)))
 
 (define (force-it obj)
-  (cond ((thunk? obj)
+  (cond ((memo-thunk? obj)
          (let ((result (actual-value
                         (thunk-exp obj)
                         (thunk-env obj))))
@@ -55,6 +55,8 @@
            result))
         ((evaluated-thunk? obj)
          (thunk-value obj))
+        ((thunk? obj)
+         (actual-value (thunk-exp obj) (thunk-env obj)))
         (else obj)))
 
 ;; (define (force-it obj)
@@ -67,6 +69,12 @@
 
 (define (thunk? obj)
   (tagged-list? obj 'thunk))
+
+(define (delay-it-memo exp env)
+  (list 'thunk-memo exp env))
+
+(define (memo-thunk? obj)
+  (tagged-list? obj 'thunk-memo))
 
 (define (thunk-exp thunk) (cadr thunk))
 (define (thunk-env thunk) (caddr thunk))
@@ -93,12 +101,44 @@
          (eval-sequence
           (procedure-body procedure)
           (extend-environment
-           (procedure-parameters procedure)
-           (list-of-delayed-args arguments env)
+           (map parameter-name (procedure-parameters procedure))
+           (list-of-mixed-arg-values (zip-with-types (procedure-parameters procedure) arguments) env)
            (procedure-environment procedure))))
         (else
          (error
           "Unknown procedure type -- APPLY" procedure))))
+
+(define (is-strict-param? p) (symbol? p))
+(define (is-lazy-param? p) (and (pair? p) (eq? (parameter-type p) 'lazy)))
+(define (is-lazy-memo-param? p) (and (pair? p) (eq? (parameter-type p) 'lazy-memo)))
+
+(define (parameter-name p) (if (pair? p) (car p) p))
+(define (parameter-type p) (if (pair? p) (cadr p) 'strict))
+
+(define (zip-with-types parameters arguments)
+  (define (loop params args)
+    (if (null? params)
+        '()
+        (cons (list (car args) (parameter-type (car params)))
+              (loop (cdr params) (cdr args)))))
+  (loop parameters arguments))
+
+(define (argument-exp exp) (car exp))
+(define (argument-type exp) (cadr exp))
+
+(define (list-of-mixed-arg-values exps env)
+  (if (no-operands? exps)
+      '()
+      (let* ((first (first-operand exps))
+             (exp (argument-exp first))
+             (type (argument-type first))
+             (next-value
+              (cond ((eq? type 'strict) (actual-value exp env))
+                    ((eq? type 'lazy) (delay-it exp env))
+                    ((eq? type 'lazy-memo) (delay-it-memo exp env))
+                    (else (error "Unknown laziness type -- LIST-OF-MIXED-ARG-VALUES" first)))))
+        (cons next-value (list-of-mixed-arg-values (rest-operands exps)
+                                                   env)))))
 
 (define (list-of-arg-values exps env)
   (if (no-operands? exps)
