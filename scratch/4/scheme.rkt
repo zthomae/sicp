@@ -7,7 +7,7 @@
   (display "ERROR: ")
   (for-each (lambda (a) (display a) (display " ")) args)
   (newline)
-  (error-value))
+  error-value)
 
 (define (error? exp)
   (tagged-list? exp 'ERROR))
