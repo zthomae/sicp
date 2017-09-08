@@ -1562,3 +1562,30 @@ thunks differently:
 
 This is all that's required to make it possible to specify
 the laziness of any parameter to a function.
+
+@section[#:tag "c4e32"]{Exercise 4.32}
+
+One thing you can do when @tt{cons} is lazy in both arguments
+that you couldn't do with the streams from earlier is do
+computations on the "spine" of a list -- that is, ask for
+questions such as the length -- without evaluating any of
+the values in that list. That means that you could have a
+list entirely filled with expression dividing by zero and
+compute the length of it anyway. This may be a contrived
+example, but you could also imagine a situation where the
+values in a list are expensive to compute, and now having a
+general way to handle that list without forcing any of the
+list values that you don't need to use.
+
+An obvious counterpoint is that you can already do this
+without lazy evaluation, as long as you manually "thunk" the
+list items yourself. That would allow you to control when
+the list items are evaluated, but naively wrapping the
+values in functions of no arguments would not allow you
+to memoize the computed values. So you'll have to define a
+slightly more sophisticated representation that mutates
+itself to return the computed result once it has been
+evaluate, even though this facility could be supported
+directly by the language without too much trouble.
+
+@section[#:tag "c4e33"]{Exercise 4.33}
