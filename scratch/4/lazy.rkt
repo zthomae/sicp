@@ -21,7 +21,7 @@
   (cond ((self-evaluating? exp) exp)
         ((error? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
-        ((quoted? exp) (text-of-quotation exp))
+        ((quoted? exp) (eval (transformed-quotation exp) env))
         ((assignment? exp) (eval-assignment exp env))
         ((definition? exp) (eval-definition exp env))
         ((let*? exp) (eval (let*->nested-lets exp) env))
@@ -192,7 +192,14 @@
 (define (quoted? exp)
   (tagged-list? exp 'quote))
 
-(define (text-of-quotation exp) (cadr exp))
+(define (transformed-quotation exp)
+  (accumulate (lambda (next acc) (list 'cons next acc)) nil (cadr exp)))
+
+(define (accumulate op initial sequence)
+  (if (null? sequence)
+      initial
+      (op (car sequence)
+          (accumulate op initial (cdr sequence)))))
 
 (define (tagged-list? exp tag)
   (if (pair? exp)
