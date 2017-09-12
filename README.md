@@ -16,6 +16,8 @@ would learn more by doing so.
 
 ## Setup
 
+### Notice: This is only tested on Racket 6.8. There are issues generating the document using later versions.
+
 In order to build the solutions, you need the [SICP package](https://github.com/sicp-lang/sicp):
 
 ```
