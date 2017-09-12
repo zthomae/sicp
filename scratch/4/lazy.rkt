@@ -432,10 +432,7 @@
 (define (primitive-implementation proc) (cadr proc))
 
 (define primitive-procedures
-  (list (list 'car car)
-        (list 'cdr cdr)
-        (list 'cons cons)
-        (list 'null? null?)
+  (list (list 'null? null?)
         (list '+ +)
         (list '- -)
         (list '< <)
@@ -454,15 +451,17 @@
   (map (lambda (proc) (list 'primitive (cadr proc)))
        primitive-procedures))
 
-(define (setup-environment)
-  (let ((initial-env
-         (extend-environment (primitive-procedure-names)
-                             (primitive-procedure-objects)
-                             the-empty-environment)))
-    (define-variable! 'true true initial-env)
-    (define-variable! 'false false initial-env)
-    initial-env))
-(define the-global-environment (setup-environment))
+(define (setup-non-primitives initial-env)
+  (eval '(define (cons (x lazy) (y lazy))
+             (lambda ((m lazy)) (m x y)))
+          initial-env)
+  (eval '(define (car (z lazy))
+           (z (lambda ((p lazy) (q lazy)) p)))
+        initial-env)
+  (eval '(define (cdr (z lazy))
+           (z (lambda ((p lazy) (q lazy)) q)))
+        initial-env)
+  initial-env)
 
 (define (apply-primitive-procedure proc args)
   (apply-in-underlying-scheme
@@ -470,14 +469,6 @@
 
 (define input-prompt ";;; L-Eval input:")
 (define output-prompt ";;; L-Eval value:")
-
-(define (driver-loop)
-  (prompt-for-input input-prompt)
-  (let ((input (read)))
-    (let ((output (actual-value input the-global-environment)))
-      (announce-output output-prompt)
-      (user-print output)))
-  (driver-loop))
 
 (define (prompt-for-input string)
   (newline) (newline) (display string) (newline))
@@ -525,3 +516,20 @@
           (set-expressions
            (map (lambda (p) (make-set (car p) (cdr p))) (let-bindings exp))))
       (append (list 'let unassigned-bindings) (append set-expressions body)))))
+
+(define (setup-environment)
+  (let ((initial-env
+         (extend-environment (primitive-procedure-names)
+                             (primitive-procedure-objects)
+                             the-empty-environment)))
+    (setup-non-primitives initial-env)))
+
+(define the-global-environment (setup-environment))
+
+(define (driver-loop)
+  (prompt-for-input input-prompt)
+  (let ((input (read)))
+    (let ((output (actual-value input the-global-environment)))
+      (announce-output output-prompt)
+      (user-print output)))
+  (driver-loop))
