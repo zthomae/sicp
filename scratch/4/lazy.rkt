@@ -197,7 +197,7 @@
   (tagged-list? exp 'quote))
 
 (define (transformed-quotation exp)
-  (accumulate (lambda (next acc) (list 'cons next acc)) nil exp))
+  (accumulate (lambda (next acc) (list 'cons (list 'quote next) acc)) nil exp))
 
 (define (accumulate op initial sequence)
   (if (null? sequence)
