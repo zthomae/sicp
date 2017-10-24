@@ -1589,3 +1589,32 @@ evaluate, even though this facility could be supported
 directly by the language without too much trouble.
 
 @section[#:tag "c4e33"]{Exercise 4.33}
+
+For the time being, quoted expressions will be turned into
+lazy lists via a syntactic transformation. It gets installed
+via a modified case in @tt{eval}:
+
+@racketblock[
+((quoted? exp)
+ (let ((rest (cadr exp)))
+   (if (list? rest)
+       (eval (transformed-quotation rest) env)
+       rest)))
+]
+
+@tt{transformed-quotation} is not a very difficult function --
+essentially, it's a left fold (or an @tt{accumulate}) over the
+quoted expression that @tt{quote}s every atom in the list (so as
+not to evaluate them) or recursively calls itself on lists. The
+expression that ends up being constructed is that of a list being
+contructed via nested @tt{cons}es.
+
+@racketblock[
+(define (transformed-quotation exp)
+  (accumulate (lambda (next acc)
+                (list 'cons
+                      (if (list? next) (transformed-quotation next) (list 'quote next))
+                      acc))
+              nil
+              exp))
+]
