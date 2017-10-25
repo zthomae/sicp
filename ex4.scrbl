@@ -1618,3 +1618,33 @@ contructed via nested @tt{cons}es.
               nil
               exp))
 ]
+
+@section[#:tag "c4e34"]{Exercise 4.34}
+
+@bold{I have not solved this yet. This is an outline of what I would like to do.}
+
+To put aside an issue right at the start, I'm not going to
+do anything special to "safely" print infinitely (or merely
+very) long lists, because I don't think it's an
+interpreter's job to do this for me. The correct solution,
+if this were a real interpreter, would be to support
+interrupting the printing with a standard shell interrupt.
+
+I think the most natural way to handle this issue is to
+interpret the printing of a lazy list as fully forcing it.
+Obviously we can't force lazy lists everywhere -- they
+wouldn't be lazy lists anymore -- but it seems strange
+to me that a list would be evaluated (in full, due to the
+above) only for the purposes of printing.
+
+@tt{cons}, @tt{car}, and @tt{cdr} should all be memoizing.
+This is especially important for @tt{cons}, as there
+would be little benefit to forcing the list expression if
+it were not.
+
+This behavior should also be fully transparent and hidden
+from the user. That is, augmenting our environment with
+new helper procedures should not be allowed. I believe that
+this implies that we have to create a new procedure type
+that can only be installed in our environment with internal
+procedures.
