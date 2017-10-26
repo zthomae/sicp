@@ -1648,3 +1648,41 @@ new helper procedures should not be allowed. I believe that
 this implies that we have to create a new procedure type
 that can only be installed in our environment with internal
 procedures.
+
+@section[#:tag "c4e35"]{Exercise 4.35}
+
+I'm choosing that @tt{an-integer-between} should be inclusive
+with the lower bound and exclusive on the right. I'm also
+treating any case where the first argument is not lower than
+the second as a failure, because then a natural solution falls
+out:
+
+@racketblock[
+(define (an-integer-between i j)
+  (require (< i j))
+  (amb i (an-integer-between (+ i 1) j)))
+]
+
+@section[#:tag "c4e36"]{Exercise 4.36}
+
+Consider the proposed procedure for generating all Pythagorean triples:
+
+@racketblock[
+(define (pythagorean-triples)
+  (let ((i (an-integer-starting-from 1))
+        (j (an-integer-starting-from i))
+        (k (an-integer-starting-from j)))
+    (require (= (+ (* i i) (* j j)) (* k k)))
+    (list i j k)))
+]
+
+Using @tt{an-integer-starting-from} in place of @tt{an-integer-between}
+in the given procedure for computing Pythagorean triples would not
+suffice because, like with the infinite streams seen earlier, we would
+only be able to produce Pythagorean triples starting from a fixed
+@tt{i} and @tt{j}. This is because @tt{an-integer-starting-from}
+produces an infinite number of values, and our backtracking will always
+have us try again with the next value of @tt{k}. Like before, we need
+to interleave these values.
+
+@bold{TODO: Finish}
