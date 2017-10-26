@@ -1665,7 +1665,8 @@ out:
 
 @section[#:tag "c4e36"]{Exercise 4.36}
 
-Consider the proposed procedure for generating all Pythagorean triples:
+Consider the proposed procedure for generating all
+Pythagorean triples:
 
 @racketblock[
 (define (pythagorean-triples)
@@ -1676,13 +1677,42 @@ Consider the proposed procedure for generating all Pythagorean triples:
     (list i j k)))
 ]
 
-Using @tt{an-integer-starting-from} in place of @tt{an-integer-between}
-in the given procedure for computing Pythagorean triples would not
-suffice because, like with the infinite streams seen earlier, we would
-only be able to produce Pythagorean triples starting from a fixed
-@tt{i} and @tt{j}. This is because @tt{an-integer-starting-from}
-produces an infinite number of values, and our backtracking will always
-have us try again with the next value of @tt{k}. Like before, we need
-to interleave these values.
+Using @tt{an-integer-starting-from} in place of
+@tt{an-integer-between} in the given procedure for computing
+Pythagorean triples would not suffice because, like with the
+infinite streams seen earlier, we would only be able to
+produce Pythagorean triples starting from a fixed @tt{i} and
+@tt{j}. This is because @tt{an-integer-starting-from}
+produces an infinite number of values, and our backtracking
+will always have us try again with the next value of
+@tt{k}. Like before, we need to interleave these values.
 
-@bold{TODO: Finish}
+However, the kind of interleaving we did in the streams
+chapter isn't going to work here, because the only decision
+we can revisit is the last one we've made. We need to
+constrain the inner loops while allowing the outer loop to
+generate toward infinity.
+
+Another way of thinking about this is that we need to find a
+global ordering for all Pythagorean triples that is
+parametized on a single value. A natural choice for this is
+the value of @tt{k} -- by definition, we know that the
+values of @tt{i} and @tt{j} have to be integers between
+@tt{1} and @tt{k}, and we can generate them sequentially as
+in the correct procedure for generating bounded Pythagorean
+triples. Since the nondeterministic expressions generating
+@tt{i} and @tt{j} values are guaranteed to fail, we know
+that all possible values of @tt{k} will eventually be
+considered, and that all Pythagorean triples will eventually
+be found.
+
+@racketblock[
+(define (pythagorean-triples)
+  (let ((k (an-integer-starting-from 1)))
+    (let ((i (an-integer-between 1 k)))
+      (let ((j (an-integer-between i k)))
+        (require (= (+ (* i i) (* j j)) (* k k)))
+        (list i j k)))))
+]
+
+@section[#:tag "c4e37"]{Exercise 4.37}
