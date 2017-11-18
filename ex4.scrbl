@@ -1772,3 +1772,141 @@ will be considered -- any value of @tt{k} such that @tt{k^2}
 is greater than @tt{high^2} is not accepted. Therefore, we
 can trust that the second algorithm is correct, while also
 being significantly more efficient than the first.
+
+@section[#:tag "c4e38"]{Exercise 4.38}
+
+There are five solutions to the modified problem:
+
+@verbatim{
+;;; Amb-Eval input:
+(multiple-dwelling-2)
+
+;;; Starting a new problem
+;;; Amb-Eval value:
+((baker 1) (cooper 2) (fletcher 4) (miller 3) (smith 5))
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+((baker 1) (cooper 2) (fletcher 4) (miller 5) (smith 3))
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+((baker 1) (cooper 4) (fletcher 2) (miller 5) (smith 3))
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+((baker 3) (cooper 4) (fletcher 2) (miller 5) (smith 1))
+
+;;; Amb-Eval input:
+try-again
+
+;;; There are no more values of
+(multiple-dwelling-2)
+}
+
+@section[#:tag "c4e39"]{Exercise 4.39}
+
+Changing the order in which the restrictions are checked
+does not change the answer(s) that are found. This is
+intuitively obvious -- the same values are tested, and the
+set of restrictions that are checked is the same, so all
+the sets of values that satisfy all of the restrictions
+must be the same no matter what order they are checked in.
+
+However, the order that the restrictions are checked in
+@italic{does} have an effect on the amount of time it may
+take to find an answer. The biggest optimization to be found
+is in moving the distinctness requirement to the end. The
+logic for this move is that this operation is vastly more
+expensive to check than any of the other requirements,
+and therefore should be tested as few times as possible. If
+we exhaust the rest of requirements first, then the number
+of times that @tt{distinct?} is called is as low as it could
+possibly be.
+
+For a more limited optimization, consider the fact that one
+of the first checks is that @tt{cooper} is not equal to
+@tt{1}. @tt{cooper} is the second value generated, which
+means that three other sets need to be tested to exhaustion
+before @tt{cooper} gets a passing value.
+
+For arbitrary programs, finding the optimal order to test
+requirements in may be very difficult. However, the order
+that the requirements for participants are being tested in
+in this program is (almost) the same as the order in which
+those participants were assigned values. If, before the
+distinctness check, we simply reversed the order in which
+the requirements were checked, we would do much better,
+and if we moved the requirement for @tt{fletcher} and
+@tt{cooper} not to be within one of each other to be after
+the check that @tt{miller} is not above @tt{cooper}, we
+would be even better at finding the one solution to the
+problem quickly.
+
+@section[#:tag "c4e40"]{Exercise 4.40}
+
+There are @tt{5^5 = 3125} non-unique assignments of
+floors to residents and only @tt{5! = 120} unique
+assignments. This means that the vast majority
+of the assignments that we will test, even ignoring
+the other requirements in the problem, will be failures.
+In addition to reducing the number of times we test
+for distinctness, we should be reducing the search space
+by testing our conditions as each assignment is generated,
+rather than after we have constructed a full assignment.
+
+Borrowing the order of the requirements from the original
+solution (minus @tt{distinct?}, which is moved to the
+end), we arrive at the following program:
+
+@racketblock[
+(define (multiple-dwelling-3)
+  (let ((baker (amb 1 2 3 4 5)))
+    (require (not (= baker 5)))
+    (let ((cooper (amb 1 2 3 4 5)))
+      (require (not (= cooper 1)))
+      (let ((fletcher (amb 1 2 3 4 5)))
+        (require (not (= fletcher 5)))
+        (require (not (= fletcher 1)))
+        (require (not (= (abs (- fletcher cooper)) 1)))
+        (let ((miller (amb 1 2 3 4 5)))
+          (require (> miller cooper))
+          (let ((smith (amb 1 2 3 4 5)))
+            (require (not (= (abs (- smith fletcher)) 1)))
+            (require
+             (distinct? (list baker cooper fletcher miller smith)))
+            (list (list 'baker baker)
+                  (list 'cooper cooper)
+                  (list 'fletcher fletcher)
+                  (list 'miller miller)
+                  (list 'smith smith))))))))
+]
+
+We can see that it generates the correct answer:
+
+@verbatim{
+;;; Amb-Eval input:
+(multiple-dwelling-3)
+
+;;; Starting a new problem
+;;; Amb-Eval value:
+((baker 3) (cooper 2) (fletcher 4) (miller 5) (smith 1))
+
+;;; Amb-Eval input:
+try-again
+
+;;; There are no more values of
+(multiple-dwelling-3)
+}
