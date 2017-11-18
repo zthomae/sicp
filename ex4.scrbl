@@ -1716,3 +1716,59 @@ be found.
 ]
 
 @section[#:tag "c4e37"]{Exercise 4.37}
+
+Consider the two following procedures for computing
+Pythagorean triples with high and low bounds:
+
+@racketblock[
+(define (a-pythagorean-triple-between low high)
+  (let ((i (an-integer-between low high)))
+    (let ((j (an-integer-between i high)))
+      (let ((k (an-integer-between j high)))
+        (require (= (+ (* i i) (* j j)) (* k k)))
+        (list i j k)))))
+]
+
+@racketblock[
+(define (a-pythagorean-triple-between low high)
+  (let ((i (an-integer-between low high))
+        (hsq (* high high)))
+    (let ((j (an-integer-between i high)))
+      (let ((ksq (+ (* i i) (* j j))))
+        (require (>= hsq ksq))
+        (let ((k (sqrt ksq)))
+          (require (integer? k))
+          (list i j k))))))
+]
+
+The former method is naive and straightforward, iterating
+through all of the possibilities for @tt{i}, @tt{j}, and
+@tt{k} and testing whether the equality holds. This is very
+inefficient, requiring on the order of @tt{O(n^3)}
+operations.
+
+The alternative solution is more clever. First, it acts on
+the fact that it isn't necessary to test more than a single
+potential @tt{k} value after @tt{i} and @tt{j} are fixed --
+there's only one sum to their squares, and the square root
+of that is either an integer or not. Doing this cuts a power
+of @tt{n} off of the time complexity.
+
+However, in order for this to work, you need to know when to
+stop testing values. However, this is also easily done -- we
+know that the maximum value of @tt{k} cannot be greater than
+the square root of the high bound. Alternatively, as
+expressed in the algorithm above, @tt{k^2} cannot be greater
+than @tt{high^2}. (My only complaint about the above is that
+I would calculate @tt{hsq} before @tt{i}).  Then, all that
+needs to be done is checking whether the potential @tt{k^2}
+values are no greater than this upper bound.
+
+We can see that the second algorithm does test every valid
+@tt{i} and @tt{j}, and that this means that all possible
+triples with @tt{i} and @tt{j} within bounds are checked. We
+can also see that no possible triples outside of the bounds
+will be considered -- any value of @tt{k} such that @tt{k^2}
+is greater than @tt{high^2} is not accepted. Therefore, we
+can trust that the second algorithm is correct, while also
+being significantly more efficient than the first.

@@ -275,9 +275,12 @@
         (list '+ +)
         (list '* *)
         (list '< <)
+        (list '>= >=)
         (list 'not not)
         (list '= =)
         (list 'list list)
+        (list 'integer? integer?)
+        (list 'sqrt sqrt)
         ;; more...
         ))
 
@@ -631,5 +634,15 @@
         (let ((j (an-integer-between i k)))
           (require (= (+ (* i i) (* j j)) (* k k)))
           (list i j k)))))
+
+  (define (a-pythagorean-triple-between low high)
+    (let ((i (an-integer-between low high))
+          (hsq (* high high)))
+      (let ((j (an-integer-between i high)))
+        (let ((ksq (+ (* i i) (* j j))))
+          (require (>= hsq ksq))
+          (let ((k (sqrt ksq)))
+            (require (integer? k))
+            (list i j k))))))
 
   'ok)
