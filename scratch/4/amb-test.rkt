@@ -506,7 +506,100 @@
      (test-case "enclosing environment is not empty"
                 (check-equal? (enclosing-environment
                                '(((y) "asdf") ((x y) 1 2)))
-                              '(((x y) 1 2))))))))
+                              '(((x y) 1 2))))))
+
+   (test-suite
+    "syntactic transformations"
+
+    (test-suite
+     "sequence->exp"
+     (test-case "(sequence->exp nil) is nil"
+                (check-equal? (sequence->exp nil) nil))
+     (test-case "sequence->exp of a list of one expression is that expression"
+                (check-equal? (sequence->exp '(e)) 'e))
+     (test-case "(sequence->exp e1 e2) is (begin e1 e2)"
+                (check-equal? (sequence->exp '(e1 e2)) '(begin e1 e2)))
+     (test-case "(sequence->exp e1 e2 e3) is (begin e1 e2 e3)"
+                (check-equal? (sequence->exp '(e1 e2 e3)) '(begin e1 e2 e3))))
+
+    (test-suite
+     "expand-clauses"
+     (test-case "(expand-clauses nil) is 'false"
+                (check-equal? (expand-clauses nil) 'false))
+     (test-case "(expand-clauses '((p1 e1) (p2 e2)) is '(if p1 e1 (if p2 e2 'false))"
+                (check-equal? (expand-clauses '((p1 e1) (p2 e2)))
+                              '(if p1 e1 (if p2 e2 false))))
+     (test-case "(expand-clauses '((p1 e1) (p2 e2) (else e3)) is '(if p1 e1 (if p2 e2 e3))"
+                (check-equal? (expand-clauses '((p1 e1) (p2 e2) (else e3)))
+                              '(if p1 e1 (if p2 e2 e3))))
+     (test-case "returns an error if else clauses is not first"
+                (check-true (error? (expand-clauses '((p1 e1) (else e2) (p3 e3))))))
+     (test-case "(expand-clauses '((p1 => e1) (p2 => e2)) returns '(lambda (v f) (if (v (f v) ((lambda (v f) (if v (f v) false)) p2 e2))) p1 e1)"
+                (check-equal? (expand-clauses '((p1 => e1) (p2 => e2)))
+                              '((lambda (v f)
+                                  (if v
+                                      (f v)
+                                      ((lambda (v f)
+                                         (if v
+                                             (f v)
+                                             false))
+                                       p2
+                                       e2)))
+                                p1
+                                e1)))
+     (test-case "(expand-clauses '((p1 e1) (p2 => e2) (else e3)) is '(if p1 e1 ((lambda (v f) (if v (f v) e3)) p2 e2)"
+                (check-equal? (expand-clauses '((p1 e1) (p2 => e2) (else e3)))
+                              '(if p1 e1 ((lambda (v f) (if v (f v) e3)) p2 e2))))
+     (test-case "expand-clauses doesn't accept else in alternate form"
+                (check-true (error? (expand-clauses '((p1 e1) (else => e2))))))
+     (test-case "expand-clauses propagates errors through nesting"
+                (check-true (error? (expand-clauses '((p1 e1) (p2 e2) (else e3) (p4 e4))))))
+     (test-case "expand-clauses propagates errors in alternate form"
+                (check-true (error? (expand-clauses '((p1 => e1) (p2 e2) (else e3) (p4 e4)))))))
+
+    (test-suite
+     "cond->if"
+     (test-case "(cond->if '(cond (p1 e1) (p2 e2) (else e3)) is '(if p1 e1 (if p2 e2 e3))"
+                (check-equal? (cond->if '(cond (p1 e1) (p2 e2) (else e3)))
+                              '(if p1 e1 (if p2 e2 e3))))
+     (test-case "(cond->if '(cond (p1 e1) (else e2) (p3 e3)) is an error"
+                (check-true (error? (cond->if '(cond (p1 e1) (else e2) (p3 e3))))))
+     (test-case "(cond->if '(cond (p1 => e1) (p2 => e2) (p3 e3) (else e4))) is ((lambda (v f) (if v (f v) ((lambda (v f) (if v (f v) (if p3 e3 e4))) p2 e2))) p1 e1)"
+                (check-equal? (cond->if '(cond (p1 => e1) (p2 => e2) (p3 e3) (else e4)))
+                              '((lambda (v f)
+                                  (if v
+                                      (f v)
+                                      ((lambda (v f)
+                                         (if v
+                                             (f v)
+                                             (if p3 e3 e4)))
+                                       p2
+                                       e2)))
+                                p1
+                                e1)))
+     (test-case "(cond->if '(cond)) is false"
+                (check-equal? (cond->if '(cond)) 'false)))
+
+    (test-suite
+     "let->combination"
+     (test-case "(let->combination '(let ((v1 e1)) e2)) is '((lambda (v1) e2) e1)"
+                (check-equal? (let->combination '(let ((v1 e1)) e2))
+                              '((lambda (v1) e2) e1)))
+     (test-case "(let->combination '(let ((v1 e1) (v2 e2)) e3)) is '((lambda (v1 v2) e3) e1 e2)"
+                (check-equal? (let->combination '(let ((v1 e1) (v2 e2)) e3))
+                              '((lambda (v1 v2) e3) e1 e2)))
+     (test-case "(let->combination '(let () e1) is '((lambda () e1))"
+                (check-equal? (let->combination '(let () e1))
+                              '((lambda () e1))))
+     (test-case "(let->combination '(let f ((v1 e1) (v2 e2)) e3)) is '(let () (define f (lambda (v1 v2) . e3)) (f e1 e2))"
+                (check-equal? (let->combination '(let f ((v1 e1) (v2 e2)) e3))
+                              '(let () (define f (lambda (v1 v2) . e3)) (f e1 e2)))))
+
+    (test-suite
+     "let*->nested-lets"
+     (test-case "(let*->nested-lets of '(let* ((v1 e1) (v2 e2)) e3)) is '(let ((v1 e1)) (let ((v2 e2)) e3))"
+                (check-equal? (let*->nested-lets '(let* ((v1 e1) (v2 e2)) e3))
+                              '(let ((v1 e1)) (let ((v2 e2)) e3))))))))
 
 
 (run-tests tests)
