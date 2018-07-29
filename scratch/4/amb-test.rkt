@@ -3,7 +3,9 @@
 (#%require "amb.rkt"
          rackunit
          rackunit/text-ui
-         (only racket exn:fail?))
+         mock
+         mock/rackunit
+         (prefix racket: racket))
 
 (define tests
   (test-suite
@@ -290,7 +292,7 @@
                 (check-equal? (begin-actions '(begin (print asdf) (let ((x 1)) x)))
                               '((print asdf) (let ((x 1)) x))))
      (test-case "last-exp? of '() throws an error"
-                (check-exn exn:fail? (lambda () (last-exp? '()))))
+                (check-exn racket:exn:fail? (lambda () (last-exp? '()))))
      (test-case "last-exp? of (1) is true"
                 (check-true (last-exp? '(1))))
      (test-case "last-exp? of (1 2) is false"
@@ -300,7 +302,7 @@
      (test-case "last-exp? of ((print asdf) 3) is false"
                 (check-false (last-exp? '((print asdf) 3))))
      (test-case "first-exp of '() throws an error"
-                (check-exn exn:fail? (lambda () (first-exp '()))))
+                (check-exn racket:exn:fail? (lambda () (first-exp '()))))
      (test-case "first-exp of (1) is 1"
                 (check-equal? (first-exp '(1)) '1))
      (test-case "first-exp of (1 2) is 1"
@@ -308,7 +310,7 @@
      (test-case "first-exp of ((print asdf) (let ((x 1)) x)) is '(print asdf)"
                 (check-equal? (first-exp '((print asdf) (let ((x 1)) x))) '(print asdf)))
      (test-case "rest-exps of '() throws an error"
-                (check-exn exn:fail? (lambda () (rest-exps '()))))
+                (check-exn racket:exn:fail? (lambda () (rest-exps '()))))
      (test-case "rest-exps of (1) is ()"
                 (check-equal? (rest-exps '(1)) '()))
      (test-case "rest-exps of (1 2) is (2)"
@@ -343,7 +345,7 @@
      (test-case "first-operand of (1) is 1"
                 (check-equal? (first-operand '(1)) 1))
      (test-case "first-operand of '() throws an error"
-                (check-exn exn:fail? (lambda () (first-operand '()))))
+                (check-exn racket:exn:fail? (lambda () (first-operand '()))))
      (test-case "rest-operands of (1 2) is '(2)"
                 (check-equal? (rest-operands '(1 2)) '(2)))
      (test-case "rest-operands of (1) is '()"
@@ -351,7 +353,7 @@
      (test-case "rest-operands of (1 2 3) is '(2 3)"
                 (check-equal? (rest-operands '(1 2 3)) '(2 3)))
      (test-case "rest-operands throws on '()"
-                (check-exn exn:fail? (lambda () (rest-operands '())))))
+                (check-exn racket:exn:fail? (lambda () (rest-operands '())))))
 
     (test-suite
      "cond"
@@ -499,7 +501,7 @@
     (test-suite
      "enclosing-environment"
      (test-case "the empty environment has no enclosing environment"
-                (check-exn exn:fail? (lambda () (enclosing-environment the-empty-environment))))
+                (check-exn racket:exn:fail? (lambda () (enclosing-environment the-empty-environment))))
      (test-case "enclosing environment is empty"
                 (check-equal? (enclosing-environment '(((x) 1)))
                               the-empty-environment))
@@ -599,7 +601,23 @@
      "let*->nested-lets"
      (test-case "(let*->nested-lets of '(let* ((v1 e1) (v2 e2)) e3)) is '(let ((v1 e1)) (let ((v2 e2)) e3))"
                 (check-equal? (let*->nested-lets '(let* ((v1 e1) (v2 e2)) e3))
-                              '(let ((v1 e1)) (let ((v2 e2)) e3))))))))
+                              '(let ((v1 e1)) (let ((v2 e2)) e3))))))
+
+  (test-suite
+   "analyze"
+
+   (test-suite
+    "analyze-self-evaluating"
+    (test-case "passes correct arguments to succeed"
+               (let ((succeed-mock (mock #:behavior racket:void))
+                     (fail-mock (mock #:behavior racket:void)))
+                 ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
+                 (check-mock-calls succeed-mock (racket:list (arguments #t fail-mock)))))
+    (test-case "does not call fail"
+               (let ((succeed-mock (mock #:behavior racket:void))
+                     (fail-mock (mock #:behavior racket:void)))
+                 ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
+                 (check-mock-calls fail-mock (racket:list))))))))
 
 
 (run-tests tests)
