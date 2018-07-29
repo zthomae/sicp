@@ -616,12 +616,12 @@
     (test-case "passes correct arguments to succeed"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze 1) '() succeed-mock fail-mock)
+                     (ambeval 1 '() succeed-mock fail-mock)
                      (check-mock-calls succeed-mock (racket:list (arguments 1 fail-mock))))))
     (test-case "does not call fail with success value"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze 1) '() succeed-mock fail-mock)
+                     (ambeval 1 '() succeed-mock fail-mock)
                      (check-mock-calls fail-mock racket:null)))))
 
    (test-suite
@@ -629,12 +629,12 @@
     (test-case "passes quoted text and fail proc to succeed"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze (quote 'a)) '() succeed-mock fail-mock)
+                     (ambeval (quote 'a) '() succeed-mock fail-mock)
                      (check-mock-calls succeed-mock (racket:list (arguments 'a fail-mock))))))
     (test-case "does not call fail"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze (quote 'a)) '() succeed-mock fail-mock)
+                     (ambeval (quote 'a) '() succeed-mock fail-mock)
                      (check-mock-calls fail-mock racket:null)))))
 
    (test-suite
@@ -643,14 +643,93 @@
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
                      (let ((env '(((a) 1))))
-                       ((analyze 'a) env succeed-mock fail-mock)
+                       (ambeval 'a env succeed-mock fail-mock)
                        (check-mock-calls succeed-mock (racket:list (arguments 1 fail-mock)))))))
     (test-case "does not call fail"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
                      (let ((env '(((a) 1))))
-                       ((analyze 'a) env succeed-mock fail-mock)
+                       (ambeval 'a env succeed-mock fail-mock)
                        (check-mock-calls fail-mock racket:null))))))
+
+   (test-suite
+    "error"
+    (test-case "analyzing an error returns that error"
+               (check-equal? (analyze error-value) error-value)))
+
+   (test-suite
+    "amb"
+    (test-case "does not call succeed if there are no choices"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(amb) '() succeed-mock fail-mock)
+                     (check-mock-calls succeed-mock racket:null))))
+    (test-case "calls fail mock if there are no choices"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(amb) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock (racket:list empty-arguments)))))
+    (test-case "calls succeed with value of first choice after one step of evaluation"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(amb 1) '() succeed-mock fail-mock)
+                     (let* ((calls (mock-calls succeed-mock))
+                            (first-arguments (arguments-positional (mock-call-args (racket:car calls)))))
+                       (check-equal? (racket:car first-arguments) 1)))))
+    (test-case "does not call fail if first choice fails"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(amb (amb) 1) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock racket:null))))
+    (test-case "calls fail if both choices fail"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(amb (amb) (amb)) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock (racket:list empty-arguments)))))
+    (test-case "calls succeed with value of second choice after first choice fails"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(amb (amb) 1) '() succeed-mock fail-mock)
+                     (let* ((calls (mock-calls succeed-mock))
+                            (first-arguments (arguments-positional (mock-call-args (racket:car calls)))))
+                       (check-equal? (racket:car first-arguments) 1))))))
+
+   (test-suite
+    "begin"
+    (test-case "fails if the sequence is empty"
+               (check-exn racket:exn:fail? (lambda () (analyze '(begin)))))
+    (test-case "calls succeed with last value in sequence"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(begin 1 2) '() succeed-mock fail-mock)
+                     (let* ((calls (mock-calls succeed-mock))
+                            (first-arguments (arguments-positional (mock-call-args (racket:car calls)))))
+                       (check-equal? (racket:car first-arguments) 2)))))
+    (test-case "does not call fail if no sequence evaluations fail"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(begin 1 2) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock racket:null))))
+    (test-case "calls fail if first in sequence fails"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(begin (amb) 1) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock (racket:list empty-arguments)))))
+    (test-case "does not call succeed if first in sequence fails"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(begin (amb) 1) '() succeed-mock fail-mock)
+                     (check-mock-calls succeed-mock racket:null))))
+    (test-case "calls fail if second in sequence of three fails"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(begin 1 (amb) 2) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock (racket:list empty-arguments)))))
+    (test-case "does not call succeed if second in sequence of three fails"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(begin 1 (amb) 2) '() succeed-mock fail-mock)
+                     (check-mock-calls succeed-mock racket:null)))))
 
    )))
 
