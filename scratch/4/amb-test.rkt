@@ -612,44 +612,44 @@
    "analyze"
 
    (test-suite
-    "analyze-self-evaluating"
+    "self evaluating"
     (test-case "passes correct arguments to succeed"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
-                     (check-mock-calls succeed-mock (racket:list (arguments #t fail-mock))))))
-    (test-case "does not call fail"
+                     ((analyze 1) '() succeed-mock fail-mock)
+                     (check-mock-calls succeed-mock (racket:list (arguments 1 fail-mock))))))
+    (test-case "does not call fail with success value"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
+                     ((analyze 1) '() succeed-mock fail-mock)
                      (check-mock-calls fail-mock racket:null)))))
 
    (test-suite
-    "analyze-quoted"
+    "quoted"
     (test-case "passes quoted text and fail proc to succeed"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze-quoted (quote 'a)) '() succeed-mock fail-mock)
+                     ((analyze (quote 'a)) '() succeed-mock fail-mock)
                      (check-mock-calls succeed-mock (racket:list (arguments 'a fail-mock))))))
     (test-case "does not call fail"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
-                     ((analyze-quoted (quote 'a)) '() succeed-mock fail-mock)
+                     ((analyze (quote 'a)) '() succeed-mock fail-mock)
                      (check-mock-calls fail-mock racket:null)))))
 
    (test-suite
-    "analyze-variable"
+    "variable"
     (test-case "passes variable value and fail proc to succeed"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
                      (let ((env '(((a) 1))))
-                       ((analyze-variable 'a) env succeed-mock fail-mock)
+                       ((analyze 'a) env succeed-mock fail-mock)
                        (check-mock-calls succeed-mock (racket:list (arguments 1 fail-mock)))))))
     (test-case "does not call fail"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
                      (let ((env '(((a) 1))))
-                       ((analyze-variable 'a) env succeed-mock fail-mock)
+                       ((analyze 'a) env succeed-mock fail-mock)
                        (check-mock-calls fail-mock racket:null))))))
 
    )))
