@@ -7,6 +7,11 @@
          mock/rackunit
          (prefix racket: racket))
 
+(define (with-amb-mocks f)
+  (let ((succeed-mock (mock #:behavior racket:void))
+        (fail-mock (mock #:behavior racket:void)))
+    (f succeed-mock fail-mock)))
+
 (define tests
   (test-suite
    "Amb interpreter tests"
@@ -609,15 +614,45 @@
    (test-suite
     "analyze-self-evaluating"
     (test-case "passes correct arguments to succeed"
-               (let ((succeed-mock (mock #:behavior racket:void))
-                     (fail-mock (mock #:behavior racket:void)))
-                 ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
-                 (check-mock-calls succeed-mock (racket:list (arguments #t fail-mock)))))
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
+                     (check-mock-calls succeed-mock (racket:list (arguments #t fail-mock))))))
     (test-case "does not call fail"
-               (let ((succeed-mock (mock #:behavior racket:void))
-                     (fail-mock (mock #:behavior racket:void)))
-                 ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
-                 (check-mock-calls fail-mock (racket:list))))))))
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     ((analyze-self-evaluating #t) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock racket:null)))))
+
+   (test-suite
+    "analyze-quoted"
+    (test-case "passes quoted text and fail proc to succeed"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     ((analyze-quoted (quote 'a)) '() succeed-mock fail-mock)
+                     (check-mock-calls succeed-mock (racket:list (arguments 'a fail-mock))))))
+    (test-case "does not call fail"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     ((analyze-quoted (quote 'a)) '() succeed-mock fail-mock)
+                     (check-mock-calls fail-mock racket:null)))))
+
+   (test-suite
+    "analyze-variable"
+    (test-case "passes variable value and fail proc to succeed"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (let ((env '(((a) 1))))
+                       ((analyze-variable 'a) env succeed-mock fail-mock)
+                       (check-mock-calls succeed-mock (racket:list (arguments 1 fail-mock)))))))
+    (test-case "does not call fail"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (let ((env '(((a) 1))))
+                       ((analyze-variable 'a) env succeed-mock fail-mock)
+                       (check-mock-calls fail-mock racket:null))))))
+
+   )))
 
 
 (run-tests tests)
