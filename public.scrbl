@@ -17,7 +17,7 @@ Since I'm doing these for personal enlightenment, I reserve the right to do
 something other than what the exercise specifically asks for if I think I
 would learn more by doing so.
 
-The repository is located at @hyperlink["https://gitlab.com/zthomae/sicp"].
+The repository is located at @hyperlink["https://gitlab.com/zthomae/sicp" "https://gitlab.com/zthomae/sicp"].
 
 @local-table-of-contents[]
 
