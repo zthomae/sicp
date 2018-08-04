@@ -3,3 +3,4 @@ compiled
 *.bak
 *flycheck*
 coverage
+public

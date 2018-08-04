@@ -1,5 +1,7 @@
 # SICP Solutions
 
+**Officially hosted on [GitLab](http://zthomae.gitlab.io/sicp/)**
+
 These are my solutions to the exercises in the
 [Structure and Interpretation of Computer Programs](https://mitpress.mit.edu/sicp/full-text/book/book.html)
 written with [Scribble](http://docs.racket-lang.org/scribble/). Occasionally
