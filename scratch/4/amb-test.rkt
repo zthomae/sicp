@@ -17,6 +17,21 @@
          (first-arguments (arguments-positional (mock-call-args (racket:car calls)))))
     (check-equal? (racket:car first-arguments) result)))
 
+(define (check-last-n-mock-results mock n result)
+  (define (drop n lst)
+    (cond ((= n 0) lst)
+          ((racket:null? lst) nil)
+          (else (drop (- n 1) (racket:cdr lst)))))
+  (define (n-last n lst)
+    (drop (- (racket:length lst) n) lst))
+
+  (check-equal? (racket:map racket:car
+                            (n-last n
+                                    (racket:map
+                                     (lambda (call) (arguments-positional (mock-call-args call)))
+                                     (mock-calls mock))))
+                result))
+    
 (define tests
   (test-suite
    "Amb interpreter tests"
@@ -258,6 +273,54 @@
                    (lambda (succeed-mock fail-mock)
                      (ambeval '(cond) (setup-environment) succeed-mock fail-mock)
                      (check-mock-result succeed-mock #f)))))
+
+   (test-suite
+    "complex examples"
+    (test-case "pythagorean triples"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (let ((exprs '((define (an-integer-starting-from n)
+                                      (amb n (an-integer-starting-from (+ n 1))))
+
+                                    (define (require p)
+                                      (if (not p) (amb)))
+
+                                    (define (an-integer-between i j)
+                                      (require (< i j))
+                                      (amb i (an-integer-between (+ i 1) j)))
+
+                                    (define (pythagorean-triples-sum)
+                                      (let ((sum (an-integer-starting-from 3)))
+                                        (let ((i (an-integer-between 1 sum)))
+                                          (let ((j (an-integer-between i sum)))
+                                            (let ((k (an-integer-between j sum)))
+                                              (require (= sum (+ i j k)))
+                                              (require (= (+ (* i i) (* j j)) (* k k)))
+                                              (list i j k))))))
+
+                                    (define (pythagorean-triples)
+                                      (let ((k (an-integer-starting-from 1)))
+                                        (let ((i (an-integer-between 1 k)))
+                                          (let ((j (an-integer-between i k)))
+                                            (require (= (+ (* i i) (* j j)) (* k k)))
+                                            (list i j k)))))
+
+                                    (define (a-pythagorean-triple-between low high)
+                                      (let ((i (an-integer-between low high))
+                                            (hsq (* high high)))
+                                        (let ((j (an-integer-between i high)))
+                                          (let ((ksq (+ (* i i) (* j j))))
+                                            (require (>= hsq ksq))
+                                            (let ((k (sqrt ksq)))
+                                              (require (integer? k))
+                                              (list i j k))))))
+
+                                    (a-pythagorean-triple-between 1 10)
+                                    (a-pythagorean-triple-between 10 20)
+                                    ))
+                           (env (setup-environment)))
+                       (for-each (lambda (expr) (ambeval expr env succeed-mock fail-mock)) exprs)
+                       (check-last-n-mock-results succeed-mock 2 (racket:list '(3 4 5) '(12 16 20))))))))
 
    ))
 
