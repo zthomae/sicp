@@ -3,7 +3,7 @@
 (#%require (rename r5rs apply-in-underlying-scheme apply)
            (only racket print-as-expression provide all-defined-out))
 
-(provide (all-defined-out))
+(provide setup-environment ambeval driver-loop)
 
 (print-as-expression #f)
 
@@ -32,6 +32,7 @@
         ((begin? exp) (analyze-sequence (begin-actions exp)))
         ((cond? exp) (analyze (cond->if exp)))
         ((let? exp) (analyze (let->combination exp)))
+        ((let*? exp) (analyze (let->combination (let*->nested-lets exp))))
         ((amb? exp) (analyze-amb exp))
         ((application? exp) (analyze-application exp))
         (else
@@ -164,7 +165,7 @@
 (define (named-let-bindings exp) (caddr exp))
 (define (named-let-parameters exp) (map car (named-let-bindings exp)))
 (define (named-let-initial-values exp) (map cadr (named-let-bindings exp)))
-(define (named-let-body exp) (cadddr exp))
+(define (named-let-body exp) (cdddr exp))
 
 (define (make-define binding val) (list 'define binding val))
 
@@ -351,17 +352,6 @@
               (set-expressions
                (map (lambda (d) (make-set (definition-variable d) (definition-value d))) defines)))
           (list (append (list 'let unassigned-bindings) (append set-expressions body)))))))
-
-(define (letrec? exp) (tagged-list? exp 'letrec))
-
-(define (letrec->nested-let exp)
-  (let ((names (let-names exp))
-        (body (let-body exp)))
-    (let ((unassigned-bindings
-           (map (lambda (n) (list n '*unassigned)) names))
-          (set-expressions
-           (map (lambda (p) (make-set (car p) (cdr p))) (let-bindings exp))))
-      (append (list 'let unassigned-bindings) (append set-expressions body)))))
 
 ;; amb
 (define (amb? exp) (tagged-list? exp 'amb))

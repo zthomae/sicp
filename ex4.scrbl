@@ -278,7 +278,7 @@ for it:
  (define (named-let-bindings exp) (caddr exp))
  (define (named-let-parameters exp) (map car (named-let-bindings exp)))
  (define (named-let-initial-values exp) (map cadr (named-let-bindings exp)))
- (define (named-let-body exp) (cadddr exp))
+ (define (named-let-body exp) (cdddr exp))
  ]
 
 Next we define the new version of @tt{let->combination},
