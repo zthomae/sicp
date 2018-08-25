@@ -1,5 +1,13 @@
-public: public.scrbl ex1.scrbl ex2.scrbl ex3.scrbl ex4.scrbl eval.rkt
+.PHONY: deps cover
+
+scribblings := $(wildcard *.scrbl)
+test_files := $(shell find scratch/ -type f -name '*-test.rkt')
+scratch_files := $(patsubst %-test.rkt,%.rkt, $(test_files))
+
+public: deps $(scribblings) eval.rkt
 	rm -rf public/
 	raco scribble --htmls --dest . public.scrbl
-cover: scratch/4/amb.rkt scratch/4/amb-test.rkt
-	raco cover scratch/4/amb.rkt scratch/4/amb-test.rkt
+deps:
+	raco pkg install --auto --skip-installed sicp cover mock mock-rackunit
+cover: deps $(test_files) $(scratch_files)
+	raco cover $(test_files) $(scratch_files)
