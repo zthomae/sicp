@@ -1914,3 +1914,90 @@ try-again
 ;;; There are no more values of
 (multiple-dwelling-3)
 }
+
+@section[#:tag "c4e41"]{Exercise 4.41}
+
+The nondeterminism created by @tt{amb} can also be
+represented by lists (or streams) of values that we can
+"select" by @tt{filter}ing and @tt{flatmap}ping over them.
+Thus, the values in the list represent all of the possible
+values that a binding could have, and @tt{flatmap}ping over
+this list is akin to selecting an arbitrary one of them.
+(Obviously, the selection is not really arbitrary, because
+lists are ordered, but the answer will still be correct.)
+
+We can use a mechanical transformation of @tt{amb} and @tt{
+ require} operations into @tt{flatmap} and @tt{filter}
+sequences to translate the version of this program from
+@secref{c4e40}. Note as well the similarities to the solution
+to the eight queens problem from @secref{c2e42}.
+
+@examples[
+ #:eval ev #:hidden
+ (define (accumulate op initial sequence)
+   (if (null? sequence)
+       initial
+       (op (car sequence)
+           (accumulate op initial (cdr sequence)))))
+
+ (define (flatmap proc seq)
+   (accumulate append nil (map proc seq)))
+
+ (define (filter predicate sequence)
+   (cond ((null? sequence) nil)
+         ((predicate (car sequence))
+          (cons (car sequence)
+                (filter predicate (cdr sequence))))
+         (else (filter predicate (cdr sequence)))))
+
+ (define (distinct? items)
+  (cond ((null? items) true)
+        ((null? (cdr items)) true)
+        ((member (car items) (cdr items)) false)
+        (else (distinct? (cdr items)))))
+ ]
+
+@examples[
+ #:label #f #:eval ev #:no-prompt
+ (define (multiple-dwelling-4)
+   (let* ((pick-floor (list 1 2 3 4 5))
+          (baker-choices (filter (lambda (baker) (not (= baker 5))) pick-floor)))
+     (flatmap
+      (lambda (baker)
+        (let ((cooper-choices (filter (lambda (cooper) (not (= cooper 1))) pick-floor)))
+          (flatmap
+           (lambda (cooper)
+             (let ((fletcher-choices (filter (lambda (fletcher)
+                                               (and (not (= fletcher 5))
+                                                    (not (= fletcher 1))
+                                                    (not (= (abs (- fletcher cooper)) 1))))
+                                             pick-floor)))
+               (flatmap
+                (lambda (fletcher)
+                  (let ((miller-choices (filter (lambda (miller) (> miller cooper)) pick-floor)))
+                    (flatmap
+                     (lambda (miller)
+                       (let ((smith-choices (filter (lambda (smith) (not (= (abs (- smith fletcher)) 1))) pick-floor)))
+                         (filter (lambda (result) (distinct? (map cadr result)))
+                                 (map (lambda (smith)
+                                        (list (list 'baker baker)
+                                              (list 'cooper cooper)
+                                              (list 'fletcher fletcher)
+                                              (list 'miller miller)
+                                              (list 'smith smith)))
+                                      smith-choices))))
+                     miller-choices)))
+                fletcher-choices)))
+           cooper-choices)))
+      baker-choices)))
+ ]
+
+@examples[
+ #:label #f #:eval ev
+ (pretty-display (multiple-dwelling-4))
+ ]
+
+Because there is only one solution to the puzzle, it doesn't
+matter so much whether we use stream or lists of choices.
+However, lazy evaluation more accurately matches the
+semantics of @tt{amb} than do strict lists.
