@@ -2001,3 +2001,109 @@ Because there is only one solution to the puzzle, it doesn't
 matter so much whether we use stream or lists of choices.
 However, lazy evaluation more accurately matches the
 semantics of @tt{amb} than do strict lists.
+
+@section[#:tag "c4e42"]{Exercise 4.42}
+
+We're going to solve the puzzle logically and with an
+@tt{amb} program.
+
+First, a restatement of the five statements, rephrased in a
+more normalized fashion:
+
+@itemlist[
+ @item{Kitty was in second. Betty was in third.}
+ @item{Ethel was in first. Joan was in second.}
+ @item{Joan was in third. Ethel was in fifth.}
+ @item{Kitty was in second. Mary was in fourth.}
+ @item{Mary was in fourth. Betty was in first.}
+ ]
+
+Because of the final two statements, either Mary was in
+fourth place @bold{and} Kitty was not in second place @bold{
+ and} Betty was not in first place, @bold{or} Mary was not in
+fourth place @bold{and} Kitty was in second place @bold{and}
+Betty was in first place. However, based on the second
+statement, we know that either Ethel was in first place or
+Joan was in second. This means that it cannot be the case
+that Kitty was in second place nor that Betty was in first,
+so we can conclude that Mary was in fourth place.
+
+Because we know that Kitty was not in second place, we can
+conclude from the first statement that Betty was in third
+place.
+
+Because we know that Betty was in third place, we can
+conclude from the third statement that Ethel was in fifth.
+
+Because we know that Ethel was in fifth place, we can
+conclude from the second statement that Joan was in second.
+
+At this point, we have only one person and one place left.
+Kitty must have come in first place. The final ordering is
+thus
+
+@itemlist[
+ #:style 'ordered
+ @item{Kitty}
+ @item{Joan}
+ @item{Betty}
+ @item{Mary}
+ @item{Ethel}
+]
+
+With that in mind, let's write an @tt{amb} program to compute
+this.
+
+The first construct we'll need is a way of encoding the fact
+that exactly one of the claims in each statement are true --
+the @tt{xor} operation, in other words. Defining this in terms
+of @tt{and} and @tt{xor} is typical, but we have neither of
+these in our interpreter, so we'll define it slightly differently:
+
+@racketblock[
+ (define (xor a b)
+   (cond (a (not b))
+         (else b)))
+ ]
+
+Then, using the same @tt{require} and @tt{distinct?} functions
+defined earlier, we can write our @tt{amb} program. Here is one
+expression:
+
+@racketblock[
+ (define (liars)
+   (let ((betty (amb 1 2 3 4 5))
+         (ethel (amb 1 2 3 4 5))
+         (joan (amb 1 2 3 4 5))
+         (kitty (amb 1 2 3 4 5))
+         (mary (amb 1 2 3 4 5)))
+     (require (xor (= kitty 2) (= betty 3)))
+     (require (xor (= ethel 1) (= joan 2)))
+     (require (xor (= joan 3) (= ethel 5)))
+     (require (xor (= kitty 2) (= mary 4)))
+     (require (xor (= mary 4) (= betty 1)))
+     (require (distinct? (list betty ethel joan kitty mary)))
+     (list (list 'betty betty)
+           (list 'ethel ethel)
+           (list 'joan joan)
+           (list 'kitty kitty)
+           (list 'mary mary))))
+ ]
+
+Running our program, we see that the one (and only) solution
+to the puzzle is the same as the one we found:
+
+@verbatim{
+;;; Amb-Eval input:
+(liars)
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+((betty 3) (ethel 5) (joan 2) (kitty 1) (mary 4))
+
+;;; Amb-Eval input:
+try-again
+
+;;; There are no more values of
+(liars)
+}
