@@ -292,6 +292,7 @@
         (list 'integer? integer?)
         (list 'sqrt sqrt)
         (list 'member member)
+        (list 'eq? eq?)
         ;; more...
         ))
 
