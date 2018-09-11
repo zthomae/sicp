@@ -2097,7 +2097,7 @@ to the puzzle is the same as the one we found:
 ;;; Amb-Eval input:
 (liars)
 
-;;; Starting a new problem 
+;;; Starting a new problem
 ;;; Amb-Eval value:
 ((betty 3) (ethel 5) (joan 2) (kitty 1) (mary 4))
 
@@ -2106,4 +2106,161 @@ try-again
 
 ;;; There are no more values of
 (liars)
+}
+
+@section[#:tag "c4e43"]{Exercise 4.43}
+
+Solving this logically, Gabrielle's father is either Hall or
+Downing. (It can't be Parker, because then Gabrielle's
+father, Parker, would own a yacht named after Parker's
+daughter -- a father can't have a yacht named after their
+actual daughter.) If Gabrielle's father is Downing, then we
+have a problem -- Downing owns the yacht named after Sir
+Barnacle's daughter. So we can conclude that Gabrielle's
+father is Hall, and Dr. Parker's daughter is Rosalind, and
+then Downing's daughter is Lorna. The answer to the question
+is thus Downing. We have an answer -- we just need to verify
+it with an amb program.
+
+The first (and most important) step to solving this problem
+is deciding on how you will represent the facts such that
+you can write efficient predicates on top of them. What
+makes this somewhat tricky is that the relationships are
+traversed in both directions -- in particular, the fact that
+Gabrielle's father owns the yacht that is named after Dr.
+Parker's daughter is tricky, because it requires traversing
+from a known daughter to an unknown father and them from a
+known father to an unknown daughter. A simple representation
+is probably not going to allow for this bidirectional
+traversal, so you will either be forced to use a complex
+representation or find a way around this.
+
+In this case, the representation I've chosen is a set of
+bindings from each father to a pair of children, the first
+of which is his daughter and the second of which he named
+his yacht after. I've chosen this because the father is the
+the unifying link between daughters and yachts, and I think
+it will help to keep those facts together (rather than, say,
+spread across multiple similarly-named variables).
+
+In order to make an assertion based on Gabrielle's father,
+I use a small hack: I happen to know every person who can
+be her father, so I can use conditional logic to select
+which yacht needs to be named after Dr. Parker's daughter.
+
+One again, I'm going to intersperse @tt{amb} expressions
+with @tt{require}ments based on the results of those
+expressions, to reduce the amount of useless backtracking.
+I'm also going to make one immediate simplification and make
+sure not to allow Parker to be Gabrielle's daughter -- given
+the condition we've already talked about, this is obviously
+nonsense, and it would force you to write an expression (and
+do @tt{amb} generation for) a possibility that is known to
+be against the rules. I've also asserted immediately that
+Dr. Parker's yacht is the Mary, because 4 of 5 yachts are
+assigned in the problem statement, and writing an @tt{amb}
+expression with a single argument is silly.
+
+Here is a solution for the original problem:
+
+@racketblock[
+ (define (daughters)
+   (define daughter car)
+   (define (yacht p) (car (cdr p)))
+   (let ((moore (list 'mary 'lorna))
+         (barnacle (list 'melissa 'gabrielle))
+         (hall (list (amb 'lorna 'gabrielle) 'rosalind))
+         (downing (list (amb 'rosalind 'lorna 'gabrielle) 'melissa)))
+     (require (not (eq? (daughter hall) (daughter downing))))
+     (let ((parker (list (amb 'rosalind 'lorna) 'mary)))
+       (require (not (eq? (daughter hall) (daughter parker))))
+       (require (not (eq? (daughter downing) (daughter parker))))
+       (if (eq? (daughter hall) 'gabrielle)
+           (require (eq? (yacht hall) (daughter parker)))
+           (require (eq? (yacht downing) (daughter parker))))
+       (list (list 'moore moore)
+             (list 'barnacle barnacle)
+             (list 'hall hall)
+             (list 'downing downing)
+             (list 'parker parker)))))
+ ]
+
+When we run this, we can see that there is only one
+solution, and it's identical to the one derived logically:
+
+@verbatim{
+;;; Starting a new problem
+;;; Amb-Eval value:
+ok
+
+;;; Amb-Eval input:
+(daughters)
+
+;;; Starting a new problem
+;;; Amb-Eval value:
+((moore (mary lorna)) (barnacle (melissa gabrielle)) (hall (gabrielle rosalind)) (downing (lorna melissa)) (parker (rosalind mary)))
+
+;;; Amb-Eval input:
+try-again
+
+;;; There are no more values of
+(daughters)
+}
+
+Supposing instead we were not told that Mary Ann's last name
+is Moore. We can modify the original problem by selecting
+Moore's daughter with the @tt{amb} expression selecting
+between his possible daughters (namely, everyone except
+Lorna), and inserting Mary Ann's name into the @tt{amb}
+expressions for every possible father in addition to Moore
+-- Hall and Downing, since we know that Parker owns the Mary
+Ann. In the end, this allows for Mary Ann and Gabrielle to
+switch between being Moore and Hall's daughter and for
+Rosalind and Lorna to switch between being Downing and
+Parker's daughters.
+
+@racketblock[
+ (define (daughters-variant)
+   (define daughter car)
+   (define (yacht p) (car (cdr p)))
+   (let ((barnacle (list 'melissa 'gabrielle))
+         (moore (list (amb 'mary 'rosalind 'gabrielle) 'lorna))
+         (hall (list (amb 'mary 'lorna 'gabrielle) 'rosalind)))
+     (require (not (eq? (daughter moore) (daughter hall))))
+     (let ((downing (list (amb 'mary 'rosalind 'lorna 'gabrielle) 'melissa)))
+       (require (not (eq? (daughter moore) (daughter downing))))
+       (require (not (eq? (daughter hall) (daughter downing))))
+       (let ((parker (list (amb 'rosalind 'lorna) 'mary)))
+         (require (not (eq? (daughter moore) (daughter parker))))
+         (require (not (eq? (daughter hall) (daughter parker))))
+         (require (not (eq? (daughter downing) (daughter parker))))
+         (cond ((eq? (daughter moore) 'gabrielle) (require (eq? (yacht moore) (daughter parker))))
+               ((eq? (daughter hall) 'gabrielle) (require (eq? (yacht hall) (daughter parker))))
+               (else (require (eq? (yacht downing) (daughter parker)))))
+         (list (list 'moore moore)
+               (list 'barnacle barnacle)
+               (list 'hall hall)
+               (list 'downing downing)
+               (list 'parker parker))))))
+ ]
+
+@verbatim{
+;;; Amb-Eval input:
+(daughters-variant)
+
+;;; Starting a new problem
+;;; Amb-Eval value:
+((moore (mary lorna)) (barnacle (melissa gabrielle)) (hall (gabrielle rosalind)) (downing (lorna melissa)) (parker (rosalind mary)))
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+((moore (gabrielle lorna)) (barnacle (melissa gabrielle)) (hall (mary rosalind)) (downing (rosalind melissa)) (parker (lorna mary)))
+
+;;; Amb-Eval input:
+try-again
+
+;;; There are no more values of
+(daughters-variant)
 }
