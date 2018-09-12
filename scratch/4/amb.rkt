@@ -1,28 +1,18 @@
 #lang sicp
 
 (#%require (rename r5rs apply-in-underlying-scheme apply)
-           (only racket print-as-expression provide all-defined-out))
+           (prefix racket: racket))
 
-(provide setup-environment ambeval driver-loop)
+(racket:provide setup-environment ambeval driver-loop)
 
-(print-as-expression #f)
+(racket:print-as-expression #f)
 
 (define (error . args)
-  (newline)
-  (display "ERROR: ")
-  (for-each (lambda (a) (display a) (display " ")) args)
-  (newline)
-  error-value)
-
-(define (error? exp)
-  (tagged-list? exp 'ERROR))
-
-(define error-value (list 'ERROR))
+  (racket:error args))
 
 (define (analyze exp)
   (cond ((self-evaluating? exp)
          (analyze-self-evaluating exp))
-        ((error? exp) exp)
         ((quoted? exp) (analyze-quoted exp))
         ((variable? exp) (analyze-variable exp))
         ((assignment? exp) (analyze-assignment exp))
@@ -141,18 +131,14 @@
                      (else (error "ELSE clause isn't last -- COND->IF" clauses))))
               ((cond-alternate-form? first)
                (let ((rest-expanded (expand-clauses rest)))
-                 (if (error? rest-expanded)
-                     rest-expanded
-                     (list (make-lambda '(v f) (list (make-if 'v '(f v) rest-expanded)))
-                           (cond-predicate first)
-                           (cond-alternate-form-proc first)))))
+                 (list (make-lambda '(v f) (list (make-if 'v '(f v) rest-expanded)))
+                       (cond-predicate first)
+                       (cond-alternate-form-proc first))))
               (else
                (let ((rest-expanded (expand-clauses rest)))
-                 (if (error? rest-expanded)
-                     rest-expanded
-                     (make-if (cond-predicate first)
-                              (sequence->exp (cond-actions first))
-                              rest-expanded))))))))
+                 (make-if (cond-predicate first)
+                          (sequence->exp (cond-actions first))
+                          rest-expanded)))))))
 
 (define (let? exp) (tagged-list? exp 'let))
 (define (let-bindings exp) (cadr exp))
@@ -255,20 +241,16 @@
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
-  (if (error? val)
-      error-value
-      (env-loop env)))
+  (env-loop env))
 
 (define (define-variable! var val env)
-  (if (error? val)
-      error-value
-      (let ((frame (first-frame env)))
-        (define (scan vars vals)
-          (cond ((null? vars) (add-binding-to-frame! var val frame))
-                ((eq? var (car vars)) (set-car! vals val))
-                (else (scan (cdr vars) (cdr vals)))))
-        (scan (frame-variables frame)
-              (frame-values frame)))))
+  (let ((frame (first-frame env)))
+    (define (scan vars vals)
+      (cond ((null? vars) (add-binding-to-frame! var val frame))
+            ((eq? var (car vars)) (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (scan (frame-variables frame)
+          (frame-values frame))))
 
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
@@ -523,20 +505,6 @@
                                 fail2))
                     fail)))
 
-;; (define (execute-application proc args)
-;;   (cond ((primitive-procedure? proc)
-;;          (if (any? (map error? args))
-;;              error-value
-;;              (apply-primitive-procedure proc args)))
-;;         ((compound-procedure? proc)
-;;          ((procedure-body proc)
-;;           (extend-environment (procedure-parameters proc)
-;;                               args
-;;                               (procedure-environment proc))))
-;;         (else
-;;          (error
-;;           "Unknown procedure type -- EXECUTE-APPLICATION"
-;;           proc))))
 (define (execute-application proc args succeed fail)
   (cond ((primitive-procedure? proc)
          (succeed (apply-primitive-procedure proc args)
@@ -582,23 +550,31 @@
   (define (internal-loop try-again)
     (prompt-for-input input-prompt)
     (let ((input (read)))
-      (if (eq? input 'try-again)
-          (try-again)
-          (begin
-            (newline)
-            (display ";;; Starting a new problem ")
-            (ambeval input
-                     the-global-environment
-                     ;; ambeval success
-                     (lambda (val next-alternative)
-                       (announce-output output-prompt)
-                       (user-print val)
-                       (internal-loop next-alternative))
-                     ;; ambeval failure
-                     (lambda ()
-                       (announce-output ";;; There are no more values of")
-                       (user-print input)
-                       (driver-loop)))))))
+      (cond ((eq? input 'try-again) (try-again))
+            ((racket:eof-object? input) 'done)
+            (else
+             (begin
+               (newline)
+               (display ";;; Starting a new problem ")
+               (racket:with-handlers
+                ((racket:exn:fail? (lambda (exn)
+                                     (newline)
+                                     (display "An exception occurred")
+                                     (newline)
+                                     (display exn)
+                                     (driver-loop))))
+                (ambeval input
+                         the-global-environment
+                         ;; ambeval success
+                         (lambda (val next-alternative)
+                           (announce-output output-prompt)
+                           (user-print val)
+                           (internal-loop next-alternative))
+                         ;; ambeval failure
+                         (lambda ()
+                           (announce-output ";;; There are no more values of")
+                           (user-print input)
+                           (driver-loop)))))))))
   (internal-loop
    (lambda ()
      (newline)

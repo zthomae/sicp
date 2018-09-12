@@ -1,25 +1,15 @@
 #lang sicp
 
 (#%require (rename r5rs apply-in-underlying-scheme apply)
-           (only racket print-as-expression))
+           (prefix racket: racket))
 
-(print-as-expression #f)
+(racket:print-as-expression #f)
 
 (define (error . args)
-  (newline)
-  (display "ERROR: ")
-  (for-each (lambda (a) (display a) (display " ")) args)
-  (newline)
-  error-value)
-
-(define (error? exp)
-  (tagged-list? exp 'ERROR))
-
-(define error-value (list 'ERROR))
+  (racket:error args))
 
 (define (eval exp env)
   (cond ((self-evaluating? exp) exp)
-        ((error? exp) exp)
         ((variable? exp) (lookup-variable-value exp env))
         ((quoted? exp)
          (let ((rest (cadr exp)))
@@ -96,11 +86,9 @@
 (define (apply procedure arguments env)
   (cond ((primitive-procedure? procedure)
          (let ((args (list-of-arg-values arguments env)))
-           (if (any? (map error? args))
-               error-value
-               (apply-primitive-procedure
-                procedure
-                args))))
+           (apply-primitive-procedure
+            procedure
+            args)))
         ((compound-procedure? procedure)
          (eval-sequence
           (procedure-body procedure)
@@ -428,20 +416,16 @@
         (let ((frame (first-frame env)))
           (scan (frame-variables frame)
                 (frame-values frame)))))
-  (if (error? val)
-      error-value
-      (env-loop env)))
+  (env-loop env))
 
 (define (define-variable! var val env)
-  (if (error? val)
-      error-value
-      (let ((frame (first-frame env)))
-        (define (scan vars vals)
-          (cond ((null? vars) (add-binding-to-frame! var val frame))
-                ((eq? var (car vars)) (set-car! vals val))
-                (else (scan (cdr vars) (cdr vals)))))
-        (scan (frame-variables frame)
-              (frame-values frame)))))
+  (let ((frame (first-frame env)))
+    (define (scan vars vals)
+      (cond ((null? vars) (add-binding-to-frame! var val frame))
+            ((eq? var (car vars)) (set-car! vals val))
+            (else (scan (cdr vars) (cdr vals)))))
+    (scan (frame-variables frame)
+          (frame-values frame))))
 
 (define (primitive-procedure? proc)
   (tagged-list? proc 'primitive))
@@ -545,7 +529,17 @@
 (define (driver-loop)
   (prompt-for-input input-prompt)
   (let ((input (read)))
-    (let ((output (actual-value input the-global-environment)))
-      (announce-output output-prompt)
-      (user-print output)))
-  (driver-loop))
+    (if (racket:eof-object? input)
+        'done
+        (begin
+          (racket:with-handlers
+           ((racket:exn:fail? (lambda (exn)
+                                (newline)
+                                (display "An exception occurred")
+                                (newline)
+                                (display exn)
+                                (driver-loop))))
+           (let ((output (actual-value input the-global-environment)))
+             (announce-output output-prompt)
+             (user-print output)))
+          (driver-loop)))))

@@ -185,11 +185,6 @@
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)
                      (check-exn racket:exn:fail? (lambda () (ambeval '(set! x) (setup-environment) succeed-mock fail-mock))))))
-    (test-case "doesn't assign if the value isn't already in the environment"
-               (with-amb-mocks
-                   (lambda (succeed-mock fail-mock)
-                     (ambeval '(begin (set! x 3) x) (setup-environment) succeed-mock fail-mock)
-                     (check-mock-result succeed-mock '(ERROR)))))
     (test-case "does not call fail if no evaluation failure occurs"
                (with-amb-mocks
                    (lambda (succeed-mock fail-mock)

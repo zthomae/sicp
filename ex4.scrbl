@@ -173,18 +173,14 @@ we can reuse the computed value if it turns out to be truthy.
                       (else (error "ELSE clause isn't last -- COND->IF" clauses))))
                ((cond-alternate-form? first)
                 (let ((rest-expanded (expand-clauses rest)))
-                  (if (error? rest-expanded)
-                      rest-expanded
-                      (list (make-lambda '(v f) (list (make-if 'v '(f v) rest-expanded)))
-                            (cond-predicate first)
-                            (cond-alternate-form-proc first)))))
+                  (list (make-lambda '(v f) (list (make-if 'v '(f v) rest-expanded)))
+                        (cond-predicate first)
+                        (cond-alternate-form-proc first))))
                (else
                 (let ((rest-expanded (expand-clauses rest)))
-                  (if (error? rest-expanded)
-                      rest-expanded
-                      (make-if (cond-predicate first)
-                               (sequence->exp (cond-actions first))
-                               rest-expanded))))))))
+                  (make-if (cond-predicate first)
+                           (sequence->exp (cond-actions first))
+                           rest-expanded)))))))
  ]
 
 We also rely on the following helper procedures:
@@ -1527,11 +1523,9 @@ the first two arguments passed to @tt{extend-environment}:
 (define (apply procedure arguments env)
   (cond ((primitive-procedure? procedure)
          (let ((args (list-of-arg-values arguments env)))
-           (if (any? (map error? args))
-               error-value
-               (apply-primitive-procedure
-                procedure
-                args))))
+           (apply-primitive-procedure
+            procedure
+            args)))
         ((compound-procedure? procedure)
          (eval-sequence
           (procedure-body procedure)
