@@ -2264,3 +2264,173 @@ try-again
 ;;; There are no more values of
 (daughters-variant)
 }
+
+@section[#:tag "c4e44"]{Exercise 4.44}
+
+We can reuse a lot of the procedures already written for the
+eight-queens problem. In fact, the general approach will be
+the same: We will iteratively generate new positions
+nondeterministically, then @tt{require} the new position to
+be safe with respect to all of the others.
+
+Here is an entire program for solving the eight queens
+problem. The data representation of the position is a list
+of row placements, just like before. A few simple functions
+that we haven't used in an @tt{amb} session before are
+brought along as well.
+
+@racketblock[
+ (define (enumerate-interval low high)
+   (if (> low high)
+       '()
+       (cons low (enumerate-interval (+ low 1) high))))
+
+ (define (any? xs)
+   (cond ((null? xs) false)
+         ((car xs) true)
+         (else (any? (cdr xs)))))
+
+ (define (list-ref xs i)
+   (if (= i 0)
+       (car xs)
+       (list-ref (cdr xs) (- i 1))))
+
+ (define (or x y)
+   (if x
+       x
+       y))
+
+ (define (on-diagonal? i ri j rj)
+   ;; assumption: i < j
+   (let ((d (- j i)))
+     (or
+      ;; case 1: diagonal up
+      (= rj (+ ri d))
+      ;; case 2: diagonal down
+      (= ri (+ rj d)))))
+
+ (define (map f xs)
+   (if (null? xs)
+       xs
+       (cons (f (car xs)) (map f (cdr xs)))))
+
+ (define (safe? k positions)
+   (define (conflicts? positions i j)
+     (let ((ri (list-ref positions i))
+           (rj (list-ref positions j)))
+       (or
+        (= ri rj)
+        (on-diagonal? i ri j rj))))
+   (not
+    (any?
+     (map (lambda (i) (conflicts? positions 0 i))
+          (enumerate-interval 1 (- k 1))))))
+
+ (define (eight-queens)
+   (define (create-position) (amb 1 2 3 4 5 6 7 8))
+   (define (iter k positions)
+     (if (> k 8)
+         positions
+         (let* ((next-position (create-position))
+                (possible-positions (cons next-position positions)))
+           (require (safe? k possible-positions))
+           (iter (+ k 1) possible-positions))))
+   (iter 1 '()))
+ ]
+
+We can see that this generates valid solutions:
+
+@verbatim{
+;;; Amb-Eval input:
+(eight-queens)
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+(4 2 7 3 6 8 5 1)
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+(5 2 4 7 3 8 6 1)
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+(3 5 2 8 6 4 7 1)
+}
+
+In fact, we can do one better than this. There's no reason
+why we have to only solve the problem for a board size of
+eight. The number eight only appears in two places: To allow
+the generation of new positions to place queens into every
+row, and to detect the completion of the board. We can
+parametize both of these fairly simply.
+
+@racketblock[
+ (define (amb-select xs)
+   (if (null? xs)
+       (amb)
+       (amb (car xs) (amb-select (cdr xs)))))
+
+ (define (n-queens n)
+   (define (create-position) (amb-select (enumerate-interval 1 n)))
+   (define (iter k positions)
+     (if (> k n)
+         positions
+         (let* ((next-position (create-position))
+                (possible-positions (cons next-position positions)))
+           (require (safe? k possible-positions))
+           (iter (+ k 1) possible-positions))))
+   (iter 1 '()))
+ ]
+
+This even generates the same solutions as the previous when
+the board size is eight, but it can do even more:
+
+@verbatim{
+;;; Amb-Eval input:
+(n-queens 8)
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+(4 2 7 3 6 8 5 1)
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+(5 2 4 7 3 8 6 1)
+
+;;; Amb-Eval input:
+(n-queens 2)
+
+;;; Starting a new problem 
+;;; There are no more values of
+(n-queens 2)
+
+;;; Amb-Eval input:
+(n-queens 4)
+
+;;; Starting a new problem 
+;;; Amb-Eval value:
+(3 1 4 2)
+
+;;; Amb-Eval input:
+try-again
+
+;;; Amb-Eval value:
+(2 4 1 3)
+
+;;; Amb-Eval input:
+try-again
+
+;;; There are no more values of
+(n-queens 4)
+}
+
+Keeping in mind the way that lists can represent
+nondeterministic selection, this solution is very similar to
+the one presented back in chapter 2. However, the new
+evaluator has made it much easier to express this solution.
