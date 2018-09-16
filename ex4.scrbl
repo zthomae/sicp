@@ -2428,3 +2428,108 @@ Keeping in mind the way that lists can represent
 nondeterministic selection, this solution is very similar to
 the one presented back in chapter 2. However, the new
 evaluator has made it much easier to express this solution.
+
+@section[#:tag "c4e45"]{Exercise 4.45}
+
+I've chosen to represent the five different parses of the
+sentence via the actual representations found by an @tt{amb}
+interpreter, because this happens to be an unambiguous
+representation that can be understood readily and verified
+by parsing the sentence yourself. Here are the
+interpretations, followed by brief descriptions of how the
+placement of the prepositional phrases colors the meaning of
+the sentence:
+
+@racketblock[
+ (sentence
+  (simple-noun-phrase (article the) (noun professor))
+  (verb-phrase
+   (verb-phrase
+    (verb-phrase
+     (verb lectures)
+     (prep-phrase (prep to) (simple-noun-phrase (article the) (noun student))))
+    (prep-phrase (prep in) (simple-noun-phrase (article the) (noun class))))
+   (prep-phrase (prep with) (simple-noun-phrase) (article the) (noun cat))))
+ ]
+
+Here, there are three nested verb phrases. The first,
+"lectures to the student", is qualified by the lecturing
+being in the class, and this is qualified even further by
+the fact that the lecturing is with the cat.
+
+@racketblock[
+ (sentence
+  (simple-noun-phrase (article the) (noun professor))
+  (verb-phrase
+   (verb-phrase
+    (verb lectures)
+    (prep-phrase (prep to) (simple-noun-phrase (article the) (noun student))))
+   (prep-phrase
+    (prep in)
+    (noun-phrase
+     (simple-noun-phrase (article the) (noun class))
+     (prep-phrase (prep with) (simple-noun-phrase (article the) (noun cat)))))))
+ ]
+
+Here, the class is a part of a larger noun phrase, adding
+the qualification that the class has a cat. The lecturing is
+now taking place "in the class with the cat".
+
+@racketblock[
+ (sentence
+  (simple-noun-phrase (article the) (noun professor))
+  (verb-phrase
+   (verb-phrase
+    (verb lectures)
+    (prep-phrase
+     (prep to)
+     (noun-phrase
+      (simple-noun-phrase (article the) (noun student))
+      (prep-phrase (prep in) (simple-noun-phrase (article the) (noun class))))))
+   (prep-phrase (prep with) (simple-noun-phrase (article the) (noun cat)))))
+ ]
+
+Here, "the student in the class" is a larger noun phrase
+which is the target of the lecturing. The professor is also
+lecturing with the cat.
+
+@racketblock[
+ (sentence
+  (simple-noun-phrase (article the) (noun professor))
+  (verb-phrase
+   (verb lectures)
+   (prep-phrase
+    (prep to)
+    (noun-phrase
+     (noun-phrase
+      (simple-noun-phrase (article the) (noun student))
+      (prep-phrase (prep in) (simple-noun-phrase (article the) (noun class))))
+     (prep-phrase (prep with) (simple-noun-phrase (article the) (noun cat)))))))
+ ]
+
+Here, "the student in the class with the cat" is a single
+compound noun phrase, and the noun phrases are nested such
+that the student has the cat.
+
+@racketblock[
+ (sentence
+  (simple-noun-phrase (article the) (noun professor))
+  (verb-phrase
+   (verb lectures)
+   (prep-phrase
+    (prep to)
+    (noun-phrase
+     (simple-noun-phrase (article the) (noun student))
+     (prep-phrase
+      (prep in)
+      (noun-phrase
+       (simple-noun-phrase (article the) (noun class))
+       (prep-phrase
+        (prep with)
+        (simple-noun-phrase (article the) (noun cat)))))))))
+ ]
+
+Here, "the student in the class with the cat" is also a
+single compound noun phrase, but the nesting of these
+phrases is different -- now, "the class with the cat" is
+what the student is in.

@@ -275,6 +275,7 @@
         (list 'sqrt sqrt)
         (list 'member member)
         (list 'eq? eq?)
+        (list 'memq memq)
         ;; more...
         ))
 
