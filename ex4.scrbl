@@ -2703,3 +2703,204 @@ pulling out the parsing of the specific type of word into a thunk:
 Even though it might have been less obvious, I've chosen to
 parametize the entire parser instead of just the word list
 to use.
+
+@section[#:tag "c4e49"]{Exercise 4.49}
+
+The simplest way to write a generating interpreter is to
+rewrite the procedures we already have so that they
+eventually call down into a procedure that selects a word
+from a word list, rather than parsing one. That would entail
+writing the following new code:
+
+@racketblock[
+ (define (amb-select xs)
+   (if (null? xs)
+       (amb)
+       (amb (car xs) (amb-select (cdr xs)))))
+
+ (define (generate)
+   (list 'sentence
+         (generate-noun-phrase)
+         (generate-verb-phrase)))
+
+ (define (generate-word word-list)
+   (list (car word-list) (amb-select (cdr word-list))))
+ 
+ (define (generate-prepositional-phrase)
+   (list 'prep-phrase
+         (generate-word prepositions)
+         (generate-noun-phrase)))
+
+ (define (generate-simple-noun-phrase)
+   (list 'simple-noun-phrase
+         (generate-word articles)
+         (generate-word nouns)))
+
+ (define (generate-noun-phrase)
+   (define (maybe-add-prep-phrase noun-phrase)
+     (amb noun-phrase
+          (maybe-add-prep-phrase (list 'noun-phrase
+                                       noun-phrase
+                                       (generate-prepositional-phrase)))))
+   (maybe-add-prep-phrase (amb (generate-simple-noun-phrase)
+                               (generate-noun-phrase-with-adjective))))
+
+ (define (generate-noun-phrase-with-adjective)
+   (list 'noun-phrase
+         (generate-word articles)
+         (generate-adjective-phrase)
+         (generate-word nouns)))
+
+ (define (generate-verb-phrase)
+   (define (maybe-add-prep-phrase verb-phrase)
+     (amb verb-phrase
+          (maybe-add-prep-phrase (list 'verb-phrase
+                                       verb-phrase
+                                       (generate-prepositional-phrase)))))
+   (maybe-add-prep-phrase (amb (generate-word verbs)
+                               (generate-verb-phrase-with-adverb))))
+
+ (define (generate-verb-phrase-with-adverb)
+   (list 'verb-phrase
+         (generate-word verbs)
+         (generate-adverb-phrase)))
+
+ (define (generate-with-conjunctions generator)
+   (define (maybe-add-conjunction acc)
+     (amb acc
+          (maybe-add-conjunction (list 'conjunction
+                                       acc
+                                       (generate-word conjunctions)
+                                       (generator)))))
+   (maybe-add-conjunction (generator)))
+
+ (define (generate-adjective-phrase)
+   (generate-with-conjunctions (lambda () (generate-word adjectives))))
+
+ (define (generate-adverb-phrase)
+   (generate-with-conjunctions (lambda () (generate-word adverbs))))
+ ]
+
+I don't love this idea. The rules of sentence structure are
+now encoded twice -- once for parsing, and again for
+generating. If the rules change, almost identical changes
+need to be made to each of these. And if we do anything else
+with these rules, the problem will get even worse.
+
+The only reason that all of these procedures needed to be
+defined again is because they eventually call down into a
+single function that needs to be different. However, the API
+to this function is always the same -- it takes a word list,
+and returns something that will be used to construct a
+larger result. Even the combination of the word type and the
+word that is either selected or found is currently being
+duplicated. I believe that we can do better than this.
+
+Instead of having separate functions for generating and
+parsing, we're going to have a single set of "traversal"
+functions which are parametized on the function that will be
+applied to the root word lists. For ease of use, we're also
+going to define a helper function for creating word
+traversal functions that provides the structure of creating
+a list of the word list type followed by the result, as well
+as removing the word list type from the list before calling
+the specialized traversal function. (This eliminates the
+need to remember to use @tt{(cdr word-list)} once you're
+actually looking for words. Without knowing what else might
+be done here, this might be a mistake, but it would be
+trivial to write a variant function that doesn't do this if
+one so desired.) @tt{parse-word} and @tt{generate-word} are
+then defined in terms of this function.
+
+Lastly, we have a single @tt{traverse-sentence} function
+which encodes the requirement that sentences are composed of
+a noun phrase and a verb phrase. @tt{parse} and @tt{generate}
+are defined in terms of this.
+
+Here is the entire new implementation:
+
+@racketblock[
+ (define (traverse-sentence f)
+   (list 'sentence
+         (traverse-noun-phrase f)
+         (traverse-verb-phrase f)))
+
+ (define (traverse-word f)
+   (lambda (word-list)
+     (list (car word-list) (f (cdr word-list)))))
+
+ (define parse-word
+   (traverse-word
+    (lambda (words)
+      (require (not (null? *unparsed*)))
+      (require (memq (car *unparsed*) words))
+      (let ((found-word (car *unparsed*)))
+        (set! *unparsed* (cdr *unparsed*))
+        found-word))))
+
+ (define generate-word
+   (traverse-word amb-select))
+
+ (define (parse input)
+   (set! *unparsed* input)
+   (let ((result (traverse-sentence parse-word)))
+     (require (null? *unparsed*))
+     result))
+
+ (define (generate)
+   (traverse-sentence generate-word))
+
+ (define (traverse-prepositional-phrase f)
+   (list 'prep-phrase
+         (f prepositions)
+         (traverse-noun-phrase f)))
+
+ (define (traverse-simple-noun-phrase f)
+   (list 'simple-noun-phrase
+         (f articles)
+         (f nouns)))
+
+ (define (traverse-noun-phrase f)
+   (define (maybe-add-prep-phrase noun-phrase)
+     (amb noun-phrase
+          (maybe-add-prep-phrase (list 'noun-phrase
+                                       noun-phrase
+                                       (traverse-prepositional-phrase f)))))
+   (maybe-add-prep-phrase (amb (traverse-simple-noun-phrase f)
+                               (traverse-noun-phrase-with-adjective f))))
+
+ (define (traverse-noun-phrase-with-adjective f)
+   (list 'noun-phrase
+         (f articles)
+         (traverse-adjective-phrase f)
+         (f nouns)))
+
+ (define (traverse-verb-phrase f)
+   (define (maybe-add-prep-phrase verb-phrase)
+     (amb verb-phrase
+          (maybe-add-prep-phrase (list 'verb-phrase
+                                       verb-phrase
+                                       (traverse-prepositional-phrase f)))))
+   (maybe-add-prep-phrase (amb (f verbs)
+                               (traverse-verb-phrase-with-adverb f))))
+
+ (define (traverse-verb-phrase-with-adverb f)
+   (list 'verb-phrase
+         (f verbs)
+         (traverse-adverb-phrase f)))
+
+ (define (traverse-with-conjunctions f basis)
+   (define (maybe-add-conjunction acc)
+     (amb acc
+          (maybe-add-conjunction (list 'conjunction
+                                       acc
+                                       (f conjunctions)
+                                       (basis)))))
+   (maybe-add-conjunction (basis)))
+
+ (define (traverse-adjective-phrase f)
+   (traverse-with-conjunctions f (lambda () (f adjectives))))
+
+ (define (traverse-adverb-phrase f)
+   (traverse-with-conjunctions f (lambda () (f adverbs))))
+ ]

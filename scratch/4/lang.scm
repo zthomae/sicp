@@ -117,3 +117,70 @@
 
 (define (parse-adverb-phrase)
   (parse-with-conjunctions (lambda () (parse-word adverbs))))
+
+(define (amb-select xs)
+  (if (null? xs)
+      (amb)
+      (amb (car xs) (amb-select (cdr xs)))))
+
+(define (generate-sentence)
+  (list 'sentence
+        (generate-noun-phrase)
+        (generate-verb-phrase)))
+
+(define (generate-word word-list)
+  (list (car word-list) (amb-select (cdr word-list))))
+
+(define (generate-prepositional-phrase)
+  (list 'prep-phrase
+        (generate-word prepositions)
+        (generate-noun-phrase)))
+
+(define (generate-simple-noun-phrase)
+  (list 'simple-noun-phrase
+        (generate-word articles)
+        (generate-word nouns)))
+
+(define (generate-noun-phrase)
+  (define (maybe-add-prep-phrase noun-phrase)
+    (amb noun-phrase
+         (maybe-add-prep-phrase (list 'noun-phrase
+                                      noun-phrase
+                                      (generate-prepositional-phrase)))))
+  (maybe-add-prep-phrase (amb (generate-simple-noun-phrase)
+                              (generate-noun-phrase-with-adjective))))
+
+(define (generate-noun-phrase-with-adjective)
+  (list 'noun-phrase
+        (generate-word articles)
+        (generate-adjective-phrase)
+        (generate-word nouns)))
+
+(define (generate-verb-phrase)
+  (define (maybe-add-prep-phrase verb-phrase)
+    (amb verb-phrase
+         (maybe-add-prep-phrase (list 'verb-phrase
+                                      verb-phrase
+                                      (generate-prepositional-phrase)))))
+  (maybe-add-prep-phrase (amb (generate-word verbs)
+                              (generate-verb-phrase-with-adverb))))
+
+(define (generate-verb-phrase-with-adverb)
+  (list 'verb-phrase
+        (generate-word verbs)
+        (generate-adverb-phrase)))
+
+(define (generate-with-conjunctions generator)
+  (define (maybe-add-conjunction acc)
+    (amb acc
+         (maybe-add-conjunction (list 'conjunction
+                                      acc
+                                      (generate-word conjunctions)
+                                      (generator)))))
+  (maybe-add-conjunction (generator)))
+
+(define (generate-adjective-phrase)
+  (generate-with-conjunctions (lambda () (generate-word adjectives))))
+
+(define (generate-adverb-phrase)
+  (generate-with-conjunctions (lambda () (generate-word adverbs))))
