@@ -2533,3 +2533,173 @@ Here, "the student in the class with the cat" is also a
 single compound noun phrase, but the nesting of these
 phrases is different -- now, "the class with the cat" is
 what the student is in.
+
+@section[#:tag "c4e46"]{Exercise 4.46}
+
+Our parsing program relies on operands being evaluated in
+left-to-right order because our parsing procedure modifies a
+single global input list. Consider the following function
+that was given in the chapter:
+
+@racketblock[
+ (define (parse-preopositional-phrase)
+   (list 'prep-phrase
+         (parse-word prepositions)
+         (parse-noun-phrase)))
+ ]
+
+If the operands were evaluated in, say, right-to-left order,
+then it would try to parse a noun phrase (thus expecting to
+remove nouns from the input source) before the preposition
+itself. This would parse a different set of sentences than
+we expect.
+
+It would be possible to write this function to behave
+correctly with right-to-left operand evaluation, but it
+might be somewhat confusing -- at the very least, the
+operand order corresponds with the actual order that the
+segments will be found in the sentence. However, if the
+order of evaluation for operands were
+implementation-defined, it would not be possible to write
+this interpreter in a portable fashion.
+
+@section[#:tag "c4e47"]{Exercise 4.47}
+
+Compare Louis Reasoner's @tt{parse-verb-phrase} with the
+original:
+
+@racketblock[
+ (code:comment @#,elem{Original})
+ (define (parse-verb-phrase)
+   (define (maybe-extend verb-phrase)
+     (amb verb-phrase
+          (maybe-extend (list 'verb-phrase
+                              verb-phrase
+                              (parse-prepositional-phrase)))))
+   (maybe-extend (parse-word verbs)))
+
+ (code:comment @#,elem{Louis Reasoner})
+ (define (parse-verb-phrase)
+   (amb (parse-word verbs)
+        (list 'verb-phrase
+              (parse-verb-phrase)
+              (parse-prepositional-phrase))))
+ ]
+
+As stated, the main difference is that Louis chose to inline
+the calls to @tt{parse-verb-phrase} and thereby eliminate
+@tt{maybe-extend}. However, this is very critically wrong,
+and will lead to an infinite loop.
+
+@bold{TODO: Explain why this doesn't terminate}
+
+@section[#:tag "c4e48"]{Exercise 4.48}
+
+For this exercise, I'm going to be adding some support for
+adjectives and adverbs, as well as simple conjunctions of
+the two.
+
+I'm going to be following a simple rule for parsing adverbs:
+The adverb must appear after the verb it modifies. In
+reality, placing adverbs is much more complicated than this,
+but I'm not going to be exploring that at this time.
+
+In the simplest form, instead of parsing just a verb, we are
+either parsing a verb or a verb followed by an adverb. We'll
+still label this a @tt{ verb-phrase}.
+
+@racketblock[
+ (define adverbs '(adverb quickly slowly immediately lazily))
+
+ (define (parse-verb-phrase-with-adverb)
+   (list 'verb-phrase
+         (parse-word verbs)
+         (parse-word adverbs)))
+ 
+ (define (parse-verb-phrase)
+   (define (maybe-extend verb-phrase)
+     (amb verb-phrase
+          (maybe-extend (list 'verb-phrase
+                              verb-phrase
+                              (parse-prepositional-phrase)))))
+   (maybe-extend (amb (parse-word verbs)
+                      (parse-verb-phrase-with-adverb))))
+ ]
+
+Adjectives, on the other hand, appear before the nouns they
+modify in English. A slight variant on the above will allow
+noun phrases to include adjectives:
+
+@racketblock[
+ (define adjectives '(adjective big small red green blue))
+
+ (define (parse-noun-phrase-with-adjective)
+   (list 'noun-phrase
+         (parse-word articles)
+         (parse-word adjectives)
+         (parse-word nouns)))
+
+ (define (parse-noun-phrase)
+   (define (maybe-add-prep-phrase noun-phrase)
+     (amb noun-phrase
+          (maybe-add-prep-phrase (list 'noun-phrase
+                                       noun-phrase
+                                       (parse-prepositional-phrase)))))
+   (maybe-add-prep-phrase (amb (parse-simple-noun-phrase)
+                               (parse-noun-phrase-with-adjective))))
+ ]
+
+While there are multiple types of conjunctions in English,
+I'm going to focus on adding conjunctions to of adverbs onto
+adverbs and adjectives onto adjectives. I'll allow the
+number of conjunctions to be unlimited (even though this
+probably won't apply much in practice). We can write
+functions that are essentially similar to those which added
+prepositional phrases:
+
+@racketblock[
+ (define (parse-adverb-phrase)
+   (define (maybe-add-conjunction adverb-phrase)
+     (amb adverb-phrase
+          (maybe-add-conjunction (list 'conjunction
+                                       adverb-phrase
+                                       (parse-word conjunctions)
+                                       (parse-word adverbs)))))
+   (maybe-add-conjunction (parse-word adverbs)))
+             
+ (define (parse-adjective-phrase)
+   (define (maybe-add-conjunction adjective-phrase)
+     (amb adjective-phrase
+          (maybe-add-conjunction (list 'conjunction
+                                       adjective-phrase
+                                       (parse-word conjunctions)
+                                       (parse-word adjectives)))))
+   (maybe-add-conjunction (parse-word adjectives)))
+ ]
+
+However, you'll notice that adding a sequence of
+conjunctions of a single type of word is an essentially
+generic operation -- in fact, these two procedures are
+almost identical. We can factor out the commonality by
+pulling out the parsing of the specific type of word into a thunk:
+
+@racketblock[
+ (define (parse-with-conjunctions parser)
+   (define (maybe-add-conjunction acc)
+     (amb acc
+          (maybe-add-conjunction (list 'conjunction
+                                       acc
+                                       (parse-word conjunctions)
+                                       (parser)))))
+   (maybe-add-conjunction (parser)))
+
+ (define (parse-adjective-phrase)
+   (parse-with-conjunctions (lambda () (parse-word adjectives))))
+
+ (define (parse-adverb-phrase)
+   (parse-with-conjunctions (lambda () (parse-word adverbs))))
+ ]
+
+Even though it might have been less obvious, I've chosen to
+parametize the entire parser instead of just the word list
+to use.

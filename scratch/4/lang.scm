@@ -34,23 +34,86 @@
         (parse-word prepositions)
         (parse-noun-phrase)))
 
+(define (parse-simple-noun-phrase)
+  (list 'simple-noun-phrase
+        (parse-word articles)
+        (parse-word nouns)))
+
+(define adjectives '(adjective big small red green blue))
+
+(define (parse-noun-phrase-with-adjective--1)
+    (list 'noun-phrase
+          (parse-word articles)
+          (parse-word adjectives)
+          (parse-word nouns)))
+
+(define (parse-noun-phrase)
+  (define (maybe-add-prep-phrase noun-phrase)
+    (amb noun-phrase
+         (maybe-add-prep-phrase (list 'noun-phrase
+                                      noun-phrase
+                                      (parse-prepositional-phrase)))))
+  (maybe-add-prep-phrase (amb (parse-simple-noun-phrase)
+                              (parse-noun-phrase-with-adjective))))
+
+(define adverbs '(adverb quickly slowly immediately lazily))
+
+(define (parse-verb-phrase-with-adverb--1)
+  (list 'verb-phrase
+        (parse-word verbs)
+        (parse-word adverbs)))
+
 (define (parse-verb-phrase)
   (define (maybe-extend verb-phrase)
     (amb verb-phrase
          (maybe-extend (list 'verb-phrase
                              verb-phrase
                              (parse-prepositional-phrase)))))
-  (maybe-extend (parse-word verbs)))
+  (maybe-extend (amb (parse-word verbs)
+                     (parse-verb-phrase-with-adverb))))
 
-(define (parse-simple-noun-phrase)
-  (list 'simple-noun-phrase
-        (parse-word articles)
-        (parse-word nouns)))
+(define conjunctions '(conjunction and but))
 
-(define (parse-noun-phrase)
-  (define (maybe-extend noun-phrase)
-    (amb noun-phrase
-         (maybe-extend (list 'noun-phrase
-                             noun-phrase
-                             (parse-prepositional-phrase)))))
-  (maybe-extend (parse-simple-noun-phrase)))
+(define (parse-adjective-phrase--1)
+  (define (maybe-add-conjunction adjective-phrase)
+    (amb adjective-phrase
+         (maybe-add-conjunction (list 'conjunction
+                                      adjective-phrase
+                                      (parse-word conjunctions)
+                                      (parse-word adjectives)))))
+  (maybe-add-conjunction (parse-word adjectives)))
+
+(define (parse-noun-phrase-with-adjective)
+    (list 'noun-phrase
+          (parse-word articles)
+          (parse-adjective-phrase)
+          (parse-word nouns)))
+
+(define (parse-adverb-phrase--1)
+  (define (maybe-add-conjunction adverb-phrase)
+    (amb adverb-phrase
+         (maybe-add-conjunction (list 'conjunction
+                                      adverb-phrase
+                                      (parse-word conjunctions)
+                                      (parse-word adverbs)))))
+  (maybe-add-conjunction (parse-word adverbs)))
+
+(define (parse-verb-phrase-with-adverb)
+  (list 'verb-phrase
+        (parse-word verbs)
+        (parse-adverb-phrase)))
+
+(define (parse-with-conjunctions parser)
+  (define (maybe-add-conjunction acc)
+    (amb acc
+         (maybe-add-conjunction (list 'conjunction
+                                      acc
+                                      (parse-word conjunctions)
+                                      (parser)))))
+  (maybe-add-conjunction (parser)))
+
+(define (parse-adjective-phrase)
+  (parse-with-conjunctions (lambda () (parse-word adjectives))))
+
+(define (parse-adverb-phrase)
+  (parse-with-conjunctions (lambda () (parse-word adverbs))))
