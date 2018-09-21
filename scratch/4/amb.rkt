@@ -26,6 +26,7 @@
         ((let*? exp) (analyze (let->combination (let*->nested-lets exp))))
         ((amb? exp) (analyze-amb exp))
         ((ramb? exp) (analyze-ramb exp))
+        ((if-fail? exp) (analyze-if-fail exp))
         ((application? exp) (analyze-application exp))
         (else
          (error "Unknown expression type -- ANALYZE" exp))))
@@ -105,6 +106,10 @@
   (if (not (null? (cdddr exp)))
       (cadddr exp)
       'false))
+
+(define (if-fail? exp) (tagged-list? exp 'if-fail))
+(define (if-fail-value exp) (cadr exp))
+(define (if-fail-alternative exp) (caddr exp))
 
 (define (make-if predicate consequent alternative)
   (list 'if predicate consequent alternative))
@@ -422,6 +427,19 @@
                    (aproc env succeed fail2)))
              ;; failure continuation for evaluating the predicate
              fail))))
+
+(define (analyze-if-fail exp)
+  (let* ((vproc (analyze (if-fail-value exp)))
+         (aproc (analyze (if-fail-alternative exp))))
+    (lambda (env succeed fail)
+      (vproc env
+             (lambda (val fail2)
+               (succeed val fail2))
+             (lambda ()
+               (aproc env
+                      (lambda (val fail3)
+                        (succeed val fail3))
+                      fail))))))
 
 ;; (define (analyze-sequence exps)
 ;;   (define (sequentially proc1 proc2)

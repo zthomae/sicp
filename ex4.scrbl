@@ -3042,3 +3042,54 @@ it is a strictly simpler variant:
                              (fail2)))))
               fail))))
  ]
+
+@section[#:tag "c4e52"]{Exercise 4.52}
+
+An @tt{if-fail} expression takes two arguments. The first is
+an expression that is always going to be evaluated. If it
+successfully evaluates to a value @tt{v}, then the result of
+the @tt{if-fail} expression as a whole is @tt{v}. However,
+if evaluation fails, then the result of the entire
+expression will be the result of evaluating the second
+argument. If the evaluation of the alternative fails, then
+the evaluation of the entire expression fails.
+
+First, the boilerplate:
+
+@racketblock[
+ (define (if-fail? exp) (tagged-list? exp 'if-fail))
+ (define (if-fail-value exp) (cadr exp))
+ (define (if-fail-alternative exp) (caddr exp))
+ ]
+
+Implementing @tt{if-fail} is a little tricker than most of
+the special forms we've written so far, because it requires
+constructing a new failure continuation and adding it to the
+right place (alongside a few other failure continuations
+being juggled around).
+
+The one tricky bit is that the new failure continuation
+needs to be a thunk -- if you forget this thunk wrapping,
+then you will always evaluate the alternative case. If the
+main evaluation succeeds, you will get very confusing
+results.
+
+This is probably easier to understand by looking at the
+code:
+
+@racketblock[
+ (define (analyze-if-fail exp)
+   (let* ((vproc (analyze (if-fail-value exp)))
+          (aproc (analyze (if-fail-alternative exp))))
+     (lambda (env succeed fail)
+       (vproc env
+              (code:comment @#,elem{If the evaluation of the predicate succeeds})
+              (lambda (val fail2)
+                (succeed val fail2))
+              (code:comment @#,elem{If the evaluation of the predicate fails})
+              (lambda ()
+                (aproc env
+                       (lambda (val fail3)
+                         (succeed val fail3))
+                       fail))))))
+ ]
