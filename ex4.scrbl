@@ -2991,3 +2991,54 @@ ordering.
            (inner (cons (car next) acc) (cdr next) (- len 1)))))
    (inner '() xs (length xs)))
  ]
+
+@section[#:tag "c4e51"]{Exercise 4.51}
+
+Implementing @tt{permanent-set!} is actually easier than
+implementing @tt{set!} was, because it no longer needs to
+wrap the innermost failure continuation with code that sets
+the value back to what it was before.
+
+First, we have the trivial detection and accessor functions.
+@tt{permanent-set?} is added as a case to @tt{analyze}
+before @tt{application?}, just like usual:
+
+@racketblock[
+ (define (permanent-assignment? exp)
+   (tagged-list? exp 'permanent-set!))
+ (define (permanent-assignment-variable exp) (cadr exp))
+ (define (permanent-assignment-value exp) (caddr exp))
+ ]
+
+And here is how we analyze permanent set expressions.
+
+@racketblock[
+ (define (analyze-permanent-assignment exp)
+   (let ((var (permanent-assignment-variable exp))
+         (vproc (analyze (permanent-assignment-value exp))))
+     (lambda (env succeed fail)
+       (vproc env
+              (lambda (val fail2)
+                (set-variable-value! var val env)
+                (succeed 'ok fail2))
+              fail))))
+ ]
+
+Compare this to @tt{analyze-assignment} -- you'll see that
+it is a strictly simpler variant:
+
+@racketblock[
+ (define (analyze-assignment exp)
+   (let ((var (assignment-variable exp))
+         (vproc (analyze (assignment-value exp))))
+     (lambda (env succeed fail)
+       (vproc env
+              (lambda (val fail2)
+                (let ((old-value (lookup-variable-value var env)))
+                  (set-variable-value! var val env)
+                  (succeed 'ok
+                           (lambda ()
+                             (set-variable-value! var old-value env)
+                             (fail2)))))
+              fail))))
+ ]
