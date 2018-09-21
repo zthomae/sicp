@@ -2960,7 +2960,8 @@ Inserting @tt{ramb} handling into @tt{analyze} is straightforward:
 @racketblock[
 (define (analyze exp)
   (cond (code:comment @#,elem{...})
-        ((ramb? exp) (analyze-ramb exp))
+        ((ramb? exp) (analyze-ramb exp)) (code:comment @#,elem{Added})
+        ((application? exp) (analyze-application exp))
         (else
          (error "Unknown expression type -- ANALYZE" exp))))
 
