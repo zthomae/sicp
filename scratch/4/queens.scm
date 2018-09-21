@@ -58,13 +58,12 @@
           (iter (+ k 1) possible-positions))))
   (iter 1 '()))
 
-(define (amb-select xs)
-  (if (null? xs)
-      (amb)
-      (amb (car xs) (amb-select (cdr xs)))))
+(define (an-element-of items)
+  (require (not (null? items)))
+  (amb (car items) (an-element-of (cdr items))))
 
 (define (n-queens n)
-  (define (create-position) (amb-select (enumerate-interval 1 n)))
+  (define (create-position) (an-element-of (enumerate-interval 1 n)))
   (define (iter k positions)
     (if (> k n)
         positions

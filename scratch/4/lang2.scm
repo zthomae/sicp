@@ -11,10 +11,9 @@
 (define adverbs '(adverb quickly slowly immediately lazily))
 (define conjunctions '(conjunction and but))
 
-(define (amb-select xs)
-  (if (null? xs)
-      (amb)
-      (amb (car xs) (amb-select (cdr xs)))))
+(define (an-element-of items)
+  (require (not (null? items)))
+  (amb (car items) (an-element-of (cdr items))))
 
 (define (traverse-sentence f)
   (list 'sentence
@@ -35,7 +34,7 @@
        found-word))))
 
 (define generate-word
-  (traverse-word amb-select))
+  (traverse-word an-element-of))
 
 (define (parse input)
   (set! *unparsed* input)

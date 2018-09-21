@@ -2363,13 +2363,8 @@ row, and to detect the completion of the board. We can
 parametize both of these fairly simply.
 
 @racketblock[
- (define (amb-select xs)
-   (if (null? xs)
-       (amb)
-       (amb (car xs) (amb-select (cdr xs)))))
-
  (define (n-queens n)
-   (define (create-position) (amb-select (enumerate-interval 1 n)))
+   (define (create-position) (an-element-of (enumerate-interval 1 n)))
    (define (iter k positions)
      (if (> k n)
          positions
@@ -2743,18 +2738,13 @@ from a word list, rather than parsing one. That would entail
 writing the following new code:
 
 @racketblock[
- (define (amb-select xs)
-   (if (null? xs)
-       (amb)
-       (amb (car xs) (amb-select (cdr xs)))))
-
  (define (generate)
    (list 'sentence
          (generate-noun-phrase)
          (generate-verb-phrase)))
 
  (define (generate-word word-list)
-   (list (car word-list) (amb-select (cdr word-list))))
+   (list (car word-list) (an-element-of (cdr word-list))))
  
  (define (generate-prepositional-phrase)
    (list 'prep-phrase
@@ -2869,7 +2859,7 @@ Here is the entire new implementation:
         found-word))))
 
  (define generate-word
-   (traverse-word amb-select))
+   (traverse-word an-element-of))
 
  (define (parse input)
    (set! *unparsed* input)

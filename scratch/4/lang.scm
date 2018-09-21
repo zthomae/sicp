@@ -118,10 +118,9 @@
 (define (parse-adverb-phrase)
   (parse-with-conjunctions (lambda () (parse-word adverbs))))
 
-(define (amb-select xs)
-  (if (null? xs)
-      (amb)
-      (amb (car xs) (amb-select (cdr xs)))))
+(define (an-element-of items)
+  (require (not (null? items)))
+  (amb (car items) (an-element-of (cdr items))))
 
 (define (generate-sentence)
   (list 'sentence
@@ -129,7 +128,7 @@
         (generate-verb-phrase)))
 
 (define (generate-word word-list)
-  (list (car word-list) (amb-select (cdr word-list))))
+  (list (car word-list) (an-element-of (cdr word-list))))
 
 (define (generate-prepositional-phrase)
   (list 'prep-phrase
