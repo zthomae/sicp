@@ -2934,3 +2934,69 @@ Here is the entire new implementation:
  (define (traverse-adverb-phrase f)
    (traverse-with-conjunctions f (lambda () (f adverbs))))
  ]
+
+@section[#:tag "c4e50"]{Exercise 4.50}
+
+The simplest way to implement the new @tt{ramb} special form
+is as a syntactic transformation into an @tt{amb}. You could
+do this even before analyzation. However, this would be
+critically wrong -- once analyzed, the selection of the
+choices would be fixed. This means that if, for example, you
+used this @tt{ramb} in a function, the selection order would
+be randomized at the time of the definition of the function,
+but every invocation of the function would use the same
+list. This won't work.
+
+What will work is deferring the shuffling until the
+evaluation of the form. This can be done by writing a slight
+variant of @tt{analyze-amb} that will shuffle the choices
+@italic{inside} the returned function. This means that you
+can use @tt{ramb} inside a function and have it provide
+different random values every time, just as I think anyone
+would want.
+
+Inserting @tt{ramb} handling into @tt{analyze} is straightforward:
+
+@racketblock[
+(define (analyze exp)
+  (cond (code:comment @#,elem{...})
+        ((ramb? exp) (analyze-ramb exp))
+        (else
+         (error "Unknown expression type -- ANALYZE" exp))))
+
+ (define (analyze-ramb exp)
+   (let ((cprocs (map analyze (ramb-choices exp))))
+     (lambda (env succeed fail)
+       (define (try-next choices)
+         (if (null? choices)
+             (fail)
+             ((car choices) env
+                            succeed
+                            (lambda () (try-next (cdr choices))))))
+       (try-next (shuffle cprocs)))))
+ ]
+
+There are many ways to write @tt{shuffle}, but one way
+relies on using a @tt{random} function (which is already
+provided in my environment). This generates a random integer
+between @tt{0} and the (positive) argument you provide it.
+We can use this by continually generating random indices of
+values to take from the list, in the end achieving a random
+ordering.
+
+@racketblock[
+ (define (shuffle xs)
+   (define (extract xs idx)
+     (define (inner acc rest idx)
+       (if (= idx 0)
+           (cons (car rest) (append acc (cdr rest)))
+           (inner (cons (car rest) acc) (cdr rest) (- idx 1))))
+     (inner '() xs idx))
+   (define (inner acc rest len)
+     (if (= len 0)
+         acc
+         (let* ((idx (random len))
+                (next (extract rest idx)))
+           (inner (cons (car next) acc) (cdr next) (- len 1)))))
+   (inner '() xs (length xs)))
+ ]

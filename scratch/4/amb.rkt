@@ -24,6 +24,7 @@
         ((let? exp) (analyze (let->combination exp)))
         ((let*? exp) (analyze (let->combination (let*->nested-lets exp))))
         ((amb? exp) (analyze-amb exp))
+        ((ramb? exp) (analyze-ramb exp))
         ((application? exp) (analyze-application exp))
         (else
          (error "Unknown expression type -- ANALYZE" exp))))
@@ -32,6 +33,21 @@
   (if (null? xs)
       #f
       (or (car xs) (any? (cdr xs)))))
+
+(define (shuffle xs)
+  (define (extract xs idx)
+    (define (inner acc rest idx)
+      (if (= idx 0)
+          (cons (car rest) (append acc (cdr rest)))
+          (inner (cons (car rest) acc) (cdr rest) (- idx 1))))
+    (inner '() xs idx))
+  (define (inner acc rest len)
+    (if (= len 0)
+        acc
+        (let* ((idx (random len))
+               (next (extract rest idx)))
+          (inner (cons (car next) acc) (cdr next) (- len 1)))))
+  (inner '() xs (length xs)))
 
 ;; copypasta from scheme.rkt
 
@@ -341,6 +357,9 @@
 (define (amb? exp) (tagged-list? exp 'amb))
 (define (amb-choices exp) (cdr exp))
 
+(define (ramb? exp) (tagged-list? exp 'ramb))
+(define (ramb-choices exp) (cdr exp))
+
 (define (ambeval exp env succeed fail)
   ((analyze exp) env succeed fail))
 
@@ -532,6 +551,17 @@
                            succeed
                            (lambda () (try-next (cdr choices))))))
       (try-next cprocs))))
+
+(define (analyze-ramb exp)
+  (let ((cprocs (map analyze (ramb-choices exp))))
+    (lambda (env succeed fail)
+      (define (try-next choices)
+        (if (null? choices)
+            (fail)
+            ((car choices) env
+                           succeed
+                           (lambda () (try-next (cdr choices))))))
+      (try-next (shuffle cprocs)))))
 
 ;; (define input-prompt ";;; M-Eval input:")
 ;; (define output-prompt ";;; M-Eval value:")
