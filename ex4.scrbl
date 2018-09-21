@@ -3093,3 +3093,39 @@ code:
                          (succeed val fail3))
                        fail))))))
  ]
+
+@section[#:tag "c4e53"]{Exercise 4.53}
+
+We are asked to determine the result of evaluating the
+following:
+
+@racketblock[
+(let ((pairs '()))
+  (if-fail (let ((p (prime-sum-pair '(1 3 5 8) '(20 35 110))))
+             (permanent-set! pairs (cons p pairs))
+             (amb))
+           pairs))
+ ]
+
+It's important to keep two different levels of failure
+continuations straight. The failure continuation constructed
+by the @tt{if-fail} expression that leads to @tt{pairs}
+being returned is only evaluated if the entire value
+expression fails. However, the @tt{(amb)} call inside the
+@tt{let} body is not going to immediately cause the entire
+expression evaluation to fail -- it's merely going to
+backtrack far enough for @tt{prime-sum-pair} to select
+another pair, which, after being selected, will be
+permanently added to @tt{pairs}. The expression as a whole
+will only fail when all of the pairs have been evaluated,
+meaning that this is one way to collect all of the prime sum
+pairs that will be found.
+
+The three prime sum pairs for these lists are @tt{(3, 20)},
+@tt{(3, 113)}, and @tt{(8, 35)}. Given that the first list
+controls the outermost iteration, and that both lists are
+iterated in order, the pairs will be discovered in this
+order, and therefore @italic{prepended} in this order. This
+leads to a final result of
+
+@tt{'((8 35) (3 113) (3 20))}
