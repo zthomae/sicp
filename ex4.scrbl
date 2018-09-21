@@ -2591,7 +2591,37 @@ the calls to @tt{parse-verb-phrase} and thereby eliminate
 @tt{maybe-extend}. However, this is very critically wrong,
 and will lead to an infinite loop.
 
-@bold{TODO: Explain why this doesn't terminate}
+Consider what will happen when this encounters a phrase that
+doesn't start with a verb, as might happen naturally during
+the exploration and backtracking process. First it will call
+@tt{(parse-word verbs)}, which will predictably fail. At
+this point it will try the second case, which requires
+evaluating a recursive call to @tt{(parse-verb-phrase)}. The
+first thing this will do is call @tt{(parse-word verbs)}
+again, which will fail again and cause another recursive
+call. We will continue to recurse without processing another
+word.
+
+The correct variant presented in the text sidesteps this
+problem by moving the parsing of a verb outside of the
+optional extension with prepositional phrases. If there is
+no verb, the function will fail immediately, and
+backtracking can proceed normally.
+
+As a follow-up question, we are asked to consider what
+will happen if the order of the @tt{amb} expression is
+changed as so:
+
+@racketblock[
+ (define (parse-verb-phrase)
+   (amb (list 'verb-phrase
+              (parse-verb-phrase)
+              (parse-prepositional-phrase))
+        (parse-word verbs)))
+ ]
+
+This @bold{really} doesn't work -- the infinite recursion
+will happen immediately.
 
 @section[#:tag "c4e48"]{Exercise 4.48}
 
@@ -2606,7 +2636,7 @@ but I'm not going to be exploring that at this time.
 
 In the simplest form, instead of parsing just a verb, we are
 either parsing a verb or a verb followed by an adverb. We'll
-still label this a @tt{ verb-phrase}.
+still label this a @tt{verb-phrase}.
 
 @racketblock[
  (define adverbs '(adverb quickly slowly immediately lazily))
