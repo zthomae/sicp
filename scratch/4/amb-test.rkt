@@ -270,6 +270,70 @@
                      (check-mock-result succeed-mock #f)))))
 
    (test-suite
+    "permanent-set!"
+    (test-case "book example"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (let ((exprs '((define count 0)
+                                    (define (an-element-of items)
+                                      (require (not (null? items)))
+                                      (amb (car items) (an-element-of (cdr items))))
+                                    (let ((x (an-element-of (quote (a b c))))
+                                          (y (an-element-of (quote (a b c)))))
+                                      (permanent-set! count (+ count 1))
+                                      (require (not (eq? x y)))
+                                      (list x y count))))
+                           (env (setup-environment)))
+                       (for-each (lambda (expr) (ambeval expr env succeed-mock fail-mock)) exprs)
+                       (check-last-n-mock-results succeed-mock 1 (racket:list '(a b 2))))))))
+
+   (test-suite
+    "if-fail"
+    (test-case "returns failure value if no cases pass"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(if-fail (let ((x (amb 1 3 5)))
+                                          (require (> x 5))
+                                          x)
+                                        'all-small)
+                              (setup-environment)
+                              succeed-mock
+                              fail-mock)
+                     (check-mock-result succeed-mock 'all-small))))
+    (test-case "returns first successful value"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(if-fail (let ((x (amb 1 3 5 8)))
+                                          (require (> x 5))
+                                          x)
+                                        'all-small)
+                              (setup-environment)
+                              succeed-mock
+                              fail-mock)
+                     (check-mock-result succeed-mock 8)))))
+
+   ;; TODO: Add tests for ramb when it is possible to control backtracking outside of the driver loop
+   ;; (i.e. when try-again is extracted as a special form)
+
+   (test-suite
+    "require"
+    (test-case "should accept basic true predicate"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(require (> 1 0)) (setup-environment) succeed-mock fail-mock)
+                     (check-mock-result succeed-mock 'ok))))
+    (test-case "should fail on false predicate"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(require (> 0 1)) (setup-environment) succeed-mock fail-mock)
+                     (check-mock-calls fail-mock (racket:list empty-arguments)))))
+    (test-case "should accept true predicate with amb"
+               (with-amb-mocks
+                   (lambda (succeed-mock fail-mock)
+                     (ambeval '(require (> 1 (amb 0 1 2 3))) (setup-environment) succeed-mock fail-mock)
+                     (check-mock-result succeed-mock 'ok)))))
+   
+   (test-suite
     "complex examples"
     (test-case "pythagorean triples"
                (with-amb-mocks
