@@ -27,6 +27,7 @@
         ((amb? exp) (analyze-amb exp))
         ((ramb? exp) (analyze-ramb exp))
         ((if-fail? exp) (analyze-if-fail exp))
+        ((require? exp) (analyze-require exp))
         ((application? exp) (analyze-application exp))
         (else
          (error "Unknown expression type -- ANALYZE" exp))))
@@ -220,6 +221,9 @@
 (define (procedure-parameters p) (cadr p))
 (define (procedure-body p) (caddr p))
 (define (procedure-environment p) (cadddr p))
+
+(define (require? exp) (tagged-list? exp 'require))
+(define (require-predicate exp) (cadr exp))
 
 (define (enclosing-environment env) (cdr env))
 (define (first-frame env) (car env))
@@ -596,6 +600,16 @@
                            succeed
                            (lambda () (try-next (cdr choices))))))
       (try-next (shuffle cprocs)))))
+
+(define (analyze-require exp)
+  (let ((pproc (analyze (require-predicate exp))))
+    (lambda (env succeed fail)
+      (pproc env
+             (lambda (pred-value fail2)
+               (if (not pred-value)
+                   (fail2)
+                   (succeed 'ok fail2)))
+             fail))))
 
 ;; (define input-prompt ";;; M-Eval input:")
 ;; (define output-prompt ";;; M-Eval value:")

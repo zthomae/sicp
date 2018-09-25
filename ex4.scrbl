@@ -3129,3 +3129,58 @@ order, and therefore @italic{prepended} in this order. This
 leads to a final result of
 
 @tt{'((8 35) (3 113) (3 20))}
+
+@section[#:tag "c4e54"]{Exercise 4.54}
+
+If we were going to add @tt{require} as a special form
+(which, although not strictly necessary, would have some
+benefit -- @tt{require} is so ubiquitous that it makes sense
+to predefine it in the interpreter in some way), we would
+essentially have to evaluate the predicate and immediately
+call the relevant failure continuation if the predicate is
+not true. This is already evident in the partial source for
+@tt{analyze-require} that is provided for this exercise:
+
+@racketblock[
+ (define (analyze-require exp)
+   (let ((pproc (analyze (require-predicate exp))))
+     (lambda (env succeed fail)
+       (pproc env
+              (lambda (pred-value fail2)
+                (if ???
+                    ???
+                    (succeed 'ok fail2)))
+              fail))))
+ ]
+
+We can already see that the predicate passed to @tt{if}
+should be true if the predicate is false, because the @tt{
+ succeed} case is in the alternative position. The only thing
+that we need to be careful of is that we call the correct
+failure continuation if the predicate is false. This is
+relatively straightforward, though -- we should call @tt{
+ fail2}, otherwise @tt{amb} expressions in the predicate will
+not behave correctly. If we called the outermost @tt{fail}
+continuation immediately, then an expression like
+@racket[(require (> 1 (amb 0 1 2 3)))] would fully terminate
+without recognizing that some of the selectable values would
+pass the predicate. This is different from how the original
+@tt{require} would behave, as that would continue to search
+for a solution (Note: strictly speaking, this implementation
+is already different than that of the procedure @tt{
+ require}, because the successful return value is @tt{'ok}
+instead of @tt{false}.)
+
+Here is the completed function:
+
+@racketblock[
+ (define (analyze-require exp)
+   (let ((pproc (analyze (require-predicate exp))))
+     (lambda (env succeed fail)
+       (pproc env
+              (lambda (pred-value fail2)
+                (if (not pred-value)
+                    (fail2)
+                    (succeed 'ok fail2)))
+              fail))))
+ ]
