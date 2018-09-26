@@ -3315,3 +3315,32 @@ improved a little bit:
 
  (meeting-time (Hacker Alyssa P) ?division (Wednesday ?time))
  ]
+
+@section[#:tag "c4e60"]{Exercise 4.60}
+
+Consider the rule @tt{lives-near}, given as an example earlier:
+
+@racketblock[
+ (rule (lives-near ?person-1 ?person-2)
+       (and (address ?person-1 (?town . ?rest-1))
+            (address ?person-2 (?town . ?rest-2))
+            (not (same ?person-1 ?person-2))))
+ ]
+
+Alyssa P. Hacker has noticed that this will return pairings
+twice if both persons are parametized at once. This is a
+fairly straightforward consequence -- if Alyssa and Cy live
+near each other, then by the rule body above,
+@racket[(lives-near (Hacker Alyssa P) (Fect Cy D))] and
+@racket[(lives-near (Fect Cy D) (Hacker Alyssa P))] are
+obviously both true. What this means is that @tt{lives-near}
+is a commutative rule.
+
+The rule needs a new condition strictly for removing
+duplicate pairs. One potential choice is a lexicographical
+(that is, alphabetical) comparison of the names -- you could
+pass a function computing whether a name is alphabetically
+precedent to another to @tt{lisp-value} and discard
+duplicate entries that way. It also isn't unreasonable to
+have all the results be presented with names in alphabetical
+order.
