@@ -3225,3 +3225,32 @@ the name of the job (i.e., the job for
 
 @racketblock[(and (supervisor ?subordinate ?supervisor)
                   (not (job ?supervisor (computer . ?supervisor-job))))]
+
+@section[#:tag "c4e57"]{Exercise 4.57}
+
+Here is the rule saying that person 1 can replace person 2
+because they either have the same job or because a person
+with person 1's job can do person 2's job:
+
+@racketblock[
+ (rule (can-replace ?person-1 ?person-2)
+       (and (or (and (job ?person-1 ?job)
+                     (job ?person-2 ?job))
+                (and (job ?person-1 ?job-1)
+                     (job ?person-2 ?job-2)
+                     (can-do-job ?job-1 ?job-2)))
+            (not (same ?person-1 ?person-2))))
+ ]
+
+Now we can use this rule in a series of follow-up queries:
+
+@bold{All people who can replace Cy D. Fect}
+
+@racketblock[(can-replace ?person (Fect Cy D))]
+
+@bold{All people who can replace someone who is being paid more than they are, together with the two salaries}
+
+@racketblock[(and (can-replace ?person-1 ?person-2)
+                  (salary ?person-1 ?salary-1)
+                  (salary ?person-2 ?salary-2)
+                  (lisp-value < ?salary-1 ?salary-2))]
