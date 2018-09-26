@@ -3254,3 +3254,25 @@ Now we can use this rule in a series of follow-up queries:
                   (salary ?person-1 ?salary-1)
                   (salary ?person-2 ?salary-2)
                   (lisp-value < ?salary-1 ?salary-2))]
+
+@section[#:tag "c4e58"]{Exercise 4.58}
+
+Let a "big shot" in a division be anyone who does not have a
+supervisor in that division. The first question we should
+ask ourselves is whether the division itself should be a
+part of the rule -- that is, do we want to ask whether a
+person is a big shot in @italic{any} division, or in
+@italic{this} division? What we might realize is that the
+more specific question can be used to write a query to solve
+the more general question -- all we have to do is parametize
+the division. We can do that like this:
+
+@racketblock[
+ (rule (is-big-shot ?person ?division)
+       (and (job ?person (?division . ?position))
+            (not (and (supervisor ?person ?supervisor)
+                      (job ?supervisor (?division . ?supervisor-position))))))
+
+ (is-big-shot (Bitdiddle Ben) computer) (code:comment @#,elem{Determine whether Ben is a big shot in the computer division})
+ (is-big-shot (Bitdiddle Ben) ?division) (code:comment @#,elem{Find all of the divisions for which Ben is a big shot})
+ ]
