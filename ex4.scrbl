@@ -3203,3 +3203,25 @@ name of the city in a valid address (e.g.
 @racket[(Slumerville (Pine Tree Road) 80)]). With that in mind,
 
 @racketblock[(address ?x (Slumerville . ?y))]
+
+@section[#:tag "c4e56"]{Exercise 4.56}
+
+@bold{The names of all people who are supervised by Ben Bitdiddle, together with their addresses}
+
+@racketblock[(and (supervisor ?person (Bitdiddle Ben))
+                  (address ?person ?address))]
+
+@bold{All people whose salary is less than Ben Bitdiddle's, together with their salary and Ben Bitdiddle's salary}
+
+@racketblock[(and (salary (Bitdiddle Ben) ?bitdiddle-salary)
+                  (salary ?person ?person-salary)
+                  (lisp-value > ?bitdiddle-salary ?person-salary))]
+
+@bold{All people who are supervised by someone who is not in the computer division, together with the supervisor's name and job}
+
+I'm going to interpret the division as not being a part of
+the name of the job (i.e., the job for
+@racket[(computer programmer)] is @racket[(programmer)]).
+
+@racketblock[(and (supervisor ?subordinate ?supervisor)
+                  (not (job ?supervisor (computer . ?supervisor-job))))]
