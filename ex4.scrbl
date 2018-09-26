@@ -3344,3 +3344,41 @@ precedent to another to @tt{lisp-value} and discard
 duplicate entries that way. It also isn't unreasonable to
 have all the results be presented with names in alphabetical
 order.
+
+@section[#:tag "c4e61"]{Exercise 4.61}
+
+Consider the @tt{next-to} relation, which determines whether
+@tt{?x} is followed directly by @tt{?y} in a list, as
+defined below:
+
+@racketblock[
+ (rule (?x next-to ?y in (?x ?y . ?u)))
+
+ (rule (?x next-to ?y in (?v . ?z))
+       (?x next-to ?y in ?z))
+ ]
+
+The first rule passes if the first two values of the list
+are @tt{?x} and @tt{?y}. The second reduces the problem by
+removing the first value of the list and asking whether @tt{
+ ?x} is followed by @tt{?y} in the rest.
+
+Some example queries using this rule (note that I am making
+an inference as to how the output will be formatted based on
+the @tt{append-to-form} example in the text):
+
+@verbatim{
+ ;;; Query input:
+ (?x next-to ?y in (1 (2 3) 4))
+ ;;; Query results:
+ (1 next-to (2 3) in (1 (2 3) 4))
+ ((2 3) next-to 4 in (1 (2 3) 4))
+}
+
+@verbatim{
+ ;;; Query input:
+ (?x next-to 1 in (2 1 3 1))
+ ;;; Query results:
+ (2 next-to 1 in (2 1 3 1))
+ (3 next-to 1 in (2 1 3 1))
+}
