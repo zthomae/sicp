@@ -3276,3 +3276,42 @@ the division. We can do that like this:
  (is-big-shot (Bitdiddle Ben) computer) (code:comment @#,elem{Determine whether Ben is a big shot in the computer division})
  (is-big-shot (Bitdiddle Ben) ?division) (code:comment @#,elem{Find all of the divisions for which Ben is a big shot})
  ]
+
+@section[#:tag "c4e59"]{Exercise 4.59}
+
+If Ben wants to query for all of the meetings happening on
+Friday, he could do this:
+
+@racketblock[(meeting ?division (Friday ?time))]
+
+If Alyssa P. Hacker wants to write a rule to associate
+persons with meeting days and times, she could do this:
+
+@racketblock[
+ (rule (meeting-time ?person ?day-and-time)
+       (or (meeting whole-company ?day-and-time)
+           (and (job ?person (?division . ?position))
+                (meeting ?division ?day-and-time))))
+ ]
+
+Using this, she could then find all of the meetings she has
+to attend on Wednesday:
+
+@racketblock[
+ (meeting-time (Hacker Alyssa P) (Wednesday ?time))
+ ]
+
+However, the results of this rule will not include the
+divisions that the meetings are for. This is a little
+suspect, especially if multiple meetings can happen at the
+same time. I think the @tt{meeting-time} rule can be
+improved a little bit:
+
+@racketblock[
+ (rule (meeting-time ?person ?division ?day-and-time)
+       (and (meeting ?division ?day-and-time)
+            (or (same whole-company ?division)
+                (job ?person (?division . ?position)))))
+
+ (meeting-time (Hacker Alyssa P) ?division (Wednesday ?time))
+ ]
