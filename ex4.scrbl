@@ -3184,3 +3184,22 @@ Here is the completed function:
                     (succeed 'ok fail2)))
               fail))))
  ]
+
+@section[#:tag "c4e55"]{Exercise 4.55}
+
+@bold{All people supervised by Ben Bitdiddle}
+
+@racketblock[(supervisor ?x (Bitdiddle Ben))]
+
+@bold{The names and jobs of all people in the accounting division}
+
+@racketblock[(job ?x (accounting . ?y))]
+
+@bold{The names and addresses of all people who live in Slumerville}
+
+I'm going to treat address as specifying the street name and
+number, which are the contents of the list following the
+name of the city in a valid address (e.g.
+@racket[(Slumerville (Pine Tree Road) 80)]). With that in mind,
+
+@racketblock[(address ?x (Slumerville . ?y))]
