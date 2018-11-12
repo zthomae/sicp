@@ -3382,3 +3382,149 @@ the @tt{append-to-form} example in the text):
  (2 next-to 1 in (2 1 3 1))
  (3 next-to 1 in (2 1 3 1))
 }
+
+@section[#:tag "c4e62"]{Exercise 4.62}
+
+@tt{last-pair} returns the a list containing just the last
+value of the input list.
+
+The first thing we need to be aware of is that this function
+is not total -- it will not be defined for empty lists. We
+need to write our matching rules carefully so that this
+doesn't come up.
+
+@tt{last-pair} can be defined recursively. The base case is
+trivial: The last pair of a one-element list is that same
+list. The recursive case is also straightfoward: In an
+element of more than one element, the @tt{last-pair} is
+equal to the @tt{last-pair} of the @tt{cdr} of that list.
+
+We can define these rules like this:
+
+@verbatim{
+ (rule (last-pair (?x) (?x)))
+ (rule (last-pair (?x . ?y) ?z)
+       (last-pair ?y ?z))
+}
+
+Note that there is no matching rule for an empty list.
+
+I don't believe this can be used to generate lists for which
+a single-element list is the last pair. This would entail
+generating an infinite number of possible lists ending with
+a given value, and while infinitely-long result sets are
+supported by the evaluator by way of streams, generating
+data points that don't exist in any provided examples or
+database records is not something that the evaluator can do,
+as far as I'm aware.
+
+@section[#:tag "c4e63"]{Exercise 4.63}
+
+Suppose we are given the following genealogy from Genesis:
+
+@verbatim{
+ (son Adam Cain)
+ (son Cain Enoch)
+ (son Enoch Irad)
+ (son Irad Mehujael)
+ (son Mehujael Methushael)
+ (son Methushael Lamech)
+ (wife Lamech Ada)
+ (son Ada Jabal)
+ (son Ada Jubal)
+}
+
+We are asked to write rules to enable the query system to
+find the following:
+
+@itemlist[
+ @item{The grandson of Cain}
+ @item{The sons oF Lamech}
+ @item{The grandsons of Methushael}
+ ]
+
+To do this, the book suggests to implement the following
+rules:
+
+@itemlist[
+ @item{If S is the son of F, and F is the son of G, then S is the grandson of G}
+ @item{If W is the wife of M, and S is the son of W, then S is the son of M}
+ ]
+
+We'll name the first rule @tt{grandson} (naturally). The
+implementation is a straightforward translation of the
+book's suggestion:
+
+@verbatim{
+ (rule (grandson S G)
+       (and (son F S)
+            (son G F)))
+}
+
+The same goes for the next rule, which we'll title @tt{father}:
+
+@verbatim{
+ (rule (father F S)
+       (and (wife F M)
+            (son M S)))
+}
+
+@section[#:tag "c4e64"]{Exercise 4.64}
+
+Louis Reasoner has retyped in the @tt{outranked-by} rule as
+follows:
+
+@verbatim{
+ (rule (outranked-by ?staff-person ?boss)
+       (or (supervisor ?staff-person ?boss)
+           (and (outranked-by ?middle-manager ?boss)
+                (supervisor ?staff-person ?middle-manager))))
+}
+
+(His mistake was to flip the arguments to the @tt{and}
+predicate.)
+
+The problem with this mistake is that it causes an infinite
+loop when evaluating expressions such as @tt{(outranked-by
+ (Bitdiddle Ben) ?who)}. In the second branch of the @tt{or}
+expression, this will try to find all database entries which
+match the form @tt{(outranked-by ?middle-manager ?boss)},
+where neither of the variables are bound. Since this will
+not match any database entries (as this is only a rule),
+this will recursively try to match database entries against
+the body of the @tt{outranked-by} rule. However, in
+evaluating the body of this rule, it will try to evaluate
+@tt{(outranked-by ?middle-manager ?boss)} again, thereby
+creating an infinite loop.
+
+The recursive reference to the @tt{outranked-by} rule was
+not meant to be applied to the database directly, but to a
+stream of frames where @tt{?middle-manager} has been bound
+to the direct supervisor of the original @tt{?staff-person}.
+Interchanging the order of these expressions has prevented
+it from doing its job (and the entire expression from
+terminating).
+
+@section[#:tag "c4e65"]{Exercise 4.65}
+
+As a reminder, the @tt{wheel} rule is implemented as follows:
+
+@verbatim{
+ (rule (wheel ?person)
+       (and (supervisor ?middle-manager ?person)
+            (supervisor ?x ?middle-manager)))
+}
+
+The purpose of this rule is to find all people who are a
+supervisor of someone who is also a supervisor.
+
+One thing to immediately be worried about is people who are
+supervisors of multiple people. Each one of these supervisor
+relationships would provide a new pair of bindings for @tt{
+ ?x} and @tt{?middle-manager} such that, for a given @tt{
+ ?person} who supervises @tt{?middle-manager}, there will be
+multiple justifications for @tt{?person} being a wheel.
+Because @tt{?person} is the only binding used in the
+conclusion of the rule, this will cause @tt{?person} to be
+reported multiple times in the results. This is the
+situation that Cy D. Fect has run into.
