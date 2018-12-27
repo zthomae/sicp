@@ -1,7 +1,43 @@
 #lang sicp
 
 (#%require (rename r5rs apply-in-underlying-scheme apply)
-           (only racket print-as-expression))
+           (only racket make-base-namespace print-as-expression))
+
+(define (make-table)
+  (let ((local-table (list '*table*)))
+    (define (lookup key-1 key-2)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (cdr record)
+                  false))
+            false)))
+    (define (insert! key-1 key-2 value)
+      (let ((subtable (assoc key-1 (cdr local-table))))
+        (if subtable
+            (let ((record (assoc key-2 (cdr subtable))))
+              (if record
+                  (set-cdr! record value)
+                  (set-cdr! subtable
+                            (cons (cons key-2 value)
+                                  (cdr subtable)))))
+            (set-cdr! local-table
+                      (cons (list key-1
+                                  (cons key-2 value))
+                            (cdr local-table)))))
+      'ok)
+    (define (dispatch m)
+      (cond ((eq? m 'lookup-proc) lookup)
+            ((eq? m 'insert-proc!) insert!)
+            (else (error "Unknown operation -- TABLE" m))))
+    dispatch))
+
+(define operation-table (make-table))
+(define get (operation-table 'lookup-proc))
+(define put (operation-table 'insert-proc!))
+
+(define user-initial-environment (make-base-namespace))
 
 (print-as-expression #f)
 
@@ -84,7 +120,7 @@
    (lambda (frame)
      (if (stream-null? (qeval (negated-query operands)
                               (singleton-stream frame)))
-         (singlton-stream frame)
+         (singleton-stream frame)
          the-empty-stream))
    frame-stream))
 
@@ -121,7 +157,7 @@
 (define (check-an-assertion assertion query-pat query-frame)
   (let ((match-result
          (pattern-match query-pat assertion query-frame)))
-    (if (q? match-result 'failed)
+    (if (eq? match-result 'failed)
         the-empty-stream
         (singleton-stream match-result))))
 
@@ -187,7 +223,7 @@
   (let ((binding (binding-in-frame var frame)))
     (cond (binding
            (unify-match
-            (binding-value binding) value frame))
+            (binding-value binding) val frame))
           ((var? val) ; ***
            (let ((binding (binding-in-frame val frame)))
              (if binding
@@ -265,7 +301,7 @@
   (if (indexable? assertion)
       (let ((key (index-key-of assertion)))
         (let ((current-assertion-stream
-               (Get-stream key 'assertion-stream)))
+               (get-stream key 'assertion-stream)))
           (put key
                'assertion-stream
                (cons-stream assertion
@@ -278,9 +314,9 @@
           (let ((current-rule-stream
                  (get-stream key 'rule-stream)))
             (put key
-                 rule-stream
+                 'rule-stream
                  (cons-stream rule
-                              curent-rule-stream)))))))
+                              current-rule-stream)))))))
 
 (define (indexable? pat)
   (or (constant-symbol? (car pat))
@@ -322,9 +358,9 @@
   (cons-stream x the-empty-stream))
 
 (define (type exp)
-  (f (pair? exp)
-     (car exp)
-     (error "Unknown expression TYPE" exp)))
+  (if (pair? exp)
+      (car exp)
+      (error "Unknown expression TYPE" exp)))
 
 (define (contents exp)
   (if (pair? exp)
@@ -393,7 +429,7 @@
 (define (make-new-variable var rule-application-id)
   (cons '? (cons rule-application-id (cdr var))))
 
-(define (contract-question-mark variables)
+(define (contract-question-mark variable)
   (string->symbol
    (string-append "?"
                   (if (number? (cadr variable))
@@ -460,3 +496,14 @@
                       (stream-filter pred
                                      (stream-cdr stream))))
         (else (stream-filter pred (stream-cdr stream)))))
+
+(define (stream-append s1 s2)
+  (if (stream-null? s1)
+      s2
+      (cons-stream (stream-car s1)
+                   (stream-append (stream-cdr s1) s2))))
+
+(define (tagged-list? exp tag)
+  (if (pair? exp)
+      (eq? (car exp) tag)
+      false))
