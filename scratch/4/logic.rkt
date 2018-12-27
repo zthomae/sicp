@@ -1,7 +1,7 @@
 #lang sicp
 
 (#%require (rename r5rs apply-in-underlying-scheme apply)
-           (only racket make-base-namespace print-as-expression))
+           (only racket eof-object? exn-message exn:fail:read? make-base-namespace print-as-expression with-handlers))
 
 (define (make-table)
   (let ((local-table (list '*table*)))
@@ -50,25 +50,31 @@
 
 (define (query-driver-loop)
   (prompt-for-input input-prompt)
-  (let ((q (query-syntax-process (read))))
-    (cond ((assertion-to-be-added? q)
-           (add-rule-or-assertion! (add-assertion-body q))
-           (newline)
-           (display "Assertion addded to data base.")
-           (query-driver-loop))
-          (else
-           (newline)
-           (display output-prompt)
-           (display-stream
-            (stream-map
-             (lambda (frame)
-               (instantiate
-                 q
-                 frame
-                 (lambda (v f)
-                   (contract-question-mark v))))
-             (qeval q (singleton-stream '()))))
-           (query-driver-loop)))))
+  (with-handlers
+      ((exn:fail:read? (lambda (exn)
+                    (newline)
+                    (display (exn-message exn))
+                    (query-driver-loop))))
+    (let ((q (query-syntax-process (read))))
+      (cond ((eof-object? q) 'done)
+            ((assertion-to-be-added? q)
+             (add-rule-or-assertion! (add-assertion-body q))
+             (newline)
+             (display "Assertion addded to data base.")
+             (query-driver-loop))
+            (else
+             (newline)
+             (display output-prompt)
+             (display-stream
+              (stream-map
+               (lambda (frame)
+                 (instantiate
+                     q
+                   frame
+                   (lambda (v f)
+                     (contract-question-mark v))))
+               (qeval q (singleton-stream '()))))
+             (query-driver-loop))))))
 
 (define (instantiate exp frame unbound-var-handler)
   (define (copy exp)
