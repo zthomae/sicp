@@ -3528,3 +3528,58 @@ Because @tt{?person} is the only binding used in the
 conclusion of the rule, this will cause @tt{?person} to be
 reported multiple times in the results. This is the
 situation that Cy D. Fect has run into.
+
+@section[#:tag "c4e66"]{Exercise 4.66}
+
+Ben has realized that his accumulation function will give
+incorrect results when the same results are found multiple
+times by the query. This is not a flaw in the accumulation
+method @italic{per se}, but is an awkward fact that needs to
+be considered when using accumulations in a system like this.
+
+It may be possible in some situations to modify the query to
+dedupe the results. Or perhaps adding a deduplication
+mechanism to the language itself -- similar to the @tt{UNIQUE}
+keyword in SQL -- is a reasonable solution.
+
+@section[#:tag "c4e67"]{Exercise 4.67}
+
+@bold{TODO: Expand and implement}
+
+A straightforward way to detect loops is to maintain a stack
+of all derivations that a system has made at every point of
+execution, akin to a call stack. If a derivation is ever
+attempted that already exists in this stack, then we know
+that the system is entering an infinite loop.
+
+It is necessary for the derivation and all bound parameters
+to match exactly. If, for example, we evaluate the rule with
+a superset of the bound parameters of an earlier call, then
+we are not infinitely looping.
+
+@section[#:tag "c4e68"]{Exercise 4.68}
+
+We are tasked with implementing a rule describing the @tt{
+ reverse} function.
+
+The base case of this rule is simple: the reversal of an
+empty list is also an empty list:
+
+@verbatim{
+ (rule (reverse () ()))
+}
+
+The recursive case is defined in a mildly-inefficient manner
+wherein we append the first element of the list with the
+reversal of the rest of the list:
+
+@verbatim{
+ (rule (reverse (?x . ?xs) ?reversed)
+       (and (reverse ?xs ?xs-reversed)
+            (append-to-form ?xs-reversed (?x) ?reversed)))
+}
+
+This will work for expressions of the form @tt{(reverse (1 2
+ 3) ?x)}, but not those like @tt{(reverse ?x (1 2 3))}. This
+is because the recursive decomposition of the list only
+occurs in the first parameter position.
