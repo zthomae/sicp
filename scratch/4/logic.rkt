@@ -27,15 +27,23 @@
                                   (cons key-2 value))
                             (cdr local-table)))))
       'ok)
+    (define (display-table)
+      (display local-table))
+    (define (clear-table!)
+      (set! local-table (list '*table*)))
     (define (dispatch m)
       (cond ((eq? m 'lookup-proc) lookup)
             ((eq? m 'insert-proc!) insert!)
+            ((eq? m 'display-proc) display-table)
+            ((eq? m 'clear-table-proc!) clear-table!)
             (else (error "Unknown operation -- TABLE" m))))
     dispatch))
 
 (define operation-table (make-table))
 (define get (operation-table 'lookup-proc))
 (define put (operation-table 'insert-proc!))
+(define show-table (operation-table 'display-proc))
+(define clear-table! (operation-table 'clear-table-proc!))
 
 (define user-initial-environment (make-base-namespace))
 
@@ -52,9 +60,9 @@
   (prompt-for-input input-prompt)
   (with-handlers
       ((exn:fail:read? (lambda (exn)
-                    (newline)
-                    (display (exn-message exn))
-                    (query-driver-loop))))
+                         (newline)
+                         (display (exn-message exn))
+                         (query-driver-loop))))
     (let ((q (query-syntax-process (read))))
       (cond ((eof-object? q) 'done)
             ((assertion-to-be-added? q)
@@ -109,8 +117,6 @@
                (qeval (first-conjunct conjuncts)
                       frame-stream))))
 
-(put 'and 'qeval conjoin)
-
 (define (disjoin disjuncts frame-stream)
   (if (empty-disjunction? disjuncts)
       the-empty-stream
@@ -118,8 +124,6 @@
        (qeval (first-disjunct disjuncts) frame-stream)
        (delay (disjoin (rest-disjuncts disjuncts)
                        frame-stream)))))
-
-(put 'or 'qeval disjoin)
 
 (define (negate operands frame-stream)
   (stream-flatmap
@@ -129,8 +133,6 @@
          (singleton-stream frame)
          the-empty-stream))
    frame-stream))
-
-(put 'not 'qeval negate)
 
 (define (lisp-value call frame-stream)
   (stream-flatmap
@@ -145,15 +147,11 @@
          the-empty-stream))
    frame-stream))
 
-(put 'lisp-value 'qeval lisp-value)
-
 (define (execute exp)
   (apply (eval (predicate exp) user-initial-environment)
          (args exp)))
 
 (define (always-true ignore frame-stream) frame-stream)
-
-(put 'always-true 'qeval always-true)
 
 (define (find-assertions pattern frame)
   (stream-flatmap (lambda (datum)
@@ -272,6 +270,21 @@
     (if s s the-empty-stream)))
 
 (define THE-RULES the-empty-stream)
+
+(define (reset-streams)
+  (put 'and 'qeval conjoin)
+  (put 'or 'qeval disjoin)
+  (put 'not 'qeval negate)
+  (put 'lisp-value 'qeval lisp-value)
+  (put 'always-true 'qeval always-true)
+  'streams-reset)
+
+(define (reset-environment)
+  (set! THE-ASSERTIONS the-empty-stream)
+  (set! THE-RULES the-empty-stream)
+  (reset-streams))
+
+(reset-environment)
 
 (define (fetch-rules pattern frame)
   (if (use-index? pattern)
