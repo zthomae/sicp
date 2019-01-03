@@ -3401,11 +3401,11 @@ equal to the @tt{last-pair} of the @tt{cdr} of that list.
 
 We can define these rules like this:
 
-@verbatim{
+@racketblock[
  (rule (last-pair (?x) (?x)))
  (rule (last-pair (?x . ?y) ?z)
        (last-pair ?y ?z))
-}
+]
 
 Note that there is no matching rule for an empty list.
 
@@ -3422,17 +3422,17 @@ as far as I'm aware.
 
 Suppose we are given the following genealogy from Genesis:
 
-@verbatim{
+@racketblock[
  (son Adam Cain)
  (son Cain Enoch)
- (son Enoch Irad)
+ (svmon Enoch Irad)
  (son Irad Mehujael)
  (son Mehujael Methushael)
  (son Methushael Lamech)
  (wife Lamech Ada)
  (son Ada Jabal)
  (son Ada Jubal)
-}
+]
 
 We are asked to write rules to enable the query system to
 find the following:
@@ -3455,31 +3455,35 @@ We'll name the first rule @tt{grandson} (naturally). The
 implementation is a straightforward translation of the
 book's suggestion:
 
-@verbatim{
- (rule (grandson S G)
-       (and (son F S)
-            (son G F)))
-}
+@racketblock[
+ (rule (grandson ?G ?S)
+       (and (son ?G ?F)
+            (son ?F ?S)))
+]
 
-The same goes for the next rule, which we'll title @tt{father}:
+The same goes for the next rule, which we'll title @tt{son},
+because we don't want to introduce a separate rule for
+finding sons through mothers and fathers (this will work
+because the database allows assertions and rules to share
+names, and will always look for both of them):
 
-@verbatim{
- (rule (father F S)
-       (and (wife F M)
-            (son M S)))
-}
+@racketblock[
+ (rule (son ?F ?S)
+       (and (wife ?F ?M)
+            (son ?M ?S)))
+]
 
 @section[#:tag "c4e64"]{Exercise 4.64}
 
 Louis Reasoner has retyped in the @tt{outranked-by} rule as
 follows:
 
-@verbatim{
+@racketblock[
  (rule (outranked-by ?staff-person ?boss)
        (or (supervisor ?staff-person ?boss)
            (and (outranked-by ?middle-manager ?boss)
                 (supervisor ?staff-person ?middle-manager))))
-}
+]
 
 (His mistake was to flip the arguments to the @tt{and}
 predicate.)
@@ -3509,11 +3513,11 @@ terminating).
 
 As a reminder, the @tt{wheel} rule is implemented as follows:
 
-@verbatim{
+@racketblock[
  (rule (wheel ?person)
        (and (supervisor ?middle-manager ?person)
             (supervisor ?x ?middle-manager)))
-}
+]
 
 The purpose of this rule is to find all people who are a
 supervisor of someone who is also a supervisor.
@@ -3565,19 +3569,19 @@ We are tasked with implementing a rule describing the @tt{
 The base case of this rule is simple: the reversal of an
 empty list is also an empty list:
 
-@verbatim{
+@racketblock[
  (rule (reverse () ()))
-}
+]
 
 The recursive case is defined in a mildly-inefficient manner
 wherein we append the first element of the list with the
 reversal of the rest of the list:
 
-@verbatim{
+@racketblock[
  (rule (reverse (?x . ?xs) ?reversed)
        (and (reverse ?xs ?xs-reversed)
             (append-to-form ?xs-reversed (?x) ?reversed)))
-}
+]
 
 This will work for expressions of the form @tt{(reverse (1 2
  3) ?x)}, but not those like @tt{(reverse ?x (1 2 3))}. This

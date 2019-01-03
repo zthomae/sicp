@@ -1,0 +1,17 @@
+(assert! (son Adam Cain))
+(assert! (son Cain Enoch))
+(assert! (son Enoch Irad))
+(assert! (son Irad Mehujael))
+(assert! (son Mehujael Methushael))
+(assert! (son Methushael Lamech))
+(assert! (wife Lamech Ada))
+(assert! (son Ada Jabal))
+(assert! (son Ada Jubal))
+
+(assert!  (rule (grandson ?G ?S)
+                (and (son ?G ?F)
+                     (son ?F ?S))))
+
+(assert!  (rule (son ?F ?S)
+                (and (wife ?F ?M)
+                     (son ?M ?S))))
