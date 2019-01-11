@@ -526,3 +526,5 @@
   (if (pair? exp)
       (eq? (car exp) tag)
       false))
+
+(query-driver-loop)
