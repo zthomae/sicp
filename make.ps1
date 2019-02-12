@@ -7,10 +7,10 @@ switch ($mode) {
     raco.exe pkg install --auto --skip-installed sicp cover mock mock-rackunit
   }
   "build" {
-    if (Test-Path .\public) {
-      Remove-Item .\public -Force -Recurse
+    if (Test-Path .\docs) {
+      Remove-Item .\docs -Force -Recurse
     }
-    raco.exe scribble --htmls --dest . public.scrbl
+    raco.exe scribble --htmls --dest . docs.scrbl
   }
   "cover" {
     $test_files = @(Get-ChildItem -Path *-test.rkt -Recurse -Force)

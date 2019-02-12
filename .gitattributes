@@ -1,0 +1,6 @@
+* text=auto
+
+*.html text eol=lf
+*.css text eol=lf
+*.rkt text eol=lf
+*.scrbl text eol=lf
