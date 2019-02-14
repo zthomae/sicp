@@ -4,3 +4,4 @@
 *.css text eol=lf
 *.rkt text eol=lf
 *.scrbl text eol=lf
+*.scm text eol=lf

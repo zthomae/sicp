@@ -2338,7 +2338,7 @@ We can see that this generates valid solutions:
 ;;; Amb-Eval input:
 (eight-queens)
 
-;;; Starting a new problem 
+;;; Starting a new problem
 ;;; Amb-Eval value:
 (4 2 7 3 6 8 5 1)
 
@@ -2382,7 +2382,7 @@ the board size is eight, but it can do even more:
 ;;; Amb-Eval input:
 (n-queens 8)
 
-;;; Starting a new problem 
+;;; Starting a new problem
 ;;; Amb-Eval value:
 (4 2 7 3 6 8 5 1)
 
@@ -2395,14 +2395,14 @@ try-again
 ;;; Amb-Eval input:
 (n-queens 2)
 
-;;; Starting a new problem 
+;;; Starting a new problem
 ;;; There are no more values of
 (n-queens 2)
 
 ;;; Amb-Eval input:
 (n-queens 4)
 
-;;; Starting a new problem 
+;;; Starting a new problem
 ;;; Amb-Eval value:
 (3 1 4 2)
 
@@ -2640,7 +2640,7 @@ still label this a @tt{verb-phrase}.
    (list 'verb-phrase
          (parse-word verbs)
          (parse-word adverbs)))
- 
+
  (define (parse-verb-phrase)
    (define (maybe-extend verb-phrase)
      (amb verb-phrase
@@ -2691,7 +2691,7 @@ prepositional phrases:
                                        (parse-word conjunctions)
                                        (parse-word adverbs)))))
    (maybe-add-conjunction (parse-word adverbs)))
-             
+
  (define (parse-adjective-phrase)
    (define (maybe-add-conjunction adjective-phrase)
      (amb adjective-phrase
@@ -2745,7 +2745,7 @@ writing the following new code:
 
  (define (generate-word word-list)
    (list (car word-list) (an-element-of (cdr word-list))))
- 
+
  (define (generate-prepositional-phrase)
    (list 'prep-phrase
          (generate-word prepositions)
@@ -3587,3 +3587,189 @@ This will work for expressions of the form @tt{(reverse (1 2
  3) ?x)}, but not those like @tt{(reverse ?x (1 2 3))}. This
 is because the recursive decomposition of the list only
 occurs in the first parameter position.
+
+@section[#:tag "c4e69"]{Exercise 4.69}
+
+This problem is trickier than it appears. At its most basic
+level, it's clear that the answer involves recursively
+unwrapping lists of the form @tt{(great great
+... grandson)}, using each appearance of @tt{great} to
+descend another @tt{son} relationship and verify that the
+rest of the relationship list holds for the son and the
+original descendant of the relationship.
+
+The first trick is provided: You have to make sure that the
+relationship you are modifying with @tt{great} can actually
+be modified in the first place. Hence the book's
+recommendation of a rule that determines whether a list ends
+with "grandson".
+
+With all of this in mind, you might expect to be able to
+write something like this:
+
+@racketblock[
+             (rule ((great . ?rel) ?x ?desc)
+                   (and (son ?x ?y)
+                        (?rel ?y ?desc)
+                        (ends-with-grandson ?rel)))
+ ]
+
+However, there is a subtle problem with this: if @tt{?rel}
+is a @italic{ending with grandson}, then we will eventually
+attempt to verify an expression like @tt{((grandson) Adam
+Enoch)}, which will not match. What @italic{could} be
+generated and pass the @tt{(?rel ?y ?desc)} condition is an
+atomic value from an improper list, such as @tt{(great
+. grandson)}. If you allow the list to be improper, you
+could get all of the correct relationships out, but I would
+prefer to state the rules cleanly.
+
+There is also a subtle danger that the previous example
+avoids. It seems important to evaluate conditions such as
+@tt{ends-with-grandson} after using other rules to generate
+relationships. In my experience, trying to evaluate these
+structural rules earlier will result in matches not being
+produced if you try to generate the relationship itself, e.g.
+with @tt{(?rel Adam ?x)}.
+
+I'd also like to point out a potential problem that we could
+exacerbate by trying to fix the rule above. Suppose we wrote a
+matching rule more like this:
+
+@racketblock[
+(and (equal ?rel (grandson))
+     (grandson ?y ?desc))
+]
+
+Something like this could allow you to extract the only
+element of a list and verify that the relationship
+holds. But consider what happens if we try to add daughters
+to our relationship graph.  This rule will no longer work,
+because it only allows you to find grandsons, and not
+granddaughters. The suggestion to verify that a list ends
+with grandson can be taken a bit too literally. Instead, we
+want a rule to determine whether a relationship is modifiable
+by "great":
+
+@racketblock[
+(rule (great-modifiable grandson))
+]
+
+You could add another case to allow granddaughter to be
+great-modifiable as well later on. And if you use this when
+you define the rule for matching on great- relationships,
+you don't need to modify a more complex existing rule in the
+face of new data.
+
+With all that stated, these are the rules I came up with
+that match these relationships correctly, and that seem to
+be correct for arbitrary queries:
+
+@racketblock[
+(assert! (rule (great-modifiable grandson)))
+
+(assert! (rule (nil ())))
+
+(assert! (rule ((great . (?r . ?rs)) ?x ?desc)
+               (and (son ?x ?y)
+                    (or (and (?r ?y ?desc)
+                             (great-modifiable ?r)
+                             (nil ?rs))
+                        (and ((?r . ?rs) ?y ?desc)
+                             (not (nil ?rs)))))))
+
+]
+
+Here are some of the queries that work successfully:
+
+@verbatim{
+;;; Query input:
+((great grandson) Adam ?x)
+
+;;; Query output:
+((great grandson) Adam Irad)
+
+;;; Query input:
+((great grandson) ?x Irad)
+
+;;; Query output:
+((great grandson) Adam Irad)
+
+;;; Query input:
+((great great ?x) Adam ?y)
+
+;;; Query output:
+((great great grandson) Adam Mehujael)
+
+;;; Query input:
+((great great . ?x) Adam ?y)
+
+;;; Query output:
+((great great grandson) Adam Mehujael)
+((great great great grandson) Adam Methushael)
+((great great great great grandson) Adam Lamech)
+((great great great great great grandson) Adam Jubal)
+((great great great great great grandson) Adam Jabal)
+
+;;; Query input:
+(?rel Adam ?x)
+
+;;; Query output:
+(son Adam Cain)
+((great grandson) Adam Irad)
+(grandson Adam Enoch)
+((great great grandson) Adam Mehujael)
+((great great great grandson) Adam Methushael)
+((great great great great grandson) Adam Lamech)
+((great great great great great grandson) Adam Jubal)
+((great great great great great grandson) Adam Jabal)
+
+;;; Query input:
+(?rel ?x ?y)
+
+;;; Query output:
+(son Ada Jubal)
+(son Ada Jabal)
+(wife Lamech Ada)
+(son Methushael Lamech)
+(son Mehujael Methushael)
+(son Irad Mehujael)
+(son Enoch Irad)
+(son Cain Enoch)
+(son Adam Cain)
+((great grandson) Mehujael Jubal)
+(son Lamech Jubal)
+((great great grandson) Irad Jubal)
+(grandson Methushael Jubal)
+((great grandson) Mehujael Jabal)
+(son Lamech Jabal)
+((great great grandson) Enoch Lamech)
+(grandson Mehujael Lamech)
+((great grandson) Irad Lamech)
+(grandson Methushael Jabal)
+((great great grandson) Irad Jabal)
+(grandson Irad Methushael)
+((great grandson) Enoch Methushael)
+(grandson Enoch Mehujael)
+((great great grandson) Cain Methushael)
+(grandson Cain Irad)
+((great grandson) Cain Mehujael)
+(grandson Adam Enoch)
+((great great great grandson) Enoch Jubal)
+((great grandson) Adam Irad)
+((great great grandson) Adam Mehujael)
+((great great great grandson) Enoch Jabal)
+((great great great grandson) Cain Lamech)
+((great great great grandson) Adam Methushael)
+((great great great great grandson) Cain Jubal)
+((great great great great grandson) Adam Lamech)
+((great great great great grandson) Cain Jabal)
+((great great great great great grandson) Adam Jubal)
+((great great great great great grandson) Adam Jabal)
+}
+
+I don't think I have the cleanest expression of the rule,
+but I'm reasonably confident that it's correct. And it
+avoids repeatedly checking that lists end with grandson (or
+what have you) at every level of recursion, which seems to
+me like an inelegance caused by an improperly-expressed rule.

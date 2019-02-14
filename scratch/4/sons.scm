@@ -15,3 +15,15 @@
 (assert!  (rule (son ?F ?S)
                 (and (wife ?F ?M)
                      (son ?M ?S))))
+
+(assert! (rule (great-modifiable grandson)))
+
+(assert! (rule (nil ())))
+
+(assert! (rule ((great . (?r . ?rs)) ?x ?desc)
+               (and (son ?x ?y)
+                    (or (and (?r ?y ?desc)
+                             (great-modifiable ?r)
+                             (nil ?rs))
+                        (and ((?r . ?rs) ?y ?desc)
+                             (not (nil ?rs)))))))
