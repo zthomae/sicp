@@ -3787,3 +3787,7 @@ to it, and then reassign it back to the binding @tt{THE-ASSERTIONS}. Instead,
 it defines @tt{THE-ASSERTIONS} to be the stream starting with the new assertion
 followed by @italic{itself}. The new stream will just be the new assertion repeated
 infinitely many times.
+
+@section[#:tag "c4e71"]{Exercise 4.71}
+
+@bold{TODO}

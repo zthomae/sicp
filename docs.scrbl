@@ -25,3 +25,4 @@ The repository is located at @hyperlink["https://gitlab.com/zthomae/sicp" "https
 @include-section["ex2.scrbl"]
 @include-section["ex3.scrbl"]
 @include-section["ex4.scrbl"]
+@include-section["ex5.scrbl"]
