@@ -21,3 +21,22 @@ update the product and increment the counter before starting
 again.
 
 @image["img/factorial-register-machine.png"]
+
+@section[#:tag "c5e2"]{Exercise 5.2}
+
+A definition of the factorial machine using the provided
+assembly language would look something like this:
+
+@racketblock[
+(controller
+  (assign product (const 1))
+  (assign counter (const 1))
+ test-counter
+  (test (op >) (reg counter) (reg n))
+  (branch (label factorial-done))
+  (assign t (op *) (reg product) (reg counter))
+  (assign product (reg t))
+  (assign counter (op +) (const 1) (reg counter))
+  (goto (label test-counter))
+ factorial-done)
+ ]
