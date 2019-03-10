@@ -3773,3 +3773,17 @@ but I'm reasonably confident that it's correct. And it
 avoids repeatedly checking that lists end with grandson (or
 what have you) at every level of recursion, which seems to
 me like an inelegance caused by an improperly-expressed rule.
+
+@section[#:tag "c4e70"]{Exercise 4.70}
+
+We need to assign @tt{THE-ASSERTIONS} to a temporary binding
+before prepending to it to avoid an infinite regress, just
+like in the provided case of the stream
+@tt{(define ones (cons-stream 1 ones))}. @tt{cons-stream}, remember, is
+a special form which allows for a stream to be referenced recursively.
+The expression @tt{(set! THE-ASSERTIONS (cons-stream assertion THE-ASSERTIONS))}
+doesn't merely take the value of @tt{THE-ASSERTIONS}, prepend the new value
+to it, and then reassign it back to the binding @tt{THE-ASSERTIONS}. Instead,
+it defines @tt{THE-ASSERTIONS} to be the stream starting with the new assertion
+followed by @italic{itself}. The new stream will just be the new assertion repeated
+infinitely many times.
