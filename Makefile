@@ -1,6 +1,5 @@
 .PHONY: deps test_deps cover
 
-dependencies = sicp
 test_dependencies = cover mock mock-rackunit
 
 pkg_install = raco pkg install --auto --skip-installed
@@ -13,7 +12,7 @@ docs: deps $(scribblings) eval.rkt
 	rm -rf docs/
 	raco scribble --htmls --dest . docs.scrbl
 deps:
-	$(pkg_install) $(dependencies)
+	$(pkg_install) ./sicp
 test-deps:
 	$(pkg_install) $(test_dependencies)
 cover: deps test-deps $(test_files) $(scratch_files)
