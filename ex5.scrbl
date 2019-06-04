@@ -40,3 +40,68 @@ assembly language would look something like this:
   (goto (label test-counter))
  factorial-done)
  ]
+
+@section[#:tag "c5e3"]{Exercise 5.3}
+
+Consider the following function for computing square roots using
+Newton's method:
+
+@racketblock[
+(define (sqrt x)
+  (define (good-enough? guess)
+    (< (abs (- (square guess) x)) 0.001))
+  (define (improve guess)
+    (average guess (/ x guess)))
+  (define (sqrt-iter guess)
+    (if (good-enough? guess)
+        guess
+        (sqrt-iter (improve guess))))
+  (sqrt-iter 1.0))
+]
+
+We're asked to translate this into a register machine -- first with
+the @tt{good-enough?} and @tt{improve} operations presumed to exist
+beforehand, and again with the operations defined ourselves.
+
+First, here is a simple machine for computing square roots with these
+operations used as primitives.
+
+@image["img/newton-method-1.png"]
+
+@racketblock[
+(controller
+  (assign x (op read))
+  (assign guess (const 1.0))
+ sqrt-iter
+  (test (op good-enough?) (reg guess) (reg x))
+  (branch (label sqrt-done))
+  (assign guess (op improve) (reg guess) (reg x))
+  (goto (label sqrt-iter))
+ sqrt-done
+  (perform (op print) (reg guess)))
+]
+
+Next, here is an expanded version with those functions expanded. (Note: the
+diagram has separated some of the re-assignments into separate registers
+purely for readability).
+
+@image["img/newton-method-2.png"]
+
+@racketblock[
+(controller
+  (assign x (op read))
+  (assign guess (const 1.0))
+ test-guess
+  (assign guess-temp (op *) (reg guess) (reg guess))
+  (assign guess-temp (op - ) (reg guess-temp) (reg x))
+  (assign guess-temp (op abs) (reg guess-temp))
+  (test (op <) (reg guess-temp) (const 0.001))
+  (branch (label sqrt-done))
+ improve-guess
+  (assign next-term (op /) (reg x) (reg guess))
+  (assign guess (op +) (reg guess) (reg next-term))
+  (assign guess (op /) (reg guess) (const 2))
+  (goto (label test-guess))
+ sqrt-done
+  (perform (op print) (reg guess)))
+]
