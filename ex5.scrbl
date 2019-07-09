@@ -8,7 +8,7 @@
 
 @define[ev @make-eval[]]
 
-@section[#:tag "c5e1"]{Exercise 5.1}
+@section[#:tag "c5e1"]{Exercise 5.1 - 2}
 
 This is a literal translation of the iterative factorial
 algorithm. The product and counter are both initialized to
@@ -20,12 +20,10 @@ stored in the @tt{product} register. If it isn't, then we
 update the product and increment the counter before starting
 again.
 
-@image["img/factorial-register-machine.png"]
-
-@section[#:tag "c5e2"]{Exercise 5.2}
-
-A definition of the factorial machine using the provided
-assembly language would look something like this:
+I don't think creating diagrams for the data paths is a good
+use of my time (they're hard to work with and confuse me
+more than help me -- sorry!). That said, here's an implementation of
+the given factorial function:
 
 @racketblock[
 (controller
@@ -66,8 +64,6 @@ beforehand, and again with the operations defined ourselves.
 First, here is a simple machine for computing square roots with these
 operations used as primitives.
 
-@image["img/newton-method-1.png"]
-
 @racketblock[
 (controller
   (assign x (op read))
@@ -81,11 +77,7 @@ operations used as primitives.
   (perform (op print) (reg guess)))
 ]
 
-Next, here is an expanded version with those functions expanded. (Note: the
-diagram has separated some of the re-assignments into separate registers
-purely for readability).
-
-@image["img/newton-method-2.png"]
+Next, here is an expanded version with those functions expanded.
 
 @racketblock[
 (controller
