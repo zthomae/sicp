@@ -147,3 +147,603 @@ work on the stack, rather than continually channeling them through the
 input values of the inner subroutine. However, the cost of doing this
 is now more explicit, because you can no longer rely on the implicit call
 stack to do this.
+
+@section[#:tag "c5e5"]{Exercise 5.5}
+
+@subsection{Factorial machine}
+
+@racketblock[
+(controller
+   (assign continue (label fact-done))     ; set up final return address
+ fact-loop
+   (test (op =) (reg n) (const 1))
+   (branch (label base-case))
+   (save continue)
+   (save n)
+   (assign n (op -) (reg n) (const 1))
+   (assign continue (label after-fact))
+   (goto (label fact-loop))
+ after-fact
+   (restore n)
+   (restore continue)
+   (assign val (op *) (reg n) (reg val))   ; val now contains n(n - 1)!
+   (goto (reg continue))                   ; return to caller
+ base-case
+   (assign val (const 1))                  ; base case: 1! = 1
+   (goto (reg continue))                   ; return to caller
+ fact-done)
+]
+
+After each instruction, if any register values have changed, they all will be
+shown in a table, like this:
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2"))
+]
+
+The stack will also be shown when it is updated, like this:
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "<end>"))
+]
+
+@racketblock[
+(assign continue (label fact-done))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2")
+      (list "continue" "(label fact-done)"))
+]
+
+@racketblock[
+(test (op =) (reg n) (const 1))
+(branch (label base-case))
+]
+
+This evaluates to false, so we don't branch.
+
+@racketblock[
+(save continue)
+(save n)
+]
+
+This adds two values to the stack:
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "2")
+      (list "(label fact-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign n (op -) (reg n) (const 1))
+(assign continue (label after-fact))
+(goto (label fact-loop))
+]
+
+This updates the values of @tt{n} and @tt{continue} for the next recursive
+call, and jumps to the beginning of the loop.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label after-fact)"))
+]
+
+@racketblock[
+(test (op =) (reg n) (const 1))
+(branch (label base-case))
+]
+
+In this case, we do take this branch, moving to the @tt{base-case} label.
+
+@racketblock[
+(assign val (const 1))
+(goto (reg continue))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label after-fact)")
+      (list "val" "1"))
+]
+
+At this point, we have first assigned to the @tt{val} register where the
+final result will be stored, and will jump to the instruction currently pointed
+at by the @tt{continue} register -- that is, the @tt{after-fact} label.
+
+@racketblock[
+(restore n)
+(restore continue)
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2")
+      (list "continue" "(label fact-done)")
+      (list "val" "1"))
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "<end>"))
+]
+
+@racketblock[
+(assign val (op *) (reg n) (reg val))
+(goto (reg continue))
+]
+
+We assign the final @tt{val} and will presently jump to @tt{fact-done}, ending
+the procedure.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2")
+      (list "continue" "(label fact-done)")
+      (list "val" "2"))
+]
+
+@subsection{Fibonacci machine}
+
+@racketblock[
+(controller
+   (assign continue (label fib-done))
+ fib-loop
+   (test (op <) (reg n) (const 2))
+   (branch (label immediate-answer))
+   (save continue)
+   (assign continue (label afterfib-n-1))
+   (save n)                           ; save old value of n
+   (assign n (op -) (reg n) (const 1)); clobber n to n - 1
+   (goto (label fib-loop))            ; perform recursive call
+ afterfib-n-1                         ; upon return, val contains Fib(n - 1)
+   (restore n)
+   (restore continue)
+   (assign n (op -) (reg n) (const 2))
+   (save continue)
+   (assign continue (label afterfib-n-2))
+   (save val)                         ; save Fib(n - 1)
+   (goto (label fib-loop))
+ afterfib-n-2                         ; upon return, val contains Fib(n - 2)
+   (assign n (reg val))               ; n now contains Fib(n - 2)
+   (restore val)                      ; val now contains Fib(n - 1)
+   (restore continue)
+   (assign val                        ;  Fib(n - 1) +  Fib(n - 2)
+           (op +) (reg val) (reg n))
+   (goto (reg continue))              ; return to caller, answer is in val
+ immediate-answer
+   (assign val (reg n))               ; base case:  Fib(n) = n
+   (goto (reg continue))
+ fib-done)
+]
+
+Our register values will start out like this:
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "3"))
+]
+
+And our stack is empty:
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "<end>"))
+]
+
+@racketblock[
+(assign continue (label fib-done))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "3")
+      (list "continue" "(label fact-done)"))
+]
+
+@racketblock[
+(test (op <) (reg n) (const 2))
+(branch (label immediate-answer))
+]
+
+This is false, so we don't branch.
+
+@racketblock[
+(save continue)
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign continue (label afterfib-n-1))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "3")
+      (list "continue" "(label afterfib-n-1)"))
+]
+
+@racketblock[
+(save n)
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign n (op -) (reg n) (const 1))
+(goto (label fib-loop))
+]
+
+We decrement @tt{n} and move on to the next loop.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2")
+      (list "continue" "(label afterfib-n-1)"))
+]
+
+@racketblock[
+(test (op <) (reg n) (const 2))
+(branch (label immediate-answer))
+]
+
+This is false, so we don't branch.
+
+@racketblock[
+(save continue)
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "(label afterfib-n-1)")
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign continue (label afterfib-n-1))
+]
+
+This happens to do nothing.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2")
+      (list "continue" "(label afterfib-n-1)"))
+]
+
+@racketblock[
+(save n)
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "2")
+      (list "(label afterfib-n-1)")
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign n (op -) (reg n) (const 1))
+(goto (label fib-loop))
+]
+
+We decrement @tt{n} and move on to the next loop.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label afterfib-n-1)"))
+]
+
+@racketblock[
+(test (op <) (reg n) (const 2))
+(branch (label immediate-answer))
+]
+
+This is now true, so we will branch.
+
+@racketblock[
+(assign val (reg n))
+(goto (reg continue))
+]
+
+We write the base case value into the @tt{val} register and will presently
+jump to @tt{afterfib-n-1}.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label afterfib-n-1)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(restore n)
+(restore continue)
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "2")
+      (list "continue" "(label afterfib-n-1)")
+      (list "val" "1"))
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign n (op -) (reg n) (const 2))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "0")
+      (list "continue" "(label afterfib-n-1)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(save continue)
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "(label afterfib-n-1)")
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign continue (label afterfib-n-2))
+]
+
+We prepare to jump into the other recursive branch for the first time.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "0")
+      (list "continue" "(label afterfib-n-2)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(save val)
+(goto (label fib-loop))
+]
+
+We also save the value of Fib(1) -- we're going to need it later.
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "1")
+      (list "(label afterfib-n-1)")
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+After this, we will begin looping again.
+
+@racketblock[
+(test (op <) (reg n) (const 2))
+(branch (label immediate-answer))
+]
+
+This is true, so we branch.
+
+@racketblock[
+(assign val (reg n))
+(goto (reg continue))
+]
+
+We write the base case value into the @tt{val} register (overwriting the value that we
+saved to the stack earlier) and will presently jump to @tt{afterfib-n-1}.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "0")
+      (list "continue" "(label afterfib-n-2)")
+      (list "val" "0"))
+]
+
+@racketblock[
+(assign n (reg val))
+]
+
+This happens to do nothing.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "0")
+      (list "continue" "(label afterfib-n-2)")
+      (list "val" "0"))
+]
+
+@racketblock[
+(restore val)
+(restore continue)
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "0")
+      (list "continue" "(label afterfib-n-1)")
+      (list "val" "1"))
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "3")
+      (list "(label fib-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign val (op +) (reg val) (reg n))
+(goto (reg continue))
+]
+
+This also happens to do nothing. After this, we will jump to @tt{afterfib-n-1}
+for another recursive go-around.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "0")
+      (list "continue" "(label afterfib-n-1)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(restore n)
+(restore continue)
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "3")
+      (list "continue" "(label fib-done)")
+      (list "val" "1"))
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "<end>"))
+]
+
+@racketblock[
+(assign n (op -) (reg n) (const 2))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label fib-done)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(save continue)
+]
+
+Notice how we have popped this label off of the stack and immediately put it back.
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "(label fact-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(assign continue (label afterfib-n-2))
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label afterfib-n-2)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(save val)
+(goto (label fib-loop))
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "1")
+      (list "(label fact-done)")
+      (list "<end>"))
+]
+
+@racketblock[
+(test (op <) (reg n) (const 2))
+(branch (label immediate-answer))
+]
+
+This is true, so we will branch.
+
+@racketblock[
+(assign val (reg n))
+(goto (reg continue))
+]
+
+This happens to do nothing.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label afterfib-n-2)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(assign n (reg val))
+]
+
+This happens to do nothing.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label afterfib-n-2)")
+      (list "val" "1"))
+]
+
+@racketblock[
+(restore val)
+(restore continue)
+]
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label fact-done)")
+      (list "val" "1"))
+]
+
+@tabular[
+(list (list @bold{Stack value})
+      (list "<end>"))
+]
+
+@racketblock[
+(assign val (op +) (reg val) (reg n))
+(goto (reg continue))
+]
+
+With this final addition, we reach our final answer and exit the procedure.
+
+@tabular[#:sep @hspace[5]
+(list (list @bold{Register} @bold{Value})
+      (list "n" "1")
+      (list "continue" "(label fact-done)")
+      (list "val" "2"))
+]
