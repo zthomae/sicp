@@ -8,7 +8,15 @@
 
 @define[ev @make-eval[]]
 
-@section[#:tag "c5e1"]{Exercise 5.1 - 2}
+@section[#:tag "c5e0"]{Note on diagrams}
+
+I don't think creating diagrams for the data paths is a good
+use of my time (they're hard to work with and confuse me
+more than help me -- sorry!). This programming note is included
+because exercise 5.1 is solely a diagramming question, and I
+want the section and exercise numbers to line up.
+
+@section[#:tag "c5e2"]{Exercise 5.2}
 
 This is a literal translation of the iterative factorial
 algorithm. The product and counter are both initialized to
@@ -20,10 +28,7 @@ stored in the @tt{product} register. If it isn't, then we
 update the product and increment the counter before starting
 again.
 
-I don't think creating diagrams for the data paths is a good
-use of my time (they're hard to work with and confuse me
-more than help me -- sorry!). That said, here's an implementation of
-the given factorial function:
+Here's an implementation of the given factorial function:
 
 @racketblock[
 (controller
@@ -747,3 +752,20 @@ With this final addition, we reach our final answer and exit the procedure.
       (list "continue" "(label fact-done)")
       (list "val" "2"))
 ]
+
+@section[#:tag "c5e6"]{Exercise 5.6}
+
+In the Fibonacci program earlier, @tt{afterfib-n-1} ran the following
+instructions in order:
+
+@racketblock[
+(restore continue)
+(assign n (op -) (reg n) (const 2))
+(save continue)
+]
+
+Immediately popping a value off of the stack into the @tt{continue} register,
+computing a value entirely unrelated to it, and then pushing the value in the
+@tt{continue} register back onto the stack is obviously an unnecessary
+@tt{restore}/@tt{save} pair. Both of these instructions can be deleted without
+consequence.
