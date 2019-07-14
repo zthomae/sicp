@@ -230,16 +230,16 @@
 
 (define (expanded-c1)
   ((lambda (v f)
-   (if v
-       (f v)
-       ((lambda (v f)
-          (if v
-              (f v)
-              (+ 1 3)))
-        (assoc 'a '((a 1) (b 2)))
-        cadr)))
- (assoc 'b '((a 1) (b 2)))
- cadr))
+    (if v
+        (f v)
+        ((lambda (v f)
+           (if v
+               (f v)
+               (+ 1 3)))
+         (assoc 'a '((a 1) (b 2)))
+         cadr)))
+   (assoc 'b '((a 1) (b 2)))
+   cadr))
 
 (define (let? exp) (tagged-list? exp 'let))
 (define (let-bindings exp) (cadr exp))
@@ -555,9 +555,9 @@
         (list 'cons cons)
         (list 'null? null?)
         (list '+ +)
-        (list '< <)
+        (list '< <)))
         ;; more...
-        ))
+
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
