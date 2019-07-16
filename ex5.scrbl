@@ -858,3 +858,73 @@ result is correct:
 > (expt 3 10)
 59049
 }
+
+@section[#:tag "c5e8"]{Exercise 5.8}
+
+Consider the following program with an ambiguous label:
+
+@racketblock[
+start
+  (goto (label here))
+here
+  (assign a (const 3))
+  (goto (label there))
+here
+  (assign a (const 4))
+  (goto (label there))
+there
+]
+
+We can see in @tt{extract-labels} that new labels are prepended to the
+list of existing labels. However, the instructions are iterated through in
+reverse order -- the fact that @tt{extract-labels} calls @tt{(extract-labels (cdr text) ...)} is
+a tell-tale clue of this. This means that the first declaration of the @tt{here}
+label will be first in the list. Since @tt{lookup-label} uses @tt{assoc}, it will
+therefore return the @italic{first} instance of the @tt{here} label in code.
+
+We can verify this by simulation:
+
+@racketblock[
+(define broken-machine
+  (make-machine
+    '(a)
+    '()
+    '(start
+       (goto (label here))
+      here
+       (assign a (const 3))
+       (goto (label there))
+      here
+       (assign a (const 4))
+       (goto (label there))
+      there)))
+]
+
+@verbatim{
+> (start broken-machine )
+'done
+> (get-register-contents broken-machine 'a)
+3
+}
+
+We can fix this by forcing @tt{extract-labels} to verify that a label with
+a given name doesn't already exist in the list of labels. It's not very
+efficient, but @tt{assoc} will do the job here with minimal changes:
+
+@racketblock[
+(define (extract-labels text receive)
+  (if (null? text)
+      (receive '() '())
+      (extract-labels (cdr text)
+        (lambda (insts labels)
+          (let ((next-inst (car text)))
+            (if (symbol? next-inst)
+                (if (assoc next-inst labels)
+                    (error "Duplicate label -- ASSEMBLE" next-inst)
+                    (receive insts
+                             (cons (make-label-entry next-inst insts)
+                                   labels)))
+                (receive (cons (make-instruction next-inst)
+                               insts)
+                         labels)))))))
+]

@@ -127,9 +127,11 @@
         (lambda (insts labels)
           (let ((next-inst (car text)))
             (if (symbol? next-inst)
-                (receive insts
-                         (cons (make-label-entry next-inst insts)
-                               labels))
+                (if (assoc next-inst labels)
+                    (error "Duplicate label -- ASSEMBLE" next-inst)
+                    (receive insts
+                             (cons (make-label-entry next-inst insts)
+                                   labels)))
                 (receive (cons (make-instruction next-inst)
                                insts)
                          labels)))))))
@@ -338,3 +340,17 @@
        (assign val (reg product))
        (goto (label expt-done))
       expt-done)))
+
+; (define broken-machine
+;   (make-machine
+;     '(a)
+;     '()
+;     '(start
+;        (goto (label here))
+;       here
+;        (assign a (const 3))
+;        (goto (label there))
+;        here
+;        (assign a (const 4))
+;        (goto (label there))
+;        there)))
