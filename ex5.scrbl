@@ -137,7 +137,7 @@ A controller instruction sequence for iterative exponentiation:
   (assign product (const 1))
  expt-iter
   (test (op =) (reg counter) (const 0))
-  (branch after-expt)
+  (branch (label after-expt))
   (assign counter (op -) (reg counter) (const 1))
   (assign product (op *) (reg b) (reg product))
   (goto (label expt-iter))
@@ -769,3 +769,92 @@ computing a value entirely unrelated to it, and then pushing the value in the
 @tt{continue} register back onto the stack is obviously an unnecessary
 @tt{restore}/@tt{save} pair. Both of these instructions can be deleted without
 consequence.
+
+@section[#:tag "c5e7"]{Exercise 5.7}
+
+We can simulate the recursive and iterative exponentiation machines by wrapping
+them in @tt{make-machine} declarations. This can be done mechanically.
+
+First, the recursive machine:
+
+@racketblock[
+(define recursive-exponentiation-machine
+  (make-machine
+    '(b n continue val)
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (assign continue (label expt-done))
+      expt-loop
+       (test (op =) (reg n) (const 0))
+       (branch (label base-case))
+       (save continue)
+       (assign n (op -) (reg n) (const 1))
+       (save n)
+       (assign continue (label after-expt))
+       (goto (label expt-loop))
+      after-expt
+       (restore n)
+       (restore continue)
+       (assign val (op *) (reg b) (reg val))
+       (goto (reg continue))
+      base-case
+       (assign val (const 1))
+       (goto (reg continue))
+      expt-done)))
+]
+
+Verifying that it works:
+
+@verbatim{
+> (set-register-contents! recursive-exponentiation-machine 'b 3)
+'done
+> (set-register-contents! recursive-exponentiation-machine 'n 10)
+'done
+> (start recursive-exponentiation-machine)
+'done
+> (get-register-contents recursive-exponentiation-machine 'val)
+59049
+}
+
+Next, the iterative machine:
+
+@racketblock[
+(define iterative-exponentiation-machine
+  (make-machine
+    '(b n val counter product)
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (assign counter (reg n))
+       (assign product (const 1))
+      expt-iter
+       (test (op =) (reg counter) (const 0))
+       (branch (label after-expt))
+       (assign counter (op -) (reg counter) (const 1))
+       (assign product (op *) (reg b) (reg product))
+       (goto (label expt-iter))
+      after-expt
+       (assign val (reg product))
+       (goto (label expt-done))
+      expt-done)))
+]
+
+Verifying that it also works:
+
+@verbatim{
+> (set-register-contents! iterative-exponentiation-machine 'b 3)
+'done
+> (set-register-contents! iterative-exponentiation-machine 'n 10)
+'done
+> (start iterative-exponentiation-machine )
+'done
+> (get-register-contents iterative-exponentiation-machine 'val)
+59049
+}
+
+Of course, if we use the builtin @tt{expt} function, we can see that this
+result is correct:
+
+@verbatim{
+> (expt 3 10)
+59049
+}
