@@ -283,8 +283,12 @@
 
 (define (make-operation-exp exp machine labels operations)
   (let ((op (lookup-prim (operation-exp-op exp) operations))
-        (aprocs (map (lambda (e) (make-primitive-exp e machine labels))
-                     (operation-exp-operands exp))))
+        (aprocs
+          (map (lambda (e)
+                 (if (label-exp? e)
+                     (error "Cannot perform operations on label -- ASSEMBLE" e)
+                     (make-primitive-exp e machine labels)))
+               (operation-exp-operands exp))))
     (lambda ()
       (apply op (map (lambda (p) (p)) aprocs)))))
 (define (operation-exp? exp)
@@ -354,3 +358,10 @@
 ;        (assign a (const 4))
 ;        (goto (label there))
 ;        there)))
+
+(define operating-on-label
+  (make-machine
+    '(a)
+    (list (list '+ +))
+    '(start
+      (assign a (op +) (label start) (const 1)))))

@@ -928,3 +928,61 @@ efficient, but @tt{assoc} will do the job here with minimal changes:
                                insts)
                          labels)))))))
 ]
+
+@section[#:tag "c5e9"]{Exercise 5.9}
+
+Currently, the machine does not reject operations that are performed on
+labels. For example, this example program is assembled correctly:
+
+@racketblock[
+(define operating-on-label
+  (make-machine
+    '(a)
+    (list (list '+ +))
+    '(start
+      (assign a (op +) (label start) (const 1)))))
+]
+
+Naturally, this program doesn't actually work -- instead, it throws a
+runtime error when trying to apply the @tt{+} operation.
+
+@verbatim{
+> (start operating-on-label )
+; +: contract violation
+;   expected: number?
+;   given: (mcons (mcons (mcons 'assign (mcons 'a (mcons (mcons 'op (mcons '+
+;     '())) (mcons (mcons 'label (mcons 'start '())) (mcons (mcons 'const
+;     (mcons 1 '())) '()))))) #<procedure:...ch/5/machine.rkt:198:6>) '())
+;   argument position: 1st
+}
+
+Since performing operations on labels is (probably) not a good idea, we can
+revise the machine to reject these programs. All that we need to do is insert
+a check in @tt{make-operation-exp} to verify that primitive expressions are not
+labels:
+
+@racketblock[
+(define (make-operation-exp exp machine labels operations)
+  (let ((op (lookup-prim (operation-exp-op exp) operations))
+        (aprocs
+          (map (lambda (e)
+                 (if (label-exp? e)
+                     (error "Cannot perform operations on label -- ASSEMBLE" e)
+                     (make-primitive-exp e machine labels)))
+               (operation-exp-operands exp))))
+    (lambda ()
+      (apply op (map (lambda (p) (p)) aprocs)))))
+]
+
+It's a little ugly, but I think this is a reasonable place to check the expression
+type. Obviously we want to check the expression itself rather than the expression
+procedure, so it's convenient to do so in a location where each operand expression
+is already in scope. And we don't want to push down any new logic into
+@tt{make-primitive-exp}, because labels @italic{are} primitives. As an alternative,
+you might also consider reporting on @italic{all} of the operands that are labels.
+
+For now, we can verify that what we've written rejects the program above:
+
+@verbatim{
+Cannot perform operations on label -- ASSEMBLE {label start}
+}
