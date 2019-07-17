@@ -986,3 +986,140 @@ For now, we can verify that what we've written rejects the program above:
 @verbatim{
 Cannot perform operations on label -- ASSEMBLE {label start}
 }
+
+@section[#:tag "c5e10"]{Exercise 5.10}
+
+There are a couple of areas in the syntax where I think readability can be
+improved by relying on a few more conventions and assumptions.
+
+For example: The explicit declaration of @tt{reg}, @tt{label}, and @tt{const}
+expressions is kind of tiresome. We can make this simpler by distinguishing
+these by the forms of the expressions themselves:
+
+@itemlist[
+@item{The only primitives that the interpreter will support are numbers, strings,
+lists, and symbols. The first three can all be unambiguously represented literally,
+and constant symbols can be differentiated by forcing them to begin with a leading quote.}
+@item{We can easily distinguish registers by forcing them to start with a special character,
+like $.}
+@item{If we have a symbol that doesn't start with a $, then we have a label.}
+]
+
+We could take this even further and drop some of these requirements where we don't need
+to distinguish between otherwise-identical expressions. For example, including leading
+@tt{$}s for the first arguments to @tt{assign} expressions is pure noise, because
+we can @italic{only} assign to registers (in fact, it could be optional, to prevent
+people from making the opposite mistake).
+
+Not all syntactic changes will be, but these @italic{can} be implemented solely by
+changing the relevant type-checking and value-accessing functions for the types
+of expressions we want to change. The entirety of the changes are presented below:
+
+@racketblock[
+(define (assign-reg-name assign-instruction)
+  (let ((exp (cadr assign-instruction)))
+    (if (register-exp? exp)
+        (register-exp-reg exp)
+        exp)))
+
+(define (symbol-starts-with? sym c)
+  (equal? c (string-ref (symbol->string sym) 0)))
+
+(define (register-exp? exp)
+  (and (symbol? exp) (symbol-starts-with? exp #\$)))
+(define (register-exp-reg exp)
+  (string->symbol (substring (symbol->string exp) 1)))
+
+(define (constant-exp? exp)
+  (or (number? exp)
+      (string? exp)
+      (and (list? exp) (not (operation-exp? exp)))))
+(define (constant-exp-value exp)
+  (if (and (list? exp) (> (length exp) 0) (eq? (car exp) 'quote))
+      (cadr exp)
+      exp))
+
+(define (label-exp? exp)
+  (and (symbol? exp) (not (symbol-starts-with? exp #\$))))
+(define (label-exp-label exp)
+  exp)
+]
+
+Two example programs are presented below:
+
+@racketblock[
+(define test-machine
+  (make-machine
+    '(a b c d e)
+    (list (list '+ +))
+    '(start
+       (assign a 1)
+       (assign b here)
+       (assign c "asdf")
+       (assign d '(1 2 3 4))
+       (assign e 'asdf)
+       (goto $b)
+      here
+       (assign $a (op +) $a 1)
+       (goto there)
+      there)))
+]
+
+@verbatim{
+> (start test-machine)
+'done
+> (get-register-contents test-machine 'a)
+2
+> (get-register-contents test-machine 'b)
+(mcons
+ (mcons
+  (mcons
+   'assign
+   (mcons '$a (mcons (mcons 'op (mcons '+ '())) (mcons '$a (mcons 1 '())))))
+  #<procedure:.../machine-alt.rkt:199:6>)
+ (mcons
+  (mcons
+   (mcons 'goto (mcons 'there '()))
+   #<procedure:.../machine-alt.rkt:238:13>)
+  '()))
+> (get-register-contents test-machine 'c)
+"asdf"
+> (get-register-contents test-machine 'd)
+(mcons 1 (mcons 2 (mcons 3 (mcons 4 '()))))
+> (get-register-contents test-machine 'e)
+'asdf
+}
+
+@racketblock[
+(define iterative-exponentiation-machine
+  (make-machine
+    '(b n val counter product)
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (assign counter $n)
+       (assign product 1)
+      expt-iter
+       (test (op =) $counter 0)
+       (branch after-expt)
+       (assign counter (op -) $counter 1)
+       (assign product (op *) $b $product)
+       (goto expt-iter)
+      after-expt
+       (assign $val $product)
+       (goto expt-done)
+      expt-done)))
+]
+
+@verbatim{
+> (set-register-contents! iterative-exponentiation-machine 'b 3)
+'done
+> (set-register-contents! iterative-exponentiation-machine 'n 10)
+'done
+> (start iterative-exponentiation-machine)
+'done
+> (get-register-contents iterative-exponentiation-machine 'val)
+59049
+}
+
+It's a small thing, but I think we're already on the road to slightly more
+legible programs.
