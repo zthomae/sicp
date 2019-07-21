@@ -4,7 +4,10 @@ param (
 
 switch ($mode) {
   "deps" {
-    raco.exe pkg install --auto --skip-installed sicp cover mock mock-rackunit
+    Set-Location sicp
+    raco.exe pkg install --skip-installed
+    Set-Location ..
+    raco.exe pkg install --auto --skip-installed cover mock mock-rackunit
   }
   "build" {
     if (Test-Path .\docs) {
