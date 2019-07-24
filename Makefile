@@ -12,7 +12,7 @@ docs: deps $(scribblings) eval.rkt
 	rm -rf docs/
 	raco scribble --htmls --dest . docs.scrbl
 deps:
-	$(pkg_install) ./sicp
+	cd sicp; $(pkg_install)
 test-deps:
 	$(pkg_install) $(test_dependencies)
 cover: deps test-deps $(test_files) $(scratch_files)
