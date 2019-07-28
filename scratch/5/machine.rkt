@@ -21,6 +21,7 @@
       (cond ((eq? message 'get) contents)
             ((eq? message 'set)
              (lambda (value) (set! contents value)))
+            ((eq? message 'name) name)
             (else
               (error "Unknown request -- REGISTER" message))))
     dispatch))
@@ -30,6 +31,9 @@
 
 (define (set-contents! register value)
   ((register 'set) value))
+
+(define (get-register-name register)
+  (register 'name))
 
 (define (make-stack)
   (let ((s '()))
@@ -242,13 +246,24 @@
 (define (make-save inst machine stack pc)
   (let ((reg (get-register machine (stack-inst-reg-name inst))))
     (lambda ()
-      (push stack (get-contents reg))
+      (push stack (cons (get-register-name reg) (get-contents reg)))
       (advance-pc pc))))
 (define (make-restore inst machine stack pc)
-  (let ((reg (get-register machine (stack-inst-reg-name inst))))
+  (let* ((to-register (stack-inst-reg-name inst))
+         (reg (get-register machine to-register)))
     (lambda ()
-      (set-contents! reg (pop stack))
-      (advance-pc pc))))
+      (let* ((stack-entry (pop stack))
+             (from-register (car stack-entry))
+             (stack-value (cdr stack-entry)))
+        (if (eq? from-register to-register)
+            (begin
+              (set-contents! reg stack-value)
+              (advance-pc pc))
+            (error (string-append "Tried to restore from register "
+                                  (symbol->string from-register)
+                                  " into register "
+                                  (symbol->string to-register)
+                                  " -- ASSEMBLE")))))))
 (define (stack-inst-reg-name stack-instruction)
   (cadr stack-instruction))
 
@@ -302,6 +317,15 @@
     (if val
         (cadr val)
         (error "Unknown operation -- ASSEMBLE" symbol))))
+
+(define test-restore-machine
+  (make-machine
+    '(a b)
+    '()
+    '(start-machine
+      (assign a (const 1))
+      (save a)
+      (restore b))))
 
 (define recursive-exponentiation-machine
   (make-machine
@@ -359,9 +383,9 @@
 ;        (goto (label there))
 ;        there)))
 
-(define operating-on-label
-  (make-machine
-    '(a)
-    (list (list '+ +))
-    '(start
-      (assign a (op +) (label start) (const 1)))))
+; (define operating-on-label
+;   (make-machine
+;     '(a)
+;     (list (list '+ +))
+;     '(start
+;       (assign a (op +) (label start) (const 1)))))

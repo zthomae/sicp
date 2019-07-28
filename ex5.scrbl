@@ -1123,3 +1123,115 @@ Two example programs are presented below:
 
 It's a small thing, but I think we're already on the road to slightly more
 legible programs.
+
+@section[#:tag "c5e11"]{Exercise 5.11}
+
+There are (apparently) three different meanings of @tt{restore}. Paraphrasing
+the book:
+
+@itemlist[
+@item{It puts the last value on the stack into the provided register, regardless of what register it came from.}
+@item{It puts the last value on the stack into the provided register, failing if that value wasn't saved
+from that register originally.}
+@item{It puts the last value saved onto the stack from the provided register back into it (essentially
+maintaining one stack per register).}
+]
+
+Full disclosure: I believe that the first meaning, which is currently implemented in the
+interpreter, is by far the most reasonable one. But that might be because I'm used to it.
+
+Consider the following instructions from the Fibonacci machine:
+
+@racketblock[
+afterfib-n-2
+  (assign n (reg val))
+  (restore val)
+  (restore continue)
+  (assign val (op +) (reg val) (reg n))
+  (goto (reg continue))
+]
+
+The @tt{+} operation will continue to work as long as @tt{val} and @tt{n}
+each contain one of the two values we need -- after all, addition is
+commutative. Observe how we move the value from the @tt{val} register into
+@tt{n} and pop the latest stack value into @tt{val} right after. What would have
+happened if we had run @tt{(restore n)} instead? The value that had been in
+@tt{val} at the start would have stayed there, and the value that was restored into
+@tt{val} would instead be in @tt{n}. We would add the same values and place the
+result into @tt{val}, so the program would continue to work as it should.
+
+However, we could modify the interpreter to support the other meanings of @tt{restore}.
+The second, which verifies that you @tt{restore} into the same register from which
+a value was @tt{save}d, can be done relatively easily. All that needs to happen is for
+the register from which a value originated to be saved on the stack alongside the
+value. If @tt{restore} is called and the registers don't match, the interpreter
+should throw an error. The changes can almost entirely be confined to @tt{make-save} and
+@tt{make-restore}:
+
+@racketblock[
+(define (make-save inst machine stack pc)
+  (let ((reg (get-register machine (stack-inst-reg-name inst))))
+    (lambda ()
+      (push stack (cons (get-register-name reg) (get-contents reg)))
+      (advance-pc pc))))
+(define (make-restore inst machine stack pc)
+  (let* ((to-register (stack-inst-reg-name inst))
+         (reg (get-register machine to-register)))
+    (lambda ()
+      (let* ((stack-entry (pop stack))
+             (from-register (car stack-entry))
+             (stack-value (cdr stack-entry)))
+        (if (eq? from-register to-register)
+            (begin
+              (set-contents! reg stack-value)
+              (advance-pc pc))
+            (error (string-append "Tried to restore from register "
+                                  (symbol->string from-register)
+                                  " into register "
+                                  (symbol->string to-register)
+                                  " -- ASSEMBLE")))))))
+]
+
+To support this, I've added a new operation on registers to retrieve the name:
+
+@racketblock[
+(define (make-register name)
+  (let ((contents '*unassigned*))
+    (define (dispatch message)
+      (cond ((eq? message 'get) contents)
+            ((eq? message 'set)
+             (lambda (value) (set! contents value)))
+            ((eq? message 'name) name)
+            (else
+              (error "Unknown request -- REGISTER" message))))
+    dispatch))
+
+(define (get-register-name register)
+  (register 'name))
+]
+
+We can verify that this works with the following test program:
+
+@racketblock[
+(define test-restore-machine
+  (make-machine
+    '(a b)
+    '()
+    '(start-machine
+      (assign a (const 1))
+      (save a)
+      (restore b))))
+]
+
+@verbatim{
+> (start test-restore-machine)
+; Tried to restore from register a into register b -- ASSEMBLE
+}
+
+To support the third meaning, where each register has an independent stack,
+we will need to make larger changes to the interpreter. For one, @tt{make-stack}
+is now going to be a bit of a misnomer -- instead, this should create stacks for each
+of the registers to use. However, for clarity's sake, I'll be leaving the name
+of this function alone.
+
+We are told that @tt{initialize-stack} should initialize all of the register stacks.
