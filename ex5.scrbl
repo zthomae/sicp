@@ -1235,3 +1235,151 @@ of the registers to use. However, for clarity's sake, I'll be leaving the name
 of this function alone.
 
 We are told that @tt{initialize-stack} should initialize all of the register stacks.
+This is a little bit interesting -- @tt{initialize-stack} is technically
+unused as of yet in the interpreter -- but it does suggest something about how
+the design should work. As of now, the machine doesn't have a dedicated list
+of all of its registers available when the stack is created, because the user-specified
+register list is only used after this happens. However, the function that calls
+@tt{make-new-machine} @italic{does} know about these. This implies that we need
+to move our initialization steps around a bit.
+
+The essential change that I'll make is to pass the register names in directly
+to @tt{make-new-machine}, and to make this function responsible for initializing
+the registers as well as the stacks. Then I'll create an list of pairs of register
+names combined with their stacks. To save from or restore into a given register, I'll
+find the stack by name and then perform the normal stack operations on that.
+
+All of the modified functions are below. Note that the operation for creating
+registers is now fully private.
+
+@racketblock[
+(define (make-machine register-names ops controller-text)
+  (let ((machine (make-new-machine register-names)))
+    ((machine 'install-operations) ops)
+    ((machine 'install-instruction-sequence)
+     (assemble controller-text machine))
+    machine))
+
+(define (make-new-machine register-names)
+  (let* ((pc (make-register 'pc))
+         (flag (make-register 'flag))
+         (all-register-names (cons 'pc (cons 'flag register-names)))
+         (stacks (map (lambda (register-name) (cons register-name (make-stack)))
+                      all-register-names))
+         (the-instruction-sequence '()))
+    (let ((the-ops
+            (list (list 'initialize-stack (lambda () (map (lambda (stack) (stack 'initialize))
+                                                          stacks)))))
+          (register-table
+            (list (list 'pc pc) (list 'flag flag))))
+      (for-each (lambda (name)
+                  (if (assoc name register-table)
+                     (error "Multiply defined register: " name)
+                     (set! register-table
+                           (cons (list name (make-register name))
+                                 register-table))))
+                register-names)
+      (define (lookup-register name)
+        (let ((val (assoc name register-table)))
+          (if val
+              (cadr val)
+              (error "Unknown register:" name))))
+      (define (execute)
+        (let ((insts (get-contents pc)))
+          (if (null? insts)
+              'done
+              (begin
+                ((instruction-execution-proc (car insts)))
+                (execute)))))
+      (define (dispatch message)
+        (cond ((eq? message 'start)
+               (set-contents! pc the-instruction-sequence)
+               (execute))
+              ((eq? message 'install-instruction-sequence)
+               (lambda (seq) (set! the-instruction-sequence seq)))
+              ((eq? message 'get-register) lookup-register)
+              ((eq? message 'install-operations)
+               (lambda (ops) (set! the-ops (append the-ops ops))))
+              ((eq? message 'stacks) stacks)
+              ((eq? message 'operations) the-ops)
+              (else (error "Unknown request -- MACHINE" message))))
+      dispatch)))
+
+(define (make-save inst machine stacks pc)
+  (let* ((register-name (stack-inst-reg-name inst))
+         (stack (cdr (assoc register-name stacks)))
+         (reg (get-register machine register-name)))
+    (lambda ()
+      (push stack (get-contents reg))
+      (advance-pc pc))))
+(define (make-restore inst machine stacks pc)
+  (let* ((register-name (stack-inst-reg-name inst))
+         (reg (get-register machine register-name)))
+    (lambda ()
+      (let ((stack (cdr (assoc register-name stacks))))
+        (set-contents! reg (pop stack))
+        (advance-pc pc)))))
+]
+
+There were also a couple of places where I renamed a @tt{stack} variable or operation to
+@tt{stacks}, to be more suggestive of its new value. Otherwise, these functions
+are identical.
+
+@racketblock[
+(define (update-insts! insts labels machine)
+  (let ((pc (get-register machine 'pc))
+        (flag (get-register machine 'flag))
+        (stacks (machine 'stacks))
+        (ops (machine 'operations)))
+    (for-each
+      (lambda (inst)
+        (set-instruction-execution-proc!
+          inst
+          (make-execution-procedure
+            (instruction-text inst) labels machine
+            pc flag stacks ops)))
+      insts)))
+
+(define (make-execution-procedure inst labels machine pc flag stacks ops)
+  (cond ((eq? (car inst) 'assign)
+         (make-assign inst machine labels ops pc))
+        ((eq? (car inst) 'test)
+         (make-test inst machine labels ops flag pc))
+        ((eq? (car inst) 'branch)
+         (make-branch inst machine labels flag pc))
+        ((eq? (car inst) 'goto)
+         (make-goto inst machine labels pc))
+        ((eq? (car inst) 'save)
+         (make-save inst machine stacks pc))
+        ((eq? (car inst) 'restore)
+         (make-restore inst machine stacks pc))
+        ((eq? (car inst) 'perform)
+         (make-perform inst machine labels ops pc))
+        (else (error "Unknown instruction type -- ASSEMBLE" inst))))
+]
+
+Now we can run a modified version of the program given above and see that
+the stacks are independent:
+
+@racketblock[
+(define test-restore-machine
+  (make-machine
+    '(a b)
+    '()
+    '(start-machine
+      (assign a (const 1))
+      (assign b (const 2))
+      (save a)
+      (save b)
+      (restore b)
+      (restore a))))
+]
+
+@verbatim{
+> (start test-restore-machine)
+'done
+> (get-register-contents test-restore-machine 'a)
+1
+> (get-register-contents test-restore-machine 'b)
+2
+}
