@@ -1170,9 +1170,10 @@ should throw an error. The changes can almost entirely be confined to @tt{make-s
 
 @racketblock[
 (define (make-save inst machine stack pc)
-  (let ((reg (get-register machine (stack-inst-reg-name inst))))
+  (let* ((register-name (stack-inst-reg-name inst))
+         (reg (get-register machine register-name)))
     (lambda ()
-      (push stack (cons (get-register-name reg) (get-contents reg)))
+      (push stack (cons register-name (get-contents reg)))
       (advance-pc pc))))
 (define (make-restore inst machine stack pc)
   (let* ((to-register (stack-inst-reg-name inst))

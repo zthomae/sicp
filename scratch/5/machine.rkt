@@ -246,24 +246,13 @@
 (define (make-save inst machine stack pc)
   (let ((reg (get-register machine (stack-inst-reg-name inst))))
     (lambda ()
-      (push stack (cons (get-register-name reg) (get-contents reg)))
+      (push stack (get-contents reg))
       (advance-pc pc))))
 (define (make-restore inst machine stack pc)
-  (let* ((to-register (stack-inst-reg-name inst))
-         (reg (get-register machine to-register)))
+  (let ((reg (get-register machine (stack-inst-reg-name inst))))
     (lambda ()
-      (let* ((stack-entry (pop stack))
-             (from-register (car stack-entry))
-             (stack-value (cdr stack-entry)))
-        (if (eq? from-register to-register)
-            (begin
-              (set-contents! reg stack-value)
-              (advance-pc pc))
-            (error (string-append "Tried to restore from register "
-                                  (symbol->string from-register)
-                                  " into register "
-                                  (symbol->string to-register)
-                                  " -- ASSEMBLE")))))))
+      (set-contents! reg (pop stack))
+      (advance-pc pc))))
 (define (stack-inst-reg-name stack-instruction)
   (cadr stack-instruction))
 
