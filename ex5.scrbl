@@ -1384,3 +1384,195 @@ the stacks are independent:
 > (get-register-contents test-restore-machine 'b)
 2
 }
+
+@section[#:tag "c5e12"]{Exercise 5.12}
+
+We are asked to add four pieces of tracking to the interpreter, to show the
+data paths required when building it. They are:
+
+@itemlist[
+@item{A list of all unique instructions sorted by instruction type}
+@item{A list of all registers used in goto instructions}
+@item{A list of all registers used in save or restore instructions}
+@item{For each register, a list of all expressions that are assigned to it}
+]
+
+Since these all rely on maintaining lists of unique values, creating procedures
+for these operations is a good place to start. One, @tt{add-unique-value},
+will return the original list if a value already exists in it, and @tt{cons}
+the new value onto the front otherwise. The other, @tt{add-unique-assoc-value},
+will use @tt{add-unique-value} to add to a list within an associative array.
+If the key already exists in the array, it will return a new associative array
+with that key bound to the expanded list. If the key does not exist, it will
+add it to the front. These functions are all immutable, and they are relatively
+efficient because I assume that ordering within these lists is not important.
+
+@racketblock[
+(define (add-unique-value lst value)
+  (define (loop rest)
+    (cond ((null? rest) (cons value lst))
+          ((equal? (car rest) value) lst)
+          (else (loop (cdr rest)))))
+  (loop lst))
+
+(define (add-unique-assoc-value lst key value)
+  (define (loop prev rest)
+    (cond ((null? rest) (cons (list key (list value)) prev))
+          ((equal? (caar rest) key)
+           (append prev
+                   (cons (list key (add-unique-value (cadar rest) value))
+                         (cdr rest))))
+          (else (loop (cons (car rest) prev) (cdr rest)))))
+  (loop '() lst))
+]
+
+Next, I have to maintain lists of instructions, entry points, stack registers,
+and assign sources within the internal machine state. This is relatively
+easy to do -- all I need are more private bindings that I can manipulate by
+sending new messages to the machine. The modified @tt{make-new-machine} is as
+follows:
+
+@racketblock[
+(define (make-new-machine)
+  (let ((pc (make-register 'pc))
+        (flag (make-register 'flag))
+        (stack (make-stack))
+        (the-instruction-sequence '())
+        (instruction-set '())
+        (entry-points '())
+        (stack-registers '())
+        (assign-sources '()))
+    (let ((the-ops
+            (list (list 'initialize-stack (lambda () (stack 'initialize)))))
+          (register-table
+            (list (list 'pc pc) (list 'flag flag))))
+      (define (allocate-register name)
+        (if (assoc name register-table)
+            (error "Multiply defined reigster: " name)
+            (set! register-table
+                  (cons (list name (make-register name))
+                        register-table)))
+        'register-allocated)
+      (define (lookup-register name)
+        (let ((val (assoc name register-table)))
+          (if val
+              (cadr val)
+              (error "Unknown register:" name))))
+      (define (execute)
+        (let ((insts (get-contents pc)))
+          (if (null? insts)
+              'done
+              (begin
+                ((instruction-execution-proc (car insts)))
+                (execute)))))
+      (define (add-instruction inst)
+        (set! instruction-set
+              (add-unique-assoc-value instruction-set (car inst) inst)))
+      (define (add-entry-point destination-register)
+        (set! entry-points
+              (add-unique-value entry-points destination-register)))
+      (define (add-stack-register stack-register-name)
+        (set! stack-registers
+              (add-unique-value stack-registers stack-register-name)))
+      (define (add-assign-source inst)
+        (set! assign-sources
+              (add-unique-assoc-value assign-sources
+                                      (assign-reg-name inst)
+                                      (assign-value-exp inst))))
+      (define (dispatch message)
+        (cond ((eq? message 'start)
+               (set-contents! pc the-instruction-sequence)
+               (execute))
+              ((eq? message 'install-instruction-sequence)
+               (lambda (seq) (set! the-instruction-sequence seq)))
+              ((eq? message 'allocate-register) allocate-register)
+              ((eq? message 'get-register) lookup-register)
+              ((eq? message 'install-operations)
+               (lambda (ops) (set! the-ops (append the-ops ops))))
+              ((eq? message 'stack) stack)
+              ((eq? message 'operations) the-ops)
+              ((eq? message 'track-instruction) add-instruction)
+              ((eq? message 'get-instruction-set) instruction-set)
+              ((eq? message 'track-entry-point) add-entry-point)
+              ((eq? message 'get-entry-points) entry-points)
+              ((eq? message 'track-stack-register) add-stack-register)
+              ((eq? message 'get-stack-registers) stack-registers)
+              ((eq? message 'track-assign-source) add-assign-source)
+              ((eq? message 'get-assign-sources) assign-sources)
+              (else (error "Unknown request -- MACHINE" message))))
+      dispatch)))
+]
+
+Finally, I need to call these tracking instructions as I'm adding instructions
+to the machine. I've combined the checks for all things I might need to track
+to a single function, so as to reduce the scope and messiness of the changes
+to the existing interpreter code. The new method, @tt{track-instruction}, and
+the modified @tt{update-insts!} that calls it are:
+
+@racketblock[
+(define (track-instruction machine inst)
+  ((machine 'track-instruction) inst)
+  (cond ((eq? (car inst) 'goto)
+         (let ((dest (goto-dest inst)))
+           (if (register-exp? dest)
+               ((machine 'track-entry-point) (register-exp-reg dest)))))
+        ((or (eq? (car inst) 'save) (eq? (car inst) 'restore))
+         ((machine 'track-stack-register) (stack-inst-reg-name inst)))
+        ((eq? (car inst) 'assign)
+         ((machine 'track-assign-source) inst))))
+
+(define (update-insts! insts labels machine)
+  (let ((pc (get-register machine 'pc))
+        (flag (get-register machine 'flag))
+        (stack (machine 'stack))
+        (ops (machine 'operations)))
+    (for-each
+      (lambda (inst)
+        (track-instruction machine (instruction-text inst))
+        (set-instruction-execution-proc!
+          inst
+          (make-execution-procedure
+            (instruction-text inst) labels machine
+            pc flag stack ops)))
+      insts)))
+]
+
+With this, we can construct the Fibonacci machine and see what it finds:
+
+@verbatim{
+> (display (fibonacci-machine 'get-instruction-set))
+((branch ((branch (label immediate-answer))))
+ (assign ((assign val (reg n))
+          (assign val (op +) (reg val) (reg n))
+          (assign n (reg val))
+          (assign continue (label afterfib-n-2))
+          (assign n (op -) (reg n) (const 2))
+          (assign n (op -) (reg n) (const 1))
+          (assign continue (label afterfib-n-1))
+          (assign continue (label fib-done))))
+ (restore ((restore val)
+           (restore continue)
+           (restore n)))
+ (save ((save val)
+        (save n)
+        (save continue)))
+ (test ((test (op <) (reg n) (const 2))))
+ (goto ((goto (reg continue))
+        (goto (label fib-loop)))))
+
+> (display (fibonacci-machine 'get-entry-points))
+(continue)
+
+> (display (fibonacci-machine 'get-stack-registers))
+(val n continue)
+
+> (display (fibonacci-machine 'get-assign-sources))
+((val (((reg n))
+       ((op +) (reg val) (reg n))))
+ (continue (((label afterfib-n-2))
+            ((label afterfib-n-1))
+            ((label fib-done))))
+ (n (((reg val))
+     ((op -) (reg n) (const 2))
+     ((op -) (reg n) (const 1)))))
+}
