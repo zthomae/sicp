@@ -1576,3 +1576,140 @@ With this, we can construct the Fibonacci machine and see what it finds:
      ((op -) (reg n) (const 2))
      ((op -) (reg n) (const 1)))))
 }
+
+@section[#:tag "c5e13"]{Exercise 5.13}
+
+I've been waiting to change the simular to automatically create the
+registers it needs as it assembles the instructions -- passing in a list
+manually is a tiresome friction when putting together programs. (In real life,
+of course, the registers are fixed, but our machine doesn't work like that.)
+
+In principle, we need to change every instruction that deals with registers
+to allow the registers to be created first. Of course, actually @tt{changing}
+every instruction like this would be wildly unsustainable. Instead, I would
+like to change the @tt{get-register} operation so it's responsible for creating
+registers if they don't already exist. That way, the assembly process can be
+entirely agnostic as to whether the instructions are preallocated or created
+on the fly.
+
+Starting at the top-level, we change @tt{make-machine} so that it no longer
+accepts a list of registers and no longer explicitly creates them. This seems
+like an improvement anyway:
+
+@racketblock[
+(define (make-machine ops controller-text)
+  (let ((machine (make-new-machine)))
+    ((machine 'install-operations) ops)
+    ((machine 'install-instruction-sequence)
+     (assemble controller-text machine))
+    machine))
+]
+
+Next, in @tt{make-new-machine} we replace the @tt{lookup-register} operation
+with the more aptly-named @tt{find-or-create-register}. This does almost the
+same thing, except in the case that the register doesn't exist it calls
+@tt{allocate-register} to create it. @tt{allocate-register} is then changed
+to return the new register it created, in addition to adding it to the register
+table, and is removed from the public interface of the machine.
+
+@racketblock[
+(define (make-new-machine)
+  (let ((pc (make-register 'pc))
+        (flag (make-register 'flag))
+        (stack (make-stack))
+        (the-instruction-sequence '())
+        (instruction-set '())
+        (entry-points '())
+        (stack-registers '())
+        (assign-sources '()))
+    (let ((the-ops
+            (list (list 'initialize-stack (lambda () (stack 'initialize)))))
+          (register-table
+            (list (list 'pc pc) (list 'flag flag))))
+      (define (allocate-register name)
+        (if (assoc name register-table)
+            (error "Multiply defined reigster: " name)
+            (let ((new-register (make-register name)))
+              (set! register-table (cons (list name new-register) register-table))
+              new-register)))
+      (define (find-or-create-register name)
+        (let ((val (assoc name register-table)))
+          (if val
+              (cadr val)
+              (allocate-register name))))
+      (define (execute)
+        (let ((insts (get-contents pc)))
+          (if (null? insts)
+              'done
+              (begin
+                ((instruction-execution-proc (car insts)))
+                (execute)))))
+      (define (add-instruction inst)
+        (set! instruction-set
+              (add-unique-assoc-value instruction-set (car inst) inst)))
+      (define (add-entry-point destination-register)
+        (set! entry-points
+              (add-unique-value entry-points destination-register)))
+      (define (add-stack-register stack-register-name)
+        (set! stack-registers
+              (add-unique-value stack-registers stack-register-name)))
+      (define (add-assign-source inst)
+        (set! assign-sources
+              (add-unique-assoc-value assign-sources
+                                      (assign-reg-name inst)
+                                      (assign-value-exp inst))))
+      (define (dispatch message)
+        (cond ((eq? message 'start)
+               (set-contents! pc the-instruction-sequence)
+               (execute))
+              ((eq? message 'install-instruction-sequence)
+               (lambda (seq) (set! the-instruction-sequence seq)))
+              ((eq? message 'get-register) find-or-create-register)
+              ((eq? message 'install-operations)
+               (lambda (ops) (set! the-ops (append the-ops ops))))
+              ((eq? message 'stack) stack)
+              ((eq? message 'operations) the-ops)
+              ((eq? message 'track-instruction) add-instruction)
+              ((eq? message 'get-instruction-set) instruction-set)
+              ((eq? message 'track-entry-point) add-entry-point)
+              ((eq? message 'get-entry-points) entry-points)
+              ((eq? message 'track-stack-register) add-stack-register)
+              ((eq? message 'get-stack-registers) stack-registers)
+              ((eq? message 'track-assign-source) add-assign-source)
+              ((eq? message 'get-assign-sources) assign-sources)
+              (else (error "Unknown request -- MACHINE" message))))
+      dispatch)))
+]
+
+And that's all we have to do. We can now define machines without passing in lists
+of registers and they will work normally:
+
+@racketblock[
+(define iterative-exponentiation-machine
+  (make-machine
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (assign counter (reg n))
+       (assign product (const 1))
+      expt-iter
+       (test (op =) (reg counter) (const 0))
+       (branch (label after-expt))
+       (assign counter (op -) (reg counter) (const 1))
+       (assign product (op *) (reg b) (reg product))
+       (goto (label expt-iter))
+      after-expt
+       (assign val (reg product))
+       (goto (label expt-done))
+      expt-done)))
+]
+
+@verbatim{
+> (set-register-contents! iterative-exponentiation-machine 'b 3)
+'done
+> (set-register-contents! iterative-exponentiation-machine 'n 10)
+'done
+> (start iterative-exponentiation-machine)
+'done
+> (get-register-contents iterative-exponentiation-machine 'val)
+59049
+}

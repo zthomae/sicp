@@ -5,11 +5,8 @@
       (eq? (car exp) tag)
       false))
 
-(define (make-machine register-names ops controller-text)
+(define (make-machine ops controller-text)
   (let ((machine (make-new-machine)))
-    (for-each (lambda (register-name)
-                ((machine 'allocate-register) register-name))
-              register-names)
     ((machine 'install-operations) ops)
     ((machine 'install-instruction-sequence)
      (assemble controller-text machine))
@@ -104,15 +101,14 @@
       (define (allocate-register name)
         (if (assoc name register-table)
             (error "Multiply defined reigster: " name)
-            (set! register-table
-                  (cons (list name (make-register name))
-                        register-table)))
-        'register-allocated)
-      (define (lookup-register name)
+            (let ((new-register (make-register name)))
+              (set! register-table (cons (list name new-register) register-table))
+              new-register)))
+      (define (find-or-create-register name)
         (let ((val (assoc name register-table)))
           (if val
               (cadr val)
-              (error "Unknown register:" name))))
+              (allocate-register name))))
       (define (execute)
         (let ((insts (get-contents pc)))
           (if (null? insts)
@@ -140,8 +136,7 @@
                (execute))
               ((eq? message 'install-instruction-sequence)
                (lambda (seq) (set! the-instruction-sequence seq)))
-              ((eq? message 'allocate-register) allocate-register)
-              ((eq? message 'get-register) lookup-register)
+              ((eq? message 'get-register) find-or-create-register)
               ((eq? message 'install-operations)
                (lambda (ops) (set! the-ops (append the-ops ops))))
               ((eq? message 'stack) stack)
@@ -374,7 +369,6 @@
 
 (define test-restore-machine
   (make-machine
-    '(a b)
     '()
     '(start-machine
       (assign a (const 1))
@@ -383,7 +377,6 @@
 
 (define recursive-exponentiation-machine
   (make-machine
-    '(b n continue val)
     (list (list '= =) (list '- -) (list '* *))
     '(start-machine
        (assign continue (label expt-done))
@@ -407,7 +400,6 @@
 
 (define iterative-exponentiation-machine
   (make-machine
-    '(b n val counter product)
     (list (list '= =) (list '- -) (list '* *))
     '(start-machine
        (assign counter (reg n))
@@ -425,7 +417,6 @@
 
 (define fibonacci-machine
   (make-machine
-    '(continue n val)
     (list (list '- -) (list '< <) (list '+ +))
     '(controller
        (assign continue (label fib-done))
