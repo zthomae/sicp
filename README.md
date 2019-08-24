@@ -1,6 +1,6 @@
 # SICP Solutions
 
-**Officially hosted on [GitLab](http://zthomae.github.io/sicp/)**
+**Officially hosted on [GitHub](https://zthomae.github.io/sicp/)**
 
 These are my solutions to the exercises in the
 [Structure and Interpretation of Computer Programs](https://mitpress.mit.edu/sicp/full-text/book/book.html)
