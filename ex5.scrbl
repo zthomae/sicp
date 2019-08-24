@@ -1809,3 +1809,129 @@ Next, let's run the machine for the integers from @tt{1} to @tt{30}:
 As predicted, there is a strict linear relationship between the number
 of pushes (and the maximum depth of the stack) and @tt{n} -- in this case,
 with the number of pushes and the maximum stack depth being @tt{2 * (n - 1)}.
+
+@section[#:tag "c5e15"]{Exercise 5.15}
+
+Tracking the number of instructions that have been executed is very easy.
+
+First, we add a new piece of mutable state within the machine to keep track of the
+number of instructions that have been executed, and operations for clearing/printing
+this value:
+
+@racketblock[
+(define (make-new-machine)
+  (let ((pc (make-register 'pc))
+        (flag (make-register 'flag))
+        (stack (make-stack))
+        (the-instruction-sequence '())
+        (instruction-set '())
+        (entry-points '())
+        (stack-registers '())
+        (assign-sources '())
+        (instruction-count 0))
+    (let ((the-ops
+            (list (list 'initialize-stack
+                        (lambda () (stack 'initialize)))
+                  (list 'print-stack-statistics
+                        (lambda () (stack 'print-statistics)))
+                  (list 'initialize-instruction-count
+                        (lambda () (set! instruction-count 0)))
+                  (list 'print-instruction-count
+                        (lambda () (displayln "instruction-count =" instruction-count)))))
+          ;; ...
+          ))))
+]
+
+Next, we modify the internal @tt{execute} procedure so it increments this counter
+before executing each instruction:
+
+@racketblock[
+(define (execute)
+  (let ((insts (get-contents pc)))
+    (if (null? insts)
+        'done
+        (begin
+          (set! instruction-count (+ instruction-count 1))
+          ((instruction-execution-proc (car insts)))
+          (execute)))))
+]
+
+Lastly, we initialize this counter to 0 before our program starts and print it
+as it exists. For convenience, we can do that by adding these instructions
+to the beginning/end of the program as we did in the previous exercise.
+
+As an example, let's instrument the recursive and iterative exponentiation
+programs and see how they compare. First, the recursive machine:
+
+@racketblock[
+(define recursive-exponentiation-machine
+  (make-machine
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (perform (op initialize-instruction-count))
+       (assign continue (label expt-done))
+      expt-loop
+       (test (op =) (reg n) (const 0))
+       (branch (label base-case))
+       (save continue)
+       (assign n (op -) (reg n) (const 1))
+       (save n)
+       (assign continue (label after-expt))
+       (goto (label expt-loop))
+      after-expt
+       (restore n)
+       (restore continue)
+       (assign val (op *) (reg b) (reg val))
+       (goto (reg continue))
+      base-case
+       (assign val (const 1))
+       (goto (reg continue))
+      expt-done
+       (perform (op print-instruction-count)))))
+]
+
+Next, the iterative machine:
+
+@racketblock[
+(define iterative-exponentiation-machine
+  (make-machine
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (perform (op initialize-instruction-count))
+       (assign counter (reg n))
+       (assign product (const 1))
+      expt-iter
+       (test (op =) (reg counter) (const 0))
+       (branch (label after-expt))
+       (assign counter (op -) (reg counter) (const 1))
+       (assign product (op *) (reg b) (reg product))
+       (goto (label expt-iter))
+      after-expt
+       (assign val (reg product))
+       (goto (label expt-done))
+      expt-done
+       (perform (op print-instruction-count)))))
+]
+
+And running them both with the same inputs:
+
+@verbatim{
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+> (set-register-contents! recursive-exponentiation-machine 'n 10)
+'done
+> (start recursive-exponentiation-machine)
+instruction-count = 116
+'done
+
+> (set-register-contents! iterative-exponentiation-machine 'b 2)
+'done
+> (set-register-contents! iterative-exponentiation-machine 'n 10)
+'done
+> (start iterative-exponentiation-machine)
+instruction-count = 57
+'done
+}
+
+As we expected, the iterative machine is significantly efficient than the
+recursive machine in that it executes many fewer instructions.

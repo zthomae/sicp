@@ -110,12 +110,17 @@
         (instruction-set '())
         (entry-points '())
         (stack-registers '())
-        (assign-sources '()))
+        (assign-sources '())
+        (instruction-count 0))
     (let ((the-ops
             (list (list 'initialize-stack
                         (lambda () (stack 'initialize)))
                   (list 'print-stack-statistics
-                        (lambda () (stack 'print-statistics)))))
+                        (lambda () (stack 'print-statistics)))
+                  (list 'initialize-instruction-count
+                        (lambda () (set! instruction-count 0)))
+                  (list 'print-instruction-count
+                        (lambda () (displayln "instruction-count =" instruction-count)))))
           (register-table
             (list (list 'pc pc) (list 'flag flag))))
       (define (allocate-register name)
@@ -134,6 +139,7 @@
           (if (null? insts)
               'done
               (begin
+                (set! instruction-count (+ instruction-count 1))
                 ((instruction-execution-proc (car insts)))
                 (execute)))))
       (define (add-instruction inst)
@@ -399,6 +405,7 @@
   (make-machine
     (list (list '= =) (list '- -) (list '* *))
     '(start-machine
+       (perform (op initialize-instruction-count))
        (assign continue (label expt-done))
        expt-loop
        (test (op =) (reg n) (const 0))
@@ -416,12 +423,14 @@
        base-case
        (assign val (const 1))
        (goto (reg continue))
-       expt-done)))
+       expt-done
+       (perform (op print-instruction-count)))))
 
 (define iterative-exponentiation-machine
   (make-machine
     (list (list '= =) (list '- -) (list '* *))
     '(start-machine
+       (perform (op initialize-instruction-count))
        (assign counter (reg n))
        (assign product (const 1))
       expt-iter
@@ -433,7 +442,8 @@
       after-expt
        (assign val (reg product))
        (goto (label expt-done))
-      expt-done)))
+      expt-done
+       (perform (op print-instruction-count)))))
 
 (define fibonacci-machine
   (make-machine
