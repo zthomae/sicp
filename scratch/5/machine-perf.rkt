@@ -202,28 +202,33 @@
 
 (define (assemble controller-text machine)
   (extract-labels controller-text
-    (lambda (insts labels)
+    (lambda (insts labels last-instruction)
       (update-insts! insts labels machine)
       insts)))
 
 (define (extract-labels text receive)
   (if (null? text)
-      (receive '() '())
+      (receive '() '() #f)
       (extract-labels (cdr text)
         ;; To process _each result_, we determine whether the next instruction
         ;; is a label or a real instruction, and then process _that instruction_
         ;; correctly by either adding it to the labels or the actual instructions
-        (lambda (insts labels)
+        (lambda (insts labels last-instruction)
           (let ((next-inst (car text)))
             (if (symbol? next-inst)
                 (if (assoc next-inst labels)
                     (error "Duplicate label -- ASSEMBLE" next-inst)
-                    (receive insts
-                             (cons (make-label-entry next-inst insts)
-                                   labels)))
-                (receive (cons (make-instruction next-inst)
-                               insts)
-                         labels)))))))
+                    (begin
+                      (if last-instruction
+                          (add-instruction-label! last-instruction next-inst))
+                      (receive insts
+                               (cons (make-label-entry next-inst insts)
+                                     labels)
+                               last-instruction)))
+                (let ((next-instruction (make-instruction next-inst)))
+                  (receive (cons next-instruction insts)
+                           labels
+                           next-instruction))))))))
 
 (define (track-instruction machine inst)
   ((machine 'track-instruction) inst)
@@ -252,16 +257,23 @@
       insts)))
 
 (define (make-instruction text)
-  (cons text '()))
+  (list text '()))
 (define (instruction-text inst)
   (car inst))
+(define (instruction-labels inst)
+  (cadr inst))
 (define (instruction-execution-proc inst)
-  (cdr inst))
+  (cddr inst))
+(define (add-instruction-label! inst label)
+  (set-cdr! inst (cons (cons label (instruction-labels inst))
+                       (instruction-execution-proc inst))))
 (define (set-instruction-execution-proc! inst proc)
-  (set-cdr! inst proc))
+  (set-cdr! (cdr inst) proc))
 
 (define (display-instruction inst)
-  (displayln (car inst)))
+  (if (instruction-labels inst)
+      (for-each displayln (instruction-labels inst)))
+  (displayln "  " (car inst)))
 
 (define (make-label-entry label-name insts)
   (cons label-name insts))
@@ -422,6 +434,7 @@
        (perform (op initialize-instruction-count))
        (assign continue (label expt-done))
        expt-loop
+       other-label-expt-loop
        (test (op =) (reg n) (const 0))
        (branch (label base-case))
        (save continue)

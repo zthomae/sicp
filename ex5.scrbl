@@ -1942,12 +1942,14 @@ To add instruction tracing, we can instrument the internal @tt{execute} procedur
 in the machine to output instructions before executing them. I think this is
 better than instrumenting the instruction procedures themselves because
 the changes to allow instruction tracing are guaranteed to stay isolated here.
-It's also trivial to add a command to turn instruction tracing on and off.
+It also seems right to me to separate the actual operations that each instruction
+performs from a machine-level concern like instruction tracing.
 
 The exercise doesn't specify how the instructions ought to be displayed,
 so we're going to do the simple thing and print the forms literally with no
 extra formatting applied. The @tt{displayln} helper function I wrote awhile
-ago will make this almost completely trivial.
+ago will make this almost completely trivial. It's also trivial to add commands
+to turn instruction tracing on and off.
 
 In @tt{make-new-machine}, we modify the following segments. The rest has been
 omitted for clarity.
@@ -2041,9 +2043,211 @@ And with that, we're all done:
 instruction-count = 28
 'done
 
+> (get-register-contents recursive-exponentiation-machine 'val)
+4
+
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'n 2)
+'done
+
 > (trace-off recursive-exponentiation-machine)
 
 > (start recursive-exponentiation-machine)
-instruction-count = 17
+instruction-count = 28
 'done
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+4
 }
+
+@section[#:tag "c5e17"]{Exercise 5.17}
+
+Printing labels alongside instructions is slightly trickier because we aren't
+currently associating instructions with their preceding labels.
+
+We could use an auxiliary data structure to store the associations between
+instructions and labels (where applicable), but it seems a little cleaner
+to me to expand the instruction type to optionally include a label. Since
+the underlying data structure is hidden behind accessing functions, the change
+should be relatively painless.
+
+@tt{extract-labels} is procedure which iterates over the labels and instructions
+in the program and separates them. One might assume that this is the best
+location to associate instructions with their label(s), but this happens to
+iterate over the instructions in reverse order. However, the iteration occurs in
+reverse order. If labels are discovered after the instruction at which they
+point, we need to be slightly more careful in how we track this.
+
+I would still like to maintain the association between labels and instructions
+by instrumenting @tt{extract-labels}, because this is the function that is
+canonically responsible for constructing both of these. The main change
+that I need to make now is to maintain a reference to the @italic{last}
+instruction which I have created and add labels to it where necessary. In
+essence, I can do this by adding a new argument to the internal function that
+this uses.
+
+First, here are the updated constructor/accessor functions for instructions:
+
+@racketblock[
+(define (make-instruction text)
+  (list text '()))
+(define (instruction-text inst)
+  (car inst))
+(define (instruction-labels inst)
+  (cadr inst))
+(define (instruction-execution-proc inst)
+  (cddr inst))
+(define (add-instruction-label! inst label)
+  (set-cdr! inst (cons (cons label (instruction-labels inst))
+                       (instruction-execution-proc inst))))
+(define (set-instruction-execution-proc! inst proc)
+  (set-cdr! (cdr inst) proc))
+]
+
+As you can see, the new representation is to include a list of labels as the
+second item in a list, with the instruction text being first and the execution
+procedure being last. This choice is arbitrary. (I've not added the ability
+to clear the labels that point to an instruction to the public interface.)
+
+Next, here is the new definition of @tt{extract-labels}. Note the new
+argument to the internal procedure, and the fact that we only associate an
+instruction with a new label if we have one.
+
+@racketblock[
+(define (extract-labels text receive)
+  (if (null? text)
+      (receive '() '() #f)
+      (extract-labels (cdr text)
+        (lambda (insts labels last-instruction)
+          (let ((next-inst (car text)))
+            (if (symbol? next-inst)
+                (if (assoc next-inst labels)
+                    (error "Duplicate label -- ASSEMBLE" next-inst)
+                    (begin
+                      (if last-instruction
+                          (add-instruction-label! last-instruction next-inst))
+                      (receive insts
+                               (cons (make-label-entry next-inst insts)
+                                     labels)
+                               last-instruction)))
+                (let ((next-instruction (make-instruction next-inst)))
+                  (receive (cons next-instruction insts)
+                           labels
+                           next-instruction))))))))
+]
+
+@tt{assemble}, the only caller of this method, also needs to be modified:
+
+@racketblock[
+(define (assemble controller-text machine)
+  (extract-labels controller-text
+    (lambda (insts labels last-instruction)
+      (update-insts! insts labels machine)
+      insts)))
+]
+
+Lastly, I can update @tt{display-instruction} to also print the labels. For
+legibility, I will unconditionally indent real instruction text to keep it
+distinct from labels:
+
+@racketblock[
+(define (display-instruction inst)
+  (if (instruction-labels inst)
+      (for-each displayln (instruction-labels inst)))
+  (displayln "  " (car inst)))
+]
+
+To see these changes in action, here's a modified version of the recursive
+exponentiation machine which contains two labels above one of the instructions:
+
+@racketblock[
+(define recursive-exponentiation-machine
+  (make-machine
+    (list (list '= =) (list '- -) (list '* *))
+    '(start-machine
+       (perform (op initialize-instruction-count))
+       (assign continue (label expt-done))
+       expt-loop
+       other-label-expt-loop
+       (test (op =) (reg n) (const 0))
+       (branch (label base-case))
+       (save continue)
+       (assign n (op -) (reg n) (const 1))
+       (save n)
+       (assign continue (label after-expt))
+       (goto (label expt-loop))
+       after-expt
+       (restore n)
+       (restore continue)
+       (assign val (op *) (reg b) (reg val))
+       (goto (reg continue))
+       base-case
+       (assign val (const 1))
+       (goto (reg continue))
+       expt-done
+       (perform (op print-instruction-count)))))
+]
+
+And in use:
+
+@verbatim{
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'n 2)
+'done
+
+> (trace-on recursive-exponentiation-machine)
+
+> (start recursive-exponentiation-machine)
+start-machine
+   (perform (op initialize-instruction-count))
+   (assign continue (label expt-done))
+expt-loop
+other-label-expt-loop
+   (test (op =) (reg n) (const 0))
+   (branch (label base-case))
+   (save continue)
+   (assign n (op -) (reg n) (const 1))
+   (save n)
+   (assign continue (label after-expt))
+   (goto (label expt-loop))
+expt-loop
+other-label-expt-loop
+   (test (op =) (reg n) (const 0))
+   (branch (label base-case))
+   (save continue)
+   (assign n (op -) (reg n) (const 1))
+   (save n)
+   (assign continue (label after-expt))
+   (goto (label expt-loop))
+expt-loop
+other-label-expt-loop
+   (test (op =) (reg n) (const 0))
+   (branch (label base-case))
+base-case
+   (assign val (const 1))
+   (goto (reg continue))
+after-expt
+   (restore n)
+   (restore continue)
+   (assign val (op *) (reg b) (reg val))
+   (goto (reg continue))
+after-expt
+   (restore n)
+   (restore continue)
+   (assign val (op *) (reg b) (reg val))
+   (goto (reg continue))
+expt-done
+   (perform (op print-instruction-count))
+instruction-count = 28
+'done
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+4
+}
+
+As you can see, the result and the instruction counts are both identical, and
+the instructions have been traced correctly.
