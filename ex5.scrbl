@@ -2251,3 +2251,104 @@ instruction-count = 28
 
 As you can see, the result and the instruction counts are both identical, and
 the instructions have been traced correctly.
+
+@section[#:tag "c5e18"]{Exercise 5.18}
+
+Adding register tracing is about as easy as instruction tracing. However, we can
+no longer isolate the changes related to tracing solely to the machine itself --
+due to the current implementation strategy, @tt{make-assign} ought to be
+responsible for the actual printing. I could modify @tt{set-contents!}
+itself, but I believe that giving the registers themselves knowledge of whether
+tracing should be enable may be unwise. For one, it seems plausible
+to me that we ought to be able to treat @tt{set-register-contents!} differently,
+because it's a user-facing command that isn't a part of machine execution.
+It's also more inconsistent with how we implemented instruction tracing.
+This is a judgment call that I don't feel entirely happy about either way.
+
+First, we modify @tt{make-new-machine} to add the new internal state and some
+methods for accessing it:
+
+@racketblock[
+(define (make-new-machine)
+  (let ((pc (make-register 'pc))
+        (flag (make-register 'flag))
+        (stack (make-stack))
+        (the-instruction-sequence '())
+        (instruction-set '())
+        (entry-points '())
+        (stack-registers '())
+        (assign-sources '())
+        (instruction-count 0)
+        (tracing-instructions #f)
+        (traced-registers '()))
+    ...
+
+    (define (dispatch message)
+      (cond ...
+        ((eq? message 'trace-register-on)
+         (lambda (register-name)
+          (set! traced-registers (add-unique-value traced-registers register-name))))
+        ((eq? message 'trace-register-off)
+         (lambda (register-name)
+          (set! traced-registers (remove-unique-value traced-registers register-name))))
+        ((eq? message 'clear-traced-registers)
+         (lambda () (set! traced-registers '())))
+        ((eq? message 'tracing-register?)
+         (lambda (register-name) (contains traced-registers register-name))))
+
+        ...)))
+]
+
+Next, we can add a few top-level helper functions to keep code clean:
+
+@racketblock[
+(define (trace-register-on machine register-name)
+  ((machine 'trace-register-on) register-name))
+(define (trace-register-off machine register-name)
+  ((machine 'trace-register-off) register-name))
+(define (clear-traced-registers machine)
+  ((machine 'clear-traced-registers)))
+(define (tracing-register? machine register-name)
+  ((machine 'tracing-register?) register-name))
+]
+
+Lastly, we modify @tt{make-assign} so that it prints out the assignment
+it will perform just before it does so:
+
+@racketblock[
+(define (make-assign inst machine labels operations pc)
+  (let* ((register-name (assign-reg-name inst))
+         (target (get-register machine register-name))
+         (value-exp (assign-value-exp inst)))
+    (let ((value-proc
+            (if (operation-exp? value-exp)
+                (make-operation-exp value-exp machine labels operations)
+                (make-primitive-exp (car value-exp) machine labels))))
+      (lambda ()
+        (let ((value (value-proc)))
+          (if (tracing-register? machine register-name)
+            (displayln "Modifying" register-name "from" (get-register-contents machine register-name) "to" value))
+          (set-contents! target value)
+          (advance-pc pc))))))
+]
+
+I'm going to opt not to modify @tt{set-register-contents!} for the sake of brevity,
+but it would be even easier to modify.
+
+Here it is in action:
+
+@verbatim{
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'n 2)
+'done
+
+> (trace-register-on recursive-exponentiation-machine 'n)
+
+> (start recursive-exponentiation-machine)
+Modifying n from 2 to 1
+Modifying n from 1 to 0
+instruction-count = 28
+'done
+}
