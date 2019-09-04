@@ -111,7 +111,8 @@
         (entry-points '())
         (stack-registers '())
         (assign-sources '())
-        (instruction-count 0))
+        (instruction-count 0)
+        (tracing-instructions #f))
     (let ((the-ops
             (list (list 'initialize-stack
                         (lambda () (stack 'initialize)))
@@ -140,6 +141,8 @@
               'done
               (begin
                 (set! instruction-count (+ instruction-count 1))
+                (if tracing-instructions
+                  (display-instruction (car insts)))
                 ((instruction-execution-proc (car insts)))
                 (execute)))))
       (define (add-instruction inst)
@@ -175,6 +178,10 @@
               ((eq? message 'get-stack-registers) stack-registers)
               ((eq? message 'track-assign-source) add-assign-source)
               ((eq? message 'get-assign-sources) assign-sources)
+              ((eq? message 'trace-on)
+               (lambda () (set! tracing-instructions #t)))
+              ((eq? message 'trace-off)
+               (lambda () (set! tracing-instructions #f)))
               (else (error "Unknown request -- MACHINE" message))))
       dispatch)))
 
@@ -185,6 +192,10 @@
 (define (set-register-contents! machine register-name value)
   (set-contents! (get-register machine register-name) value)
   'done)
+(define (trace-on machine)
+  ((machine 'trace-on)))
+(define (trace-off machine)
+  ((machine 'trace-off)))
 
 (define (get-register machine reg-name)
   ((machine 'get-register) reg-name))
@@ -248,6 +259,9 @@
   (cdr inst))
 (define (set-instruction-execution-proc! inst proc)
   (set-cdr! inst proc))
+
+(define (display-instruction inst)
+  (displayln (car inst)))
 
 (define (make-label-entry label-name insts)
   (cons label-name insts))

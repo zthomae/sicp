@@ -1935,3 +1935,115 @@ instruction-count = 57
 
 As we expected, the iterative machine is significantly efficient than the
 recursive machine in that it executes many fewer instructions.
+
+@section[#:tag "c5e16"]{Exercise 5.16}
+
+To add instruction tracing, we can instrument the internal @tt{execute} procedure
+in the machine to output instructions before executing them. I think this is
+better than instrumenting the instruction procedures themselves because
+the changes to allow instruction tracing are guaranteed to stay isolated here.
+It's also trivial to add a command to turn instruction tracing on and off.
+
+The exercise doesn't specify how the instructions ought to be displayed,
+so we're going to do the simple thing and print the forms literally with no
+extra formatting applied. The @tt{displayln} helper function I wrote awhile
+ago will make this almost completely trivial.
+
+In @tt{make-new-machine}, we modify the following segments. The rest has been
+omitted for clarity.
+
+@racketblock[
+(let ((pc (make-register 'pc))
+      (flag (make-register 'flag))
+      (stack (make-stack))
+      (the-instruction-sequence '())
+      (instruction-set '())
+      (entry-points '())
+      (stack-registers '())
+      (assign-sources '())
+      (instruction-count 0)
+      (tracing-instructions #f))
+  ...
+
+  (define (execute)
+    (let ((insts (get-contents pc)))
+      (if (null? insts)
+          'done
+          (begin
+            (set! instruction-count (+ instruction-count 1))
+            (if tracing-instructions
+              (display-instruction (car insts)))
+            ((instruction-execution-proc (car insts)))
+            (execute)))))
+  ...
+
+  (define (dispatch message)
+    (cond ...
+      ((eq? message 'trace-on)
+       (lambda () (set! tracing-instructions #t)))
+      ((eq? message 'trace-off)
+       (lambda () (set! tracing-instructions #f))))))
+]
+
+To support this, we use a few helper functions:
+
+@racketblock[
+(define (trace-on machine)
+  ((machine 'trace-on)))
+(define (trace-off machine)
+  ((machine 'trace-off)))
+
+(define (display-instruction inst)
+  (displayln (car inst)))
+]
+
+And with that, we're all done:
+
+@verbatim{
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'n 2)
+'done
+
+> (trace-on recursive-exponentiation-machine)
+
+> (start recursive-exponentiation-machine)
+(perform (op initialize-instruction-count))
+(assign continue (label expt-done))
+(test (op =) (reg n) (const 0))
+(branch (label base-case))
+(save continue)
+(assign n (op -) (reg n) (const 1))
+(save n)
+(assign continue (label after-expt))
+(goto (label expt-loop))
+(test (op =) (reg n) (const 0))
+(branch (label base-case))
+(save continue)
+(assign n (op -) (reg n) (const 1))
+(save n)
+(assign continue (label after-expt))
+(goto (label expt-loop))
+(test (op =) (reg n) (const 0))
+(branch (label base-case))
+(assign val (const 1))
+(goto (reg continue))
+(restore n)
+(restore continue)
+(assign val (op *) (reg b) (reg val))
+(goto (reg continue))
+(restore n)
+(restore continue)
+(assign val (op *) (reg b) (reg val))
+(goto (reg continue))
+(perform (op print-instruction-count))
+instruction-count = 28
+'done
+
+> (trace-off recursive-exponentiation-machine)
+
+> (start recursive-exponentiation-machine)
+instruction-count = 17
+'done
+}
