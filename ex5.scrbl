@@ -2352,3 +2352,330 @@ Modifying n from 1 to 0
 instruction-count = 28
 'done
 }
+
+@section[#:tag "c5e19"]{Exercise 5.19}
+
+Implementing breakpoints based on labels is an interesting change. Every label
+contains a reference to the instruction it points to. We can use the @tt{eq?}
+function to check whether two objects are identical (which will suffice to
+distinguish two different instances of the "same" instruction). In this way,
+our implementation strategy is straightforward. First, we initialize the machine
+with a list of active breakpoints, beginning empty. Next, we make sure to
+save the labels in the machine after assembly so we can look them up later.
+
+After this preparatory work, we can add methods for manipulating the list
+of active breakpoints. To add a breakpoint, we look up a label by name, find
+the @italic{n}th instruction after it (or raise an error if it doesn't exist),
+and add it to the set of active breakpoints. Then, when we are executing instructions
+we check whether an @italic{identical} instruction exists in the list of active
+breakpoints, halting the machine if this is true. When we're done, we can tell the
+machine to continue running.
+
+This also requires a change to the way machine execution works. Right now, there's no
+opportunity for the machine to stop executing instructions. One solution is to save
+a continuation to continue execution where it left off when we're ready to do so.
+Scheme has continuation features built into the language, but for the sake of clarity
+we'll implement this ourselves.
+
+Let's go through an MVP implementation of breakpoints for the machine. @bold{An
+exercise for later would be to expand this implementation to be more ergonomic.}
+
+First, we define a few useful helper functions for working with lists of unique
+values by identity:
+
+@racketblock[
+(define (add-unique-value-id lst value)
+  (define (loop rest)
+    (cond ((null? rest) (cons value lst))
+          ((eq? (car rest) value) lst)
+          (else (loop (cdr rest)))))
+  (loop lst))
+
+(define (filter-id lst x)
+  (define (iter acc rest)
+    (cond ((null? rest) (reverse acc))
+          ((eq? (car rest) x)
+           (iter acc (cdr rest)))
+          (else (iter (cons x acc) (cdr rest)))))
+  (iter '() lst))
+
+(define (contains-id lst x)
+  (cond ((null? lst) #f)
+        ((eq? (car lst) x) #t)
+        (else (contains (cdr lst) x))))
+]
+
+Note that these functions are almost identical to their non-identity versions.
+This means that it would be feasible to extract @tt{equal?}/@tt{eq?} from them
+and pass the comparison function in as a parameter. An example of what that
+would look like is below:
+
+@racketblock[
+(define (add-unique-value-by lst value compare)
+  (define (loop rest)
+    (cond ((null? rest) (cons value lst))
+          ((compare (car rest) value) lst)
+          (else (loop (cdr rest)))))
+  (loop lst))
+
+(define (add-unique-value lst value)
+  (add-unique-value-by lst value equal?))
+
+(define (add-unique-value-id lst value)
+  (add-unique-value-by lst value eq?))
+]
+
+(Currying would also be an option.)
+
+Next, we have to track additional state inside the machine:
+
+@racketblock[
+(define (make-new-machine)
+  (let ((pc (make-register 'pc))
+        (flag (make-register 'flag))
+        (stack (make-stack))
+        (the-instruction-sequence '())
+        (instruction-set '())
+        (labels '())
+        (entry-points '())
+        (stack-registers '())
+        (assign-sources '())
+        (instruction-count 0)
+        (tracing-instructions #f)
+        (traced-registers '())
+        (active-breakpoints '())
+        (continuation #f))
+    ...))
+]
+
+Inside this @tt{let} body, we need to define a few new internal functions
+for adding and removing breakpoints:
+
+@racketblock[
+(define (find-label label-name)
+  (define (iter rest)
+    (if (null? rest)
+        (error "Could not find label" label-name)
+        (let ((next (car rest)))
+          (if (equal? label-name (label-entry-name next))
+              next
+              (iter (cdr rest))))))
+  (iter labels))
+(define (nth-instruction-after label-name n)
+  (list-ref (label-entry-instructions (find-label label-name)) (- n 1)))
+(define (add-breakpoint inst)
+  (set! active-breakpoints (add-unique-value-id active-breakpoints inst)))
+(define (remove-breakpoint inst)
+  (set! active-breakpoints (filter-id active-breakpoints inst)))
+]
+
+Next, the meat of the work: Reworking @tt{execute} to handle continuations
+and save them if it reaches a breakpoint:
+
+@racketblock[
+(define (execute)
+  (let ((next-continuation continuation))
+    (if next-continuation
+        (begin
+          (displayln "Resuming execution")
+          (set! continuation #f)
+          (next-continuation))
+        (let ((insts (get-contents pc)))
+          (if (null? insts)
+              'done
+              (let* ((next-instruction (car insts))
+                     (next-continuation
+                       (lambda ()
+                         (set! instruction-count (+ instruction-count 1))
+                         (if tracing-instructions
+                           (display-instruction next-instruction))
+                         ((instruction-execution-proc next-instruction))
+                         (execute))))
+                (if (contains-id active-breakpoints next-instruction)
+                    (begin
+                      (set! continuation next-continuation)
+                      (displayln "Paused on breakpoint"))
+                    (next-continuation))))))))
+]
+
+I've chosen to attach this directly to @tt{execute} to make sure that this
+continuation behavior is global. I could imagine moving the execution of
+the continuation into the function for resuming execution of a paused machine
+(shown below), but I believe this would be rather likely to lead to situations
+where breakpoints are not handled correctly.
+
+There are a number of new messages that our machine needs to handle. Also note
+that @tt{start} needs to clear any continuation before beginning execution.
+
+@racketblock[
+(define (dispatch message)
+  (cond ((eq? message 'start)
+         (set-contents! pc the-instruction-sequence)
+         (set! continuation #f)
+         (execute))
+        ...
+        ((eq? message 'install-labels)
+         (lambda (seq) (set! labels seq)))
+        ((eq? message 'add-breakpoint)
+         (lambda (label n) (add-breakpoint (nth-instruction-after label n))))
+        ((eq? message 'remove-breakpoint)
+         (lambda (label n) (remove-breakpoint (nth-instruction-after label n))))
+        ((eq? message 'remove-all-breakpoints)
+         (lambda () (set! active-breakpoints '())))
+        ((eq? message 'resume-execution)
+         (lambda () (execute)))
+         ...))
+]
+
+Of course, we define the top-level interface for working with breakpoints on a
+machine:
+
+@racketblock[
+(define (set-breakpoint machine label n)
+  ((machine 'add-breakpoint) label n))
+(define (clear-breakpoint machine label n)
+  ((machine 'remove-breakpoint) label n))
+(define (cancel-all-breakpoints machine)
+  ((machine 'remove-all-breakpoints)))
+(define (proceed-machine machine)
+  ((machine 'resume-execution)))
+]
+
+The last piece that remains is getting the labels into the machine.
+This means that @tt{make-machine} needs to be expanded to save the
+labels as well as the instructions:
+
+@racketblock[
+(define (make-machine ops controller-text)
+  (let ((machine (make-new-machine)))
+    ((machine 'install-operations) ops)
+    (let* ((instructions-and-labels (assemble controller-text machine))
+           (instructions (car instructions-and-labels))
+           (labels (cdr instructions-and-labels)))
+      ((machine 'install-instruction-sequence) instructions)
+      ((machine 'install-labels) labels)
+      machine)))
+]
+
+@tt{assemble} also needs to return these labels:
+
+@racketblock[
+(define (assemble controller-text machine)
+  (extract-labels controller-text
+    (lambda (insts labels last-instruction)
+      (update-insts! insts labels machine)
+      (cons insts labels))))
+]
+
+With this, the implementation is essentially done. As a final note, you may have
+noticed that I've added a few accessor methods for the different pieces of
+a label. These are trivial:
+
+@racketblock[
+(define (label-entry-name label)
+  (car label))
+(define (label-entry-instructions label)
+  (cdr label))
+]
+
+With this, our machine now supports breakpoints:
+
+@verbatim{
+> (set-breakpoint recursive-exponentiation 'after-expt 2)
+
+> (set-breakpoint recursive-exponentiation-machine 'start-machine 1)
+
+> (set-register-contents! recursive-exponentiation-machine 'val 0)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'n 2)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+
+> (start recursive-exponentiation-machine)
+Paused on breakpoint
+
+> (get-register-contents recursive-exponentiation-machine 'n)
+2
+
+> (get-register-contents recursive-exponentiation-machine 'b)
+2
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+0
+
+> (proceed-machine recursive-exponentiation-machine)
+Resuming execution
+Paused on breakpoint
+
+> (get-register-contents recursive-exponentiation-machine 'b)
+2
+
+> (get-register-contents recursive-exponentiation-machine 'n)
+0
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+1
+
+> (proceed-machine recursive-exponentiation-machine)
+Resuming execution
+Paused on breakpoint
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+2
+
+> (get-register-contents recursive-exponentiation-machine 'n)
+1
+
+> (get-register-contents recursive-exponentiation-machine 'b)
+2
+
+> (proceed-machine recursive-exponentiation-machine)
+Resuming execution
+instruction-count = 28
+'done
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+4
+
+> (cancel-all-breakpoints recursive-exponentiation-machine)
+
+> (set-register-contents! recursive-exponentiation-machine 'b 2)
+'done
+
+ (set-register-contents! recursive-exponentiation-machine 'n 2)
+'done
+
+> (set-register-contents! recursive-exponentiation-machine 'val 0)
+'done
+
+> (start recursive-exponentiation-machine)
+instruction-count = 28
+'done
+
+> (get-register-contents recursive-exponentiation-machine 'val)
+4
+}
+
+This implementation basically works, but it has a few problems in practice. Most notably,
+no information about what the breakpoint was about is maintained, so there's no
+way to print out something all that reasonable when execution is paused (and no,
+printing out the instruction text is @italic{not} reasonable by itself). Solving
+this problem in a good way would probably require a lot more instrumentation of
+the instruction list, so you could display the instruction after the breakpoint
+and its surrounding context (as well as some globally-useful information, such as
+the index of the instruction in the total program, or the most recent label before it).
+Instruction tracing would help slightly with this problem, but at the expense of
+printing a lot more output than you may want.
+
+The limitations of the interface for working with the machine are also slightly
+more obvious now. A modern debugger is capable of displaying much more of the current
+program state at once -- local variables, stack traces, &etc. We only have functions
+for getting individual register values. The machine doesn't even expose its instruction
+sequence to the outside world.
+
+All of these are important things to do in the real world. However, I've chosen to
+skip all of them to keep the changes for this exercise concentrated on the essential
+changes needed to support breakpoints.
