@@ -2327,7 +2327,7 @@ it will perform just before it does so:
       (lambda ()
         (let ((value (value-proc)))
           (if (tracing-register? machine register-name)
-            (displayln "Assigning" register-name "from" (get-register-contents machine register-name) "to" value))
+            (displayln "Assigning" register-name "from" (get-contents target) "to" value))
           (set-contents! target value)
           (advance-pc pc))))))
 ]
@@ -2341,7 +2341,7 @@ Lastly, we make a similar modification to @tt{restore}:
     (lambda ()
       (let ((value (pop stack)))
         (if (tracing-register? machine register-name)
-            (displayln "Restoring" register-name "from" (get-register-contents machine register-name) "to" value))
+            (displayln "Restoring" register-name "from" (get-contents reg) "to" value))
         (set-contents! reg value)
         (advance-pc pc)))))
 ]
