@@ -2312,7 +2312,7 @@ Next, we can add a few top-level helper functions to keep code clean:
   ((machine 'tracing-register?) register-name))
 ]
 
-Lastly, we modify @tt{make-assign} so that it prints out the assignment
+Next, we modify @tt{make-assign} so that it prints out the assignment
 it will perform just before it does so:
 
 @racketblock[
@@ -2327,9 +2327,23 @@ it will perform just before it does so:
       (lambda ()
         (let ((value (value-proc)))
           (if (tracing-register? machine register-name)
-            (displayln "Modifying" register-name "from" (get-register-contents machine register-name) "to" value))
+            (displayln "Assigning" register-name "from" (get-register-contents machine register-name) "to" value))
           (set-contents! target value)
           (advance-pc pc))))))
+]
+
+Lastly, we make a similar modification to @tt{restore}:
+
+@racketblock[
+(define (make-restore inst machine stack pc)
+  (let* ((register-name (stack-inst-reg-name inst))
+         (reg (get-register machine register-name)))
+    (lambda ()
+      (let ((value (pop stack)))
+        (if (tracing-register? machine register-name)
+            (displayln "Restoring" register-name "from" (get-register-contents machine register-name) "to" value))
+        (set-contents! reg value)
+        (advance-pc pc)))))
 ]
 
 I'm going to opt not to modify @tt{set-register-contents!} for the sake of brevity,
@@ -2347,8 +2361,10 @@ Here it is in action:
 > (trace-register-on recursive-exponentiation-machine 'n)
 
 > (start recursive-exponentiation-machine)
-Modifying n from 2 to 1
-Modifying n from 1 to 0
+Assigning n from 2 to 1
+Assigning n from 1 to 0
+Restoring n from 0 to 0
+Restoring n from 0 to 1
 instruction-count = 28
 'done
 }
@@ -2715,3 +2731,243 @@ Diagrams follow:
 @image["img/5-20_box-pointer.png"]
 
 @image["img/5-20_memory.png"]
+
+@section[#:tag "c5e21"]{Exercise 5.21}
+
+Before I begin: I believe that the sentence "Assume that the list-structure memory
+operations are available as machine primitives." is telling me that operations like
+@tt{null?}, @tt{cons}, &etc are already provided, @italic{not} just @tt{vector-ref}
+&etc.
+
+@tt{count-leaves} is a little more complex than the other programs we've written
+so far because it has two recursive calls. We've seen an example of this before,
+but we've never written an example ourselves.
+
+First, we have a recursive implementation. This makes two recursive calls
+in sequence and adds the results. For this to work, we need to save the return
+value of the first call in order to add it to the return value of the second
+call. The only other thing I'd like to point out is that we only @tt{save} the
+@tt{continue} register before making the first recursive call. There's no need
+to do this after the second, because the destination would be the same.
+
+@racketblock[
+(define (count-leaves tree)
+  (cond ((null? tree) 0)
+        ((not (pair? tree)) 1)
+        (else (+ (count-leaves (car tree))
+                 (count-leaves (cdr tree))))))
+]
+
+@racketblock[
+start-machine
+  (assign continue (label count-leaves-done))
+recurse-test
+  (test (op null?) (reg tree))
+  (branch (label base-case))
+  (test (op pair?) (reg tree))
+  (branch (label recurse))
+  (assign val (const 1))
+  (goto (reg continue))
+recurse
+  (save continue)
+  (assign continue (label after-recurse-1))
+  (save tree)
+  (assign tree (op car) (reg tree))
+  (goto (label recurse-test))
+after-recurse-1
+  (assign continue (label after-recurse-2))
+  (restore tree)
+  (assign tree (op cdr) (reg tree))
+  (save val)
+  (goto (label recurse-test))
+after-recurse-2
+  (restore temp)
+  (assign val (op +) (reg val) (reg temp))
+  (restore continue)
+  (goto (reg continue))
+base-case
+  (assign val (const 0))
+  (goto (reg continue))
+count-leaves-done
+]
+
+The instrumentation we did in the previous section makes it easy to watch how
+this machine behaves:
+
+@verbatim{
+> (set-register-contents! recursive-count-leaves-machine 'tree '(1 (2 (3 4 (5) 6) 7)))
+'done
+
+> (trace-register-on recursive-count-leaves-machine 'val)
+
+> (trace-register-on recursive-count-leaves-machine 'tree)
+
+> (start recursive-count-leaves-machine)
+Assigning val from *unassigned* to 0
+Assigning tree from (1 (2 (3 4 (5) 6) 7)) to 1
+Assigning val from 0 to 1
+Restoring tree from 1 to (1 (2 (3 4 (5) 6) 7))
+Assigning tree from (1 (2 (3 4 (5) 6) 7)) to ((2 (3 4 (5) 6) 7))
+Assigning tree from ((2 (3 4 (5) 6) 7)) to (2 (3 4 (5) 6) 7)
+Assigning tree from (2 (3 4 (5) 6) 7) to 2
+Assigning val from 1 to 1
+Restoring tree from 2 to (2 (3 4 (5) 6) 7)
+Assigning tree from (2 (3 4 (5) 6) 7) to ((3 4 (5) 6) 7)
+Assigning tree from ((3 4 (5) 6) 7) to (3 4 (5) 6)
+Assigning tree from (3 4 (5) 6) to 3
+Assigning val from 1 to 1
+Restoring tree from 3 to (3 4 (5) 6)
+Assigning tree from (3 4 (5) 6) to (4 (5) 6)
+Assigning tree from (4 (5) 6) to 4
+Assigning val from 1 to 1
+Restoring tree from 4 to (4 (5) 6)
+Assigning tree from (4 (5) 6) to ((5) 6)
+Assigning tree from ((5) 6) to (5)
+Assigning tree from (5) to 5
+Assigning val from 1 to 1
+Restoring tree from 5 to (5)
+Assigning tree from (5) to ()
+Assigning val from 1 to 0
+Assigning val from 0 to 1
+Restoring tree from () to ((5) 6)
+Assigning tree from ((5) 6) to (6)
+Assigning tree from (6) to 6
+Assigning val from 1 to 1
+Restoring tree from 6 to (6)
+Assigning tree from (6) to ()
+Assigning val from 1 to 0
+Assigning val from 0 to 1
+Assigning val from 1 to 2
+Assigning val from 2 to 3
+Assigning val from 3 to 4
+Restoring tree from () to ((3 4 (5) 6) 7)
+Assigning tree from ((3 4 (5) 6) 7) to (7)
+Assigning tree from (7) to 7
+Assigning val from 4 to 1
+Restoring tree from 7 to (7)
+Assigning tree from (7) to ()
+Assigning val from 1 to 0
+Assigning val from 0 to 1
+Assigning val from 1 to 5
+Assigning val from 5 to 6
+Restoring tree from () to ((2 (3 4 (5) 6) 7))
+Assigning tree from ((2 (3 4 (5) 6) 7)) to ()
+Assigning val from 6 to 0
+Assigning val from 0 to 6
+Assigning val from 6 to 7
+'done
+}
+
+An iterative implementation is similar, but features a very prominent difference:
+because the algorithm is tail-recursive, we don't need to perform any operations
+after the second recursive call. The final return value should already be in the
+@tt{val} register. Much of the rest of the program is similar.
+
+@racketblock[
+(define (count-leaves tree)
+  (define (count-iter tree n)
+    (cond ((null? tree) n)
+          ((not (pair? tree)) (+ n 1))
+          (else (count-iter (cdr tree)
+                            (count-iter (car tree) n)))))
+  (count-iter tree 0))
+]
+
+@racketblock[
+start-machine
+  (assign continue (label count-leaves-done))
+  (assign val (const 0))
+  (assign n (const 0))
+count-iter
+  (test (op null?) (reg tree))
+  (branch (label base-case))
+  (test (op pair?) (reg tree))
+  (branch (label recurse))
+  (assign val (op +) (reg n) (const 1))
+  (goto (reg continue))
+recurse
+  (save continue)
+  (assign continue (label after-recurse))
+  (save tree)
+  (assign tree (op car) (reg tree))
+  (goto (label count-iter))
+after-recurse
+  (restore tree)
+  (assign tree (op cdr) (reg tree))
+  (assign n (reg val))
+  (restore continue)
+  (goto (label count-iter))
+base-case
+  (assign val (reg n))
+  (goto (reg continue))
+count-leaves-done
+]
+
+Similarly, we can instrument this program and observe how it behaves:
+
+@verbatim{
+> (set-register-contents! iterative-count-leaves-machine 'tree '(1 (2 (3 4 (5) 6) 7)))
+'done
+
+> (trace-register-on iterative-count-leaves-machine 'val)
+
+> (trace-register-on iterative-count-leaves-machine 'tree)
+
+> (trace-register-on iterative-count-leaves-machine 'n)
+
+> (start iterative-count-leaves-machine)
+Assigning val from *unassigned* to 0
+Assigning n from *unassigned* to 0
+Assigning tree from (1 (2 (3 4 (5) 6) 7)) to 1
+Assigning val from 0 to 1
+Restoring tree from 1 to (1 (2 (3 4 (5) 6) 7))
+Assigning tree from (1 (2 (3 4 (5) 6) 7)) to ((2 (3 4 (5) 6) 7))
+Assigning n from 0 to 1
+Assigning tree from ((2 (3 4 (5) 6) 7)) to (2 (3 4 (5) 6) 7)
+Assigning tree from (2 (3 4 (5) 6) 7) to 2
+Assigning val from 1 to 2
+Restoring tree from 2 to (2 (3 4 (5) 6) 7)
+Assigning tree from (2 (3 4 (5) 6) 7) to ((3 4 (5) 6) 7)
+Assigning n from 1 to 2
+Assigning tree from ((3 4 (5) 6) 7) to (3 4 (5) 6)
+Assigning tree from (3 4 (5) 6) to 3
+Assigning val from 2 to 3
+Restoring tree from 3 to (3 4 (5) 6)
+Assigning tree from (3 4 (5) 6) to (4 (5) 6)
+Assigning n from 2 to 3
+Assigning tree from (4 (5) 6) to 4
+Assigning val from 3 to 4
+Restoring tree from 4 to (4 (5) 6)
+Assigning tree from (4 (5) 6) to ((5) 6)
+Assigning n from 3 to 4
+Assigning tree from ((5) 6) to (5)
+Assigning tree from (5) to 5
+Assigning val from 4 to 5
+Restoring tree from 5 to (5)
+Assigning tree from (5) to ()
+Assigning n from 4 to 5
+Assigning val from 5 to 5
+Restoring tree from () to ((5) 6)
+Assigning tree from ((5) 6) to (6)
+Assigning n from 5 to 5
+Assigning tree from (6) to 6
+Assigning val from 5 to 6
+Restoring tree from 6 to (6)
+Assigning tree from (6) to ()
+Assigning n from 5 to 6
+Assigning val from 6 to 6
+Restoring tree from () to ((3 4 (5) 6) 7)
+Assigning tree from ((3 4 (5) 6) 7) to (7)
+Assigning n from 6 to 6
+Assigning tree from (7) to 7
+Assigning val from 6 to 7
+Restoring tree from 7 to (7)
+Assigning tree from (7) to ()
+Assigning n from 6 to 7
+Assigning val from 7 to 7
+Restoring tree from () to ((2 (3 4 (5) 6) 7))
+Assigning tree from ((2 (3 4 (5) 6) 7)) to ()
+Assigning n from 7 to 7
+Assigning val from 7 to 7
+'done
+}

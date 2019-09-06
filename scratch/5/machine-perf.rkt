@@ -431,7 +431,7 @@
       (lambda ()
         (let ((value (value-proc)))
           (if (tracing-register? machine register-name)
-            (displayln "Modifying" register-name "from" (get-register-contents machine register-name) "to" value))
+            (displayln "Assigning" register-name "from" (get-register-contents machine register-name) "to" value))
           (set-contents! target value)
           (advance-pc pc))))))
 (define (assign-reg-name assign-instruction)
@@ -481,10 +481,14 @@
       (push stack (get-contents reg))
       (advance-pc pc))))
 (define (make-restore inst machine stack pc)
-  (let ((reg (get-register machine (stack-inst-reg-name inst))))
+  (let* ((register-name (stack-inst-reg-name inst))
+         (reg (get-register machine register-name)))
     (lambda ()
-      (set-contents! reg (pop stack))
-      (advance-pc pc))))
+      (let ((value (pop stack)))
+        (if (tracing-register? machine register-name)
+            (displayln "Restoring" register-name "from" (get-register-contents machine register-name) "to" value))
+        (set-contents! reg value)
+        (advance-pc pc)))))
 (define (stack-inst-reg-name stack-instruction)
   (cadr stack-instruction))
 
@@ -652,6 +656,72 @@
        (goto (reg continue))                   ; return to caller
        fact-done
        (perform (op print-stack-statistics)))))
+
+(define recursive-count-leaves-machine
+  (make-machine
+    (list (list '+ +) (list 'car car) (list 'cdr cdr) (list 'pair? pair?) (list 'null? null?))
+    '(start-machine
+      (assign continue (label count-leaves-done))
+      (assign val (const 0))
+      recurse-test
+      (test (op null?) (reg tree))
+      (branch (label base-case))
+      (test (op pair?) (reg tree))
+      (branch (label recurse))
+      (assign val (const 1))
+      (goto (reg continue))
+      recurse
+      (save continue)
+      (assign continue (label after-recurse-1))
+      (save tree)
+      (assign tree (op car) (reg tree))
+      (goto (label recurse-test))
+      after-recurse-1
+      (assign continue (label after-recurse-2))
+      (restore tree)
+      (assign tree (op cdr) (reg tree))
+      (save val)
+      (goto (label recurse-test))
+      after-recurse-2
+      (restore temp)
+      (assign val (op +) (reg val) (reg temp))
+      (restore continue)
+      (goto (reg continue))
+      base-case
+      (assign val (const 0))
+      (goto (reg continue))
+      count-leaves-done)))
+
+(define iterative-count-leaves-machine
+  (make-machine
+    (list (list '+ +) (list 'car car) (list 'cdr cdr) (list 'pair? pair?) (list 'null? null?))
+    '(start-machine
+      (assign continue (label count-leaves-done))
+      (assign val (const 0))
+      (assign n (const 0))
+      count-iter
+      (test (op null?) (reg tree))
+      (branch (label base-case))
+      (test (op pair?) (reg tree))
+      (branch (label recurse))
+      (assign val (op +) (reg n) (const 1))
+      (goto (reg continue))
+      recurse
+      (save continue)
+      (assign continue (label after-recurse))
+      (save tree)
+      (assign tree (op car) (reg tree))
+      (goto (label count-iter))
+      after-recurse
+      (restore tree)
+      (assign tree (op cdr) (reg tree))
+      (assign n (reg val))
+      (restore continue)
+      (goto (label count-iter))
+      base-case
+      (assign val (reg n))
+      (goto (reg continue))
+      count-leaves-done)))
 ; (define broken-machine
 ;   (make-machine
 ;     '(a)
