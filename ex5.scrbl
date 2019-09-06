@@ -2679,3 +2679,39 @@ sequence to the outside world.
 All of these are important things to do in the real world. However, I've chosen to
 skip all of them to keep the changes for this exercise concentrated on the essential
 changes needed to support breakpoints.
+
+@section[#:tag "c5e20"]{Exercise 5.20}
+
+We are asked to draw box-and-pointer and memory representations of the following list:
+
+@racketblock[
+(define x (cons 1 2))
+(define y (list x x))
+]
+
+Additionally, we are told that the @tt{free} pointer is initially at @tt{p1}.
+
+If we perform these allocations in order, then we will first put a @tt{cons}
+cell with the number 1 in both the @tt{car} and @tt{cdr} slots in slot @tt{p1}.
+I believe this is uncontroversial -- we may not have a list, but @tt{car} and
+@tt{cdr} of any kind of pair are straightforward.
+
+Next, we should add a @tt{cons} cell with the @tt{car} pointing at @tt{p0} and the
+@tt{cdr} slot pointing to the empty list @tt{e0}. I believe that the most reasonable
+way to fill out memory when constructing lists with the @tt{list} operator is to
+construct them in reverse order, with the last @tt{cons} cell being allocated first.
+This is easier to implement because it allows the earlier cells to refer to cells
+that have already been created. This will also let us take advantage of the normal
+incrementing of the @tt{free} pointer.
+
+It follows that we place the next (and first) @tt{cons} cell of @tt{y} in
+slot @tt{p3}. This points to @tt{p0} in the @tt{car} position and @tt{p2} in
+the @tt{cdr} position.
+
+After we're done, the @tt{free} pointer is at position @tt{p4}.
+
+Diagrams follow:
+
+@image["img/5-20_box-pointer.png"]
+
+@image["img/5-20_memory.png"]
