@@ -2971,3 +2971,118 @@ Assigning n from 7 to 7
 Assigning val from 7 to 7
 'done
 }
+
+@section[#:tag "c5e22"]{Exercise 5.22}
+
+We are asked to reimplement @tt{append} and @tt{append!} in our assembly language.
+
+@racketblock[
+(define (append x y)
+  (if (null? x)
+      y
+      (cons (car x) (append (cdr x) y))))
+]
+
+@racketblock[
+start-machine
+  (assign continue (label append-done))
+recurse-test
+  (test (op null?) (reg x))
+  (branch (label base-case))
+  (save continue)
+  (assign continue (label after-recurse))
+  (save x)
+  (assign x (op cdr) (reg x))
+  (goto (label recurse-test))
+after-recurse
+  (restore x)
+  (assign rest (reg val))
+  (assign first (op car) (reg x))
+  (assign val (op cons) (reg first) (reg rest))
+  (restore continue)
+  (goto (reg continue))
+base-case
+  (assign val (reg y))
+  (goto (reg continue))
+append-done
+]
+
+@racketblock[
+(define (append! x y)
+  (set-cdr! (last-pair x) y)
+  x)
+
+(define (last-pair x)
+  (if (null? (cdr x))
+      x
+      (last-pair (cdr x))))
+]
+
+If we ignore the function separation between @tt{append!} and @tt{last-pair},
+we can write a very compact procedure:
+
+@racketblock[
+last-pair-init
+  (assign x-iter (reg x))
+last-pair-recurse
+  (assign temp (op cdr) (reg x-iter))
+  (test (op null?) (reg temp))
+  (branch (label perform-append))
+  (assign x-iter (reg temp))
+  (goto (label last-pair-recurse))
+perform-append
+  (perform (op set-cdr!) (reg x-iter) (reg y))
+]
+
+However, we ought to go the extra mile and make @tt{last-pair} a real function.
+By my implicit calling conventions, this means that it should return a value
+in the @tt{val} register and should not require a special communication register
+like @tt{x-iter}. This version is quite similar: The only substantive differences
+are that we @tt{save} the value of @tt{x} before starting to recurse, and that
+we assign the last @tt{x} value we encounter to the @tt{val} register before
+exiting.
+
+@racketblock[
+last-pair-init
+  (save x)
+last-pair-recurse
+  (assign temp (op cdr) (reg x))
+  (test (op null?) (reg temp))
+  (branch (label after-last-pair-recurse))
+  (assign x (reg temp))
+  (goto (label last-pair-recurse))
+after-last-pair-recurse
+  (assign val (reg x))
+  (restore x)
+perform-append
+  (perform (op set-cdr!) (reg val) (reg y))
+]
+
+Both of these machines work, but it should be noted that @tt{append!} doesn't
+support appending to an empty list, due to its use of @tt{set-cdr!}.
+
+@verbatim{
+> (set-register-contents! recursive-append-machine 'x '(1 2 3))
+'done
+
+> (set-register-contents! recursive-append-machine 'y '(4 5 6))
+'done
+
+> (start recursive-append-machine)
+'done
+
+> (get-register-contents recursive-append-machine 'val)
+(mcons 1 (mcons 2 (mcons 3 (mcons 4 (mcons 5 (mcons 6 '()))))))
+
+> (set-register-contents! iterative-append-machine 'x '(1 2 3))
+'done
+
+> (set-register-contents! iterative-append-machine 'y '(4 5 6))
+'done
+
+> (start iterative-append-machine)
+'done
+
+> (get-register-contents iterative-append-machine 'x)
+(mcons 1 (mcons 2 (mcons 3 (mcons 4 (mcons 5 (mcons 6 '()))))))
+}

@@ -722,6 +722,48 @@
       (assign val (reg n))
       (goto (reg continue))
       count-leaves-done)))
+
+(define recursive-append-machine
+  (make-machine
+    (list (list 'null? null?) (list 'car car) (list 'cdr cdr) (list 'cons cons))
+    '(start-machine
+         (assign continue (label append-done))
+       recurse-test
+         (test (op null?) (reg x))
+         (branch (label base-case))
+         (save continue)
+         (assign continue (label after-recurse))
+         (save x)
+         (assign x (op cdr) (reg x))
+         (goto (label recurse-test))
+       after-recurse
+         (restore x)
+         (assign rest (reg val))
+         (assign first (op car) (reg x))
+         (assign val (op cons) (reg first) (reg rest))
+         (restore continue)
+         (goto (reg continue))
+       base-case
+         (assign val (reg y))
+         (goto (reg continue))
+       append-done)))
+
+(define iterative-append-machine
+  (make-machine
+    (list (list 'null? null?) (list 'cdr cdr) (list 'set-cdr! set-cdr!))
+    '(last-pair-init
+      (save x)
+      last-pair-recurse
+        (assign temp (op cdr) (reg x))
+        (test (op null?) (reg temp))
+        (branch (label after-last-pair-recurse))
+        (assign x (reg temp))
+        (goto (label last-pair-recurse))
+      after-last-pair-recurse
+        (assign val (reg x))
+        (restore x)
+      perform-append
+        (perform (op set-cdr!) (reg val) (reg y)))))
 ; (define broken-machine
 ;   (make-machine
 ;     '(a)
