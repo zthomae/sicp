@@ -441,9 +441,9 @@
         (list 'true #t)
         (list 'false #f)
         (list '* *)
-        (list '/ /)
+        (list '/ /)))
         ;; more...
-        ))
+
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))
@@ -454,7 +454,7 @@
 (define (setup-non-primitives initial-env)
   (eval '(define (cons (x lazy) (y lazy))
              (lambda ((m lazy)) (m x y)))
-          initial-env)
+         initial-env)
   (eval '(define (car (z lazy))
            (z (lambda ((p lazy) (q lazy)) p)))
         initial-env)
