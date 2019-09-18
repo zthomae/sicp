@@ -361,9 +361,9 @@
         (list 'cons cons)
         (list 'null? null?)
         (list '+ +)
-        (list '< <)
+        (list '< <)))
         ;; more...
-        ))
+
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))

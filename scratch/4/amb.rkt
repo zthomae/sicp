@@ -306,9 +306,9 @@
         (list 'sqrt sqrt)
         (list 'member member)
         (list 'eq? eq?)
-        (list 'memq memq)
+        (list 'memq memq)))
         ;; more...
-        ))
+
 
 (define (primitive-procedure-names)
   (map car primitive-procedures))

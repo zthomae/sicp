@@ -3086,3 +3086,123 @@ support appending to an empty list, due to its use of @tt{set-cdr!}.
 > (get-register-contents iterative-append-machine 'x)
 (mcons 1 (mcons 2 (mcons 3 (mcons 4 (mcons 5 (mcons 6 '()))))))
 }
+
+@section[#:tag "c5e23"]{Exercise 5.23}
+
+Back in chapter 4, we defined a few types of expressions as transformations
+of other, more "basic" expressions that we already supported. For example,
+@tt{cond} expressions can be transformed into @tt{if}s, @tt{let}s can be
+defined in terms of immediately-invoked @tt{lambda}s, and so on. Since the book
+does not detail exactly what forms we'll support, I'll implement @tt{cond} as well
+as all three types of @tt{let} constructs supported by Scheme, but not the
+"extra" constructs like @tt{while}.
+
+Since we're implementing them while assuming that transformation functions
+such as @tt{cond->if} are available as operations, our methodology can be
+very straightforward: We call the operation to transform the value contained
+in the @tt{exp} register, save it back into @tt{exp}, and then re-evaluate
+the expression by branching to @tt{eval-dispatch} again. This is very similar
+to how we called @tt{eval} recursively on the transformed expressions earlier.
+
+The most straightforward way to do this is to duplicate the re-evaluation code
+for each of these cases. It would be possible to implement a single sub-procedure
+which receives an operation as an argument and jump to it from different locations.
+However elegant this idea may seem, I think it would require significantly more
+code in addition to being more complex, so I'm not going to do this.
+
+Assuming we've brought over the required operations and their dependencies
+(which will not be repeated here), the changes to the interpreter are very
+easy. First, we expand @tt{eval-dispatch} to check for our new expression types
+@italic{before} trying to perform function application:
+
+@racketblock[
+eval-dispatch
+ (test (op self-evaluating?) (reg exp))
+ (branch (label ev-self-eval))
+ (test (op variable?) (reg exp))
+ (branch (label ev-variable))
+ (test (op quoted?) (reg exp))
+ (branch (label ev-quoted))
+ (test (op assignment?) (reg exp))
+ (branch (label ev-assignment))
+ (test (op definition?) (reg exp))
+ (branch (label ev-definition))
+ (test (op if?) (reg exp))
+ (branch (label ev-if))
+ (test (op lambda?) (reg exp))
+ (branch (label ev-lambda))
+ (test (op begin?) (reg exp))
+ (branch (label ev-begin))
+ (test (op cond?) (reg exp))
+ (branch (label ev-cond))
+ (test (op let?) (reg exp))
+ (branch (label ev-let))
+ (test (op let*?) (reg exp))
+ (branch (label ev-let*))
+ (test (op application?) (reg exp))
+ (branch (label ev-application))
+ (goto (label unknown-expression-type))
+]
+
+Next, we add the new evaluation methods. They are all almost exactly
+the same:
+
+@racketblock[
+ev-cond
+ (assign exp (op cond->if) (reg exp))
+ (goto (label eval-dispatch))
+
+ev-let
+ (assign exp (op let->combination) (reg exp))
+ (goto (label eval-dispatch))
+
+ev-let*
+ (assign exp (op let*->nested-lets) (reg exp))
+ (goto (label eval-dispatch))
+]
+
+And that's all. There isn't much to verify, but we can give it a spot check:
+
+@verbatim{
+;;; EC-EVAL input:
+(let ((x 1)) (+ x 1))
+
+;;; EC-Eval value:
+2
+
+;;; EC-EVAL input:
+(let* ((x 1) (y (+ x 1))) (* y 2))
+
+;;; EC-Eval value:
+4
+
+;;; EC-EVAL input:
+(define (fib n)
+  (let fib-iter ((a 1)
+                 (b 0)
+                 (count n))
+    (if (= count 0)
+        b
+        (fib-iter (+ a b) a (- count 1)))))
+
+;;; EC-Eval value:
+ok
+
+;;; EC-EVAL input:
+(fib 10)
+
+;;; EC-Eval value:
+55
+
+;;; EC-EVAL input:
+(cond (else 1))
+
+;;; EC-Eval value:
+1
+
+;;; EC-EVAL input:
+(cond ((> 1 2) 1) (else 2))
+
+;;; EC-Eval value:
+2
+}

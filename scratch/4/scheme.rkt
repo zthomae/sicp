@@ -290,11 +290,9 @@
 
 (define (let*->nested-lets exp)
   (define (iter bindings)
-    (make-let
-     (list (car bindings))
-     (if (null? (cdr bindings))
-         (let-body exp)
-         (iter (cdr bindings)))))
+    (if (null? (cdr bindings))
+        (apply make-let (cons bindings (let-body exp)))
+        (make-let (list (car bindings)) (iter (cdr bindings)))))
   (if (null? (let-bindings exp))
       (let-body exp)
       (iter (let-bindings exp))))
