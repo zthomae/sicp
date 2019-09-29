@@ -1018,6 +1018,17 @@
 (define (cond->if exp)
   (expand-clauses (cond-clauses exp)))
 
+(define (cond-first-predicate exp)
+  (cond-predicate (first-exp exp)))
+(define (cond-first-actions exp)
+  (cond-actions (first-exp exp)))
+(define (cond-else-predicate? exp)
+  (eq? exp 'else))
+(define (cond-alternate-actions? exp)
+  (eq? (car exp) '=>))
+(define (cond-alternate-proc exp)
+  (cadr exp))
+
 (define (expand-clauses clauses)
   (if (null? clauses)
       'false
@@ -1137,9 +1148,17 @@
         (list 'cond? cond?)
         (list 'let? let?)
         (list 'let*? let*?)
-        (list 'cond->if cond->if)
+        (list 'cond-clauses cond-clauses)
+        (list 'cond-alternate-form? cond-alternate-form?)
+        (list 'cond-predicate cond-predicate)
+        (list 'cond-actions cond-actions)
+        (list 'cond-alternate-form-proc cond-alternate-form-proc)
+        (list 'cond-first-predicate cond-first-predicate)
+        (list 'cond-first-actions cond-first-actions)
+        (list 'cond-else-predicate? cond-else-predicate?)
         (list 'let->combination let->combination)
         (list 'let*->nested-lets let*->nested-lets)
+        (list 'null? null?)
         (list 'prompt-for-input prompt-for-input)
         (list 'read read)
         (list 'get-global-environment get-global-environment)
@@ -1174,7 +1193,7 @@
       (test (op begin?) (reg exp))
       (branch (label ev-begin))
       (test (op cond?) (reg exp))
-      (branch (label ev-cond))
+      (branch (label ev-begin-cond))
       (test (op let?) (reg exp))
       (branch (label ev-let))
       (test (op let*?) (reg exp))
@@ -1347,9 +1366,47 @@
       (assign val (const ok))
       (goto (reg continue))
 
+      ev-begin-cond
+      (assign unev (op cond-clauses) (reg exp))
+      (save continue)
+
       ev-cond
-      (assign exp (op cond->if) (reg exp))
+      (test (op null?) (reg unev))
+      (branch (label ev-cond-finished))
+      (assign exp (op cond-first-predicate) (reg unev))
+      (test (op cond-else-predicate?) (reg exp))
+      (branch (label ev-cond-else))
+      (save env)
+      (save unev)
+      (assign continue (label ev-cond-test-predicate))
       (goto (label eval-dispatch))
+
+      ev-cond-test-predicate
+      (restore unev)
+      (restore env)
+      (test (op true?) (reg val))
+      (branch (label ev-cond-body))
+      (assign unev (op rest-exps) (reg unev))
+      (goto (label ev-cond))
+
+      ev-cond-body
+      (assign unev (op cond-first-actions) (reg unev))
+      (test (op cond-alternate-actions?) (reg unev))
+      (branch (label ev-cond-alternate-body))
+      (assign continue (label ev-cond-finished))
+      (goto (label ev-sequence))
+
+      ev-cond-alternate-body
+
+
+      ev-cond-else
+      (assign unev (op cond-first-actions) (reg unev))
+      (assign continue (label ev-cond-finished))
+      (goto (label ev-sequence))
+
+      ev-cond-finished
+      (restore continue)
+      (goto (reg continue))
 
       ev-let
       (assign exp (op let->combination) (reg exp))

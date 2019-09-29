@@ -3206,3 +3206,18 @@ ok
 ;;; EC-Eval value:
 2
 }
+
+@section[#:tag "c5e24"]{Exercise 5.24}
+
+Interpreting @tt{cond} expressions as first-order constructs, rather than
+simplifying them into @tt{if} expressions, requires slightly more work. The
+most important piece of it is to keep track of which branches have yet to be
+evaluated. As usual, we can use the @tt{unev} register to maintain a reference
+to a list of @tt{cond} branches that we haven't checked yet.
+
+We can use @tt{cond-clauses} as a machine primitive to get a reference to the clauses.
+Of course, we'll also have to allow @tt{else} and alternate-form @tt{cond} branches,
+as these are already supported by @tt{expand-clauses}. This suggests we have to have
+three code paths for interpreting each branch, including a failure case for
+misconstructed @tt{cond} expressions in which @tt{else} is not the last branch and
+two different predicate evaluators for standard- and alternate-form bodies.
