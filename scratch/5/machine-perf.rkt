@@ -1375,7 +1375,7 @@
       (branch (label ev-cond-finished))
       (assign exp (op cond-first-predicate) (reg unev))
       (test (op cond-else-predicate?) (reg exp))
-      (branch (label ev-cond-else))
+      (branch (label ev-cond-else-test))
       (save env)
       (save unev)
       (assign continue (label ev-cond-test-predicate))
@@ -1391,13 +1391,13 @@
 
       ev-cond-body
       (assign unev (op cond-first-actions) (reg unev))
-      (test (op cond-alternate-actions?) (reg unev))
-      (branch (label ev-cond-alternate-body))
       (assign continue (label ev-cond-finished))
       (goto (label ev-sequence))
 
-      ev-cond-alternate-body
-
+      ev-cond-else-test
+      (test (op last-exp?) (reg unev))
+      (branch (label ev-cond-else))
+      (goto (label invalid-cond-else-form))
 
       ev-cond-else
       (assign unev (op cond-first-actions) (reg unev))
@@ -1420,6 +1420,10 @@
       (perform (op announce-output) (const ";;; EC-Eval value:"))
       (perform (op user-print) (reg val))
       (goto (label read-eval-print-loop))
+
+      invalid-cond-else-form
+      (assign val (const invalid-cond-else-form-error))
+      (goto (label signal-error))
 
       unknown-expression-type
       (assign val (const unknown-expression-type-error))

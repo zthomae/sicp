@@ -3216,8 +3216,73 @@ evaluated. As usual, we can use the @tt{unev} register to maintain a reference
 to a list of @tt{cond} branches that we haven't checked yet.
 
 We can use @tt{cond-clauses} as a machine primitive to get a reference to the clauses.
-Of course, we'll also have to allow @tt{else} and alternate-form @tt{cond} branches,
-as these are already supported by @tt{expand-clauses}. This suggests we have to have
-three code paths for interpreting each branch, including a failure case for
-misconstructed @tt{cond} expressions in which @tt{else} is not the last branch and
-two different predicate evaluators for standard- and alternate-form bodies.
+Of course, we'll also have to allow @tt{else} expressions, and verify that they only
+appear as the final alternative in the expression. I've chosen not to implement
+support for the alternate form at this time, largely because I never use it.
+
+First, we need some new procedures for extracting parts of @tt{cond} expressions:
+
+@racketblock[
+(define (cond-first-predicate exp)
+  (cond-predicate (first-exp exp)))
+(define (cond-first-actions exp)
+  (cond-actions (first-exp exp)))
+(define (cond-else-predicate? exp)
+  (eq? exp 'else))
+]
+
+Naturally, these will need to be added to the list of operations supported
+by the machine. I've also added @tt{null?}, which we've managed to get away
+with not having until now.
+
+For simplicity's sake, we can implement the @tt{cond} expression without
+tail recursion on the alternatives for now. That assembly looks like the
+following:
+
+@racketblock[
+ev-begin-cond
+ (assign unev (op cond-clauses) (reg exp))
+ (save continue)
+
+ev-cond
+ (test (op null?) (reg unev))
+ (branch (label ev-cond-finished))
+ (assign exp (op cond-first-predicate) (reg unev))
+ (test (op cond-else-predicate?) (reg exp))
+ (branch (label ev-cond-else-test))
+ (save env)
+ (save unev)
+ (assign continue (label ev-cond-test-predicate))
+ (goto (label eval-dispatch))
+
+ev-cond-test-predicate
+ (restore unev)
+ (restore env)
+ (test (op true?) (reg val))
+ (branch (label ev-cond-body))
+ (assign unev (op rest-exps) (reg unev))
+ (goto (label ev-cond))
+
+ev-cond-body
+ (assign unev (op cond-first-actions) (reg unev))
+ (assign continue (label ev-cond-finished))
+ (goto (label ev-sequence))
+
+ev-cond-else-test
+ (test (op last-exp?) (reg unev))
+ (branch (label ev-cond-else))
+ (goto (label invalid-cond-else-form))
+
+ev-cond-else
+ (assign unev (op cond-first-actions) (reg unev))
+ (assign continue (label ev-cond-finished))
+ (goto (label ev-sequence))
+
+ev-cond-finished
+ (restore continue)
+ (goto (reg continue))
+
+invalid-cond-else-form
+ (assign val (const invalid-cond-else-form-error))
+ (goto (label signal-error))
+]
