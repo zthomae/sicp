@@ -15,3 +15,11 @@ jobs:
         run: |
           Xvfb :1 -screen - 1024x768x16 &
           DISPLAY=:1.0 make
+          sudo apt install -y rsync
+
+      - name: Deploy
+        uses: JamesIves/github-pages-deploy-action@releases/v3
+        with:
+          ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          BRANCH: gh-pages-test
+          FOLDER: docs
