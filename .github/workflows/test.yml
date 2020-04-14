@@ -1,0 +1,17 @@
+name: Build
+on: [ pull_request ]
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    container: jackfirth/racket:7.6-full
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: true
+          persist-credentials: false
+
+      - name: Install and Build
+        run: |
+          Xvfb :1 -screen - 1024x768x16 &
+          DISPLAY=:1.0 make
