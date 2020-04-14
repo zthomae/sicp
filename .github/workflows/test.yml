@@ -13,9 +13,9 @@ jobs:
 
       - name: Install and Build
         run: |
+          apt install -y rsync
           Xvfb :1 -screen - 1024x768x16 &
           DISPLAY=:1.0 make
-          apt install -y rsync
 
       - name: Deploy
         uses: JamesIves/github-pages-deploy-action@releases/v3
