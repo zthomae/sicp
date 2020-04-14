@@ -1,9 +1,9 @@
-name: Build and Deploy
+name: Build and Deploy Docs
 on:
   push:
     branches: [ master ]
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     container: jackfirth/racket:7.6-full
     steps:
