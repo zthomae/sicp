@@ -8,6 +8,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v2
         with:
+          submodules: true
           persist-credentials: false
 
       - name: Install and Build
