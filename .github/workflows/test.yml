@@ -11,10 +11,13 @@ jobs:
           submodules: true
           persist-credentials: false
 
-      - name: Install and Build
+      - name: Install Dependencies
         run: |
           apt-get update
           apt-get install -y rsync
+
+      - name: Build
+        run: |
           Xvfb :1 -screen - 1024x768x16 &
           DISPLAY=:1.0 make
 
