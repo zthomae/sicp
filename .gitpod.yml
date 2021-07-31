@@ -1,0 +1,13 @@
+image:
+  file: .gitpod.Dockerfile
+
+tasks:
+  - init: |
+      make test-deps
+      make docs
+    command:
+      python3 -m http.server --directory docs
+
+ports:
+  - port: 8000
+    onOpen: open-browser
